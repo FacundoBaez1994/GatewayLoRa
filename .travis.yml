@@ -45,7 +45,7 @@ matrix:
 
     - &cmake-build-test
       stage: "CMake"
-      name: "CMake blinky baremetal example - develop (K64F)"
+      name: "CMake blinky example - develop (K64F)"
       env: NAME=cmake_test TARGET_NAME=K64F PROFILE=develop  CACHE_NAME=develop-K64F
       language: python
       python: 3.8
@@ -78,52 +78,43 @@ matrix:
         - pip install future==0.16.0
         - pip install "Jinja2>=2.10.1,<2.11"
         - pip install "intelhex>=1.3,<=2.2.1"
+        # Fetch mbed-os: We use manual clone, with depth=1 and --single-branch to save time.
+        - >-
+          git clone --depth=1 --single-branch https://github.com/ARMmbed/mbed-os.git;
+        - >-
       script:
-        - mbedtools deploy              
         - echo mbedtools compile -t GCC_ARM -m ${TARGET_NAME} -b ${PROFILE}
         - mbedtools compile -t GCC_ARM -m ${TARGET_NAME} -b ${PROFILE}
         - ccache -s
 
     - <<: *cmake-build-test
-      name: "CMake blinky baremetal example - release (K64F)"
+      name: "CMake blinky example - release (K64F)"
       env: NAME=cmake_test TARGET_NAME=K64F PROFILE=release CACHE_NAME=release-K64F
 
     - <<: *cmake-build-test
-      name: "CMake blinky baremetal example - debug (K64F)"
+      name: "CMake blinky example - debug (K64F)"
       env: NAME=cmake_test TARGET_NAME=K64F PROFILE=debug CACHE_NAME=debug-K64F
 
     - <<: *cmake-build-test
-      name: "CMake blinky baremetal example - develop (DISCO_L475VG_IOT01A)"
+      name: "CMake blinky example - develop (DISCO_L475VG_IOT01A)"
       env: NAME=cmake_test TARGET_NAME=DISCO_L475VG_IOT01A PROFILE=develop CACHE_NAME=develop-DISCO_L475VG_IOT01A
 
     - <<: *cmake-build-test
-      name: "CMake blinky baremetal example - release (DISCO_L475VG_IOT01A)"
+      name: "CMake blinky example - release (DISCO_L475VG_IOT01A)"
       env: NAME=cmake_test TARGET_NAME=DISCO_L475VG_IOT01A PROFILE=release CACHE_NAME=release-DISCO_L475VG_IOT01A
 
     - <<: *cmake-build-test
-      name: "CMake blinky baremetal example - debug (DISCO_L475VG_IOT01A)"
+      name: "CMake blinky example - debug (DISCO_L475VG_IOT01A)"
       env: NAME=cmake_test TARGET_NAME=DISCO_L475VG_IOT01A PROFILE=debug CACHE_NAME=debug-DISCO_L475VG_IOT01A
 
     - <<: *cmake-build-test
-      name: "CMake blinky baremetal example - develop (NRF52840_DK)"
+      name: "CMake blinky example - develop (NRF52840_DK)"
       env: NAME=cmake_test TARGET_NAME=NRF52840_DK PROFILE=develop CACHE_NAME=develop-NRF52840_DK
 
     - <<: *cmake-build-test
-      name: "CMake blinky baremetal example - release (NRF52840_DK)"
+      name: "CMake blinky example - release (NRF52840_DK)"
       env: NAME=cmake_test TARGET_NAME=NRF52840_DK PROFILE=release CACHE_NAME=release-NRF52840_DK
 
     - <<: *cmake-build-test
-      name: "CMake blinky baremetal example - debug (NRF52840_DK)"
+      name: "CMake blinky example - debug (NRF52840_DK)"
       env: NAME=cmake_test TARGET_NAME=NRF52840_DK PROFILE=debug CACHE_NAME=debug-NRF52840_DK
-
-    - <<: *cmake-build-test
-      name: "CMake blinky baremetal example - develop (NUCLEO_F303K8)"
-      env: NAME=cmake_test TARGET_NAME=NUCLEO_F303K8 PROFILE=develop CACHE_NAME=develop-NUCLEO_F303K8
-
-    - <<: *cmake-build-test
-      name: "CMake blinky baremetal example - release (NUCLEO_F303K8)"
-      env: NAME=cmake_test TARGET_NAME=NUCLEO_F303K8 PROFILE=release CACHE_NAME=release-NUCLEO_F303K8
-
-    - <<: *cmake-build-test
-      name: "CMake blinky baremetal example - debug (NUCLEO_F303K8)"
-      env: NAME=cmake_test TARGET_NAME=NUCLEO_F303K8 PROFILE=debug CACHE_NAME=debug-NUCLEO_F303K8
