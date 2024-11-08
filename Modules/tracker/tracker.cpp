@@ -26,8 +26,12 @@
 * @brief Contructor method creates a new trackerGPS instance ready to be used
 */
 tracker::tracker () {
+    this->LoRaTransciver = new LoRaClass ();
+    if (!this->LoRaTransciver->begin (915E6)) {
+        uartUSB.write ("LoRa Module Failed to Start!", strlen ("LoRa Module Failed to Start"));  // debug only
+        uartUSB.write ( "\r\n",  3 );  // debug only
+    }
 
-    this->LoRaTransciver = new LoRa ();
 
     /*
     Watchdog &watchdog = Watchdog::get_instance(); // singletom
@@ -89,18 +93,30 @@ tracker::~tracker() {
 */
 void tracker::update () {
     char message[50];
-    static int counter = 0;
-    snprintf(message, sizeof(message), "hello %d", counter);
-    
-    this->LoRaTransciver->begin ();
-    wait_us(200000); 
+    char buffer[64];
 
-    // Envía el mensaje usando la función de envío que implementaste
-    this->LoRaTransciver->beginPacket();
-    this->LoRaTransciver->write((uint8_t *)message, strlen(message));
-    this->LoRaTransciver->endPacket();
-    counter ++;
-    ThisThread::sleep_for(5000ms);  // Pausa de 5 segundos
+      // try to parse packet
+    int packetSize = this->LoRaTransciver->parsePacket();
+    if (packetSize) {
+    // received a packet
+     uartUSB.write ("Packet Received!", strlen ("Packet Received!"));  // debug only
+    uartUSB.write ( "\r\n",  3 );  // debug only
+
+    // read packet
+    while (this->LoRaTransciver->available()) {
+        ssize_t bytesRead = LoRa.read(buffer, sizeof(buffer)); // Lee hasta 64 bytes o lo que esté disponible
+        if (bytesRead > 0) {
+            for (ssize_t i = 0; i < bytesRead; i++) {
+                uartUSB.write(&buffer[i], 1); // Envía cada byte al puerto serie
+            }
+        }
+    }
+    uartUSB.write ( "\r\n",  3 );  // debug only
+
+    // print RSSI of packet
+   // Serial.print("' with RSSI ");
+    //Serial.println(LoRa.packetRssi());
+    }
 
 
 

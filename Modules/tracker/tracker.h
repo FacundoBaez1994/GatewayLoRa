@@ -37,7 +37,7 @@ private:
     CellularModule* cellularTransceiver;
     TcpSocket * socketTargetted;
     CellInformation * currentCellInformation; 
-    LoRa * LoRaTransciver;
+    LoRaClass * LoRaTransciver;
 
     GNSSModule* currentGNSSModule;
     GNSSData * currentGNSSdata;

@@ -1,142 +1,87 @@
-// Copyright (c) Sandeep Mistry. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-
 #ifndef LORA_H
 #define LORA_H
 
-#include "arm_book_lib.h"
 #include "mbed.h"
-#include "Non_Blocking_Delay.h"
-#include "string.h"
 
-#define PA_OUTPUT_RFO_PIN          0
-#define PA_OUTPUT_PA_BOOST_PIN     1
+#define PA_OUTPUT_RFO_PIN      0
+#define PA_OUTPUT_PA_BOOST_PIN 1
 
-class LoRa {
+class LoRaClass: public Stream
+{
 public:
-    LoRa();
-    ~LoRa();
-    bool begin();
-    int beginPacket(int implicitHeader = false);
+    LoRaClass();
 
-    void write(const char *message);
-    void write(const uint8_t *buffer, size_t size);
-
-    int endPacket(bool async = false);
-    bool isTransmitting ();
-
-    void sleep();
-    void setFrequency(long frequency); //frequency in Hz (433E6, 868E6, 915E6)
-    void setTxPower(int level, int outputPin = PA_OUTPUT_PA_BOOST_PIN);
-    void idle();
-    void setOCP(uint8_t mA); // private?
-
-  
+    int begin(long frequency);
     void end();
-/*
-  int beginPacket(int implicitHeader = false);
-  int endPacket(bool async = false);
 
-  int parsePacket(int size = 0);
-  int packetRssi();
-  float packetSnr();
-  long packetFrequencyError();
+    int beginPacket(int implicitHeader = false);
+    int endPacket();
 
-  int rssi();
+    int parsePacket(int size = 0);
+    int packetRssi();
+    float packetSnr();
 
-  // from Print
-  virtual size_t write(uint8_t byte);
-  virtual size_t write(const uint8_t *buffer, size_t size);
+    void onReceive(void(*callback)(int));
 
-  // from Stream
-  virtual int available();
-  virtual int read();
-  virtual int peek();
-  virtual void flush();
+    void receive(int size = 0);
+    void idle();
+    void sleep();
 
-#ifndef ARDUINO_SAMD_MKRWAN1300
-  void onReceive(void(*callback)(int));
-  void onTxDone(void(*callback)());
+    void setTxPower(int level, int outputPin = PA_OUTPUT_PA_BOOST_PIN);
+    void setFrequency(long frequency);
+    void setSpreadingFactor(int sf);
+    void setSignalBandwidth(long sbw);
+    void setCodingRate4(int denominator);
+    void setPreambleLength(long length);
+    void setSyncWord(int sw);
+    void enableCrc();
+    void disableCrc();
 
-  void receive(int size = 0);
-#endif
-  void idle();
-  void sleep();
+    // deprecated
+    void crc() {
+        enableCrc();
+    }
+    void noCrc() {
+        disableCrc();
+    }
 
-  void setTxPower(int level, int outputPin = PA_OUTPUT_PA_BOOST_PIN);
-  void setFrequency(long frequency);
-  void setSpreadingFactor(int sf);
-  void setSignalBandwidth(long sbw);
-  void setCodingRate4(int denominator);
-  void setPreambleLength(long length);
-  void setSyncWord(int sw);
-  void enableCrc();
-  void disableCrc();
-  void enableInvertIQ();
-  void disableInvertIQ();
-  
-  void setOCP(uint8_t mA); // Over Current Protection control
-  
-  void setGain(uint8_t gain); // Set LNA gain
+    uint8_t random();
 
-  // deprecated
-  void crc() { enableCrc(); }
-  void noCrc() { disableCrc(); }
+    void dumpRegisters(Stream& out);
 
-  byte random();
+    int available();
 
-  void setPins(int ss = LORA_DEFAULT_SS_PIN, int reset = LORA_DEFAULT_RESET_PIN, int dio0 = LORA_DEFAULT_DIO0_PIN);
-  void setSPI(SPIClass& spi);
-  void setSPIFrequency(uint32_t frequency);
+protected:
+    // from Print
+    virtual int _putc(int value);
+    virtual int _getc();
 
-  void dumpRegisters(Stream& out);
-*/
-/*
+
+    int peek();
+
 private:
-  void explicitHeaderMode();
-  void implicitHeaderMode();
+    void explicitHeaderMode();
+    void implicitHeaderMode();
 
-  void handleDio0Rise();
-  bool isTransmitting();
-
-  int getSpreadingFactor();
-  long getSignalBandwidth();
-
-  void setLdoFlag();
-
-
-
-  static void onDio0Rise();
-*/
-private:
+    void handleDio0Rise();
 
     uint8_t readRegister(uint8_t address);
     void writeRegister(uint8_t address, uint8_t value);
     uint8_t singleTransfer(uint8_t address, uint8_t value);
-    
 
-    void explicitHeaderMode();
-    void implicitHeaderMode();
-//  BORRAR
-    //SPISettings _spiSettings;
-    //SPIClass* _spi;
-    // int _ss;
-    // int _reset;
-// BORRAR
+    static void onDio0Rise();
 
-    SPI * spiInterface;
-    DigitalOut * ssPin;
-    DigitalOut * resetPin;
-
-    //int _dio0;
-    long interfaceFrequency;
-    long centralFrequency;
-    int packetIndex;
-    int headerMode;
-    //void (*_onReceive)(int);
-    void (*onTxDone)(); // point to a function that returns void
+private:
+    SPI &spi;
+    DigitalOut _ss;
+    DigitalOut _reset;
+    //InterruptIn _dio0;
+    int _frequency;
+    int _packetIndex;
+    int _implicitHeaderMode;
+    void (*_onReceive)(int);
 };
 
-//extern LoRa LoRa;
+extern LoRaClass LoRa;
 
 #endif
