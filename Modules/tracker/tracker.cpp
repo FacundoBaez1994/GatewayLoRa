@@ -2,6 +2,23 @@
 
 #include "tracker.h"
 #include "Debugger.h" // due to global usbUart
+#include "mbed.h"
+#include "UipEthernet.h"
+#include "TcpClient.h"
+
+#define IP      "192.168.1.35"
+#define GATEWAY "192.168.1.1"
+#define NETMASK "255.255.255.0"
+
+const uint8_t   MAC[6] = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05 };
+UipEthernet     net(MAC, PB_5, PB_4, PB_3, PA_11);   // mac, mosi, miso, sck, cs
+
+/**
+ * @brief
+ * @note
+ * @param
+ * @retval
+ */
 
 
 //=====[Declaration of private defines]========================================
@@ -26,63 +43,20 @@
 * @brief Contructor method creates a new trackerGPS instance ready to be used
 */
 tracker::tracker () {
+    /*
     this->LoRaTransciver = new LoRaClass ();
     if (!this->LoRaTransciver->begin (915E6)) {
         uartUSB.write ("LoRa Module Failed to Start!", strlen ("LoRa Module Failed to Start"));  // debug only
         uartUSB.write ( "\r\n",  3 );  // debug only
     }
-
-
-    /*
-    Watchdog &watchdog = Watchdog::get_instance(); // singletom
-    watchdog.start(TIMEOUT_MS);
-    char StringToSendUSB [50] = "Tracker initialization";
-    uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
-
-    this->latency = new NonBlockingDelay (LATENCY);
-    this->cellularTransceiver = new CellularModule ( );
-    this->currentGNSSModule = new GNSSModule (this->cellularTransceiver->getPowerManager()
-    , this->cellularTransceiver->getATHandler());
-    //both share the same power manager and ATHandler (uart)
-
-    this->socketTargetted = new TcpSocket;
-    this->socketTargetted->IpDirection = new char[16]; // 
-    strcpy(this->socketTargetted->IpDirection, "186.19.62.251");
-    this->socketTargetted->TcpPort = 123;
-
-    this->currentCellInformation = new CellInformation;
-    this->currentCellInformation->date  = new char [10];
-    this->currentCellInformation->time  = new char [10];
-    this->currentCellInformation->band = new char [20];
-
-    this->currentGNSSdata = new GNSSData;
-    this->batteryStatus = new BatteryData;
     */
+
+
 }
 
 
 tracker::~tracker() {
-    /*
-    delete[] this->currentCellInformation->date;
-    this->currentCellInformation->date = NULL;
-    delete[] this->currentCellInformation->time;
-    this->currentCellInformation->time = NULL;
-    delete[] this->currentCellInformation->band;
-    this->currentCellInformation->band = NULL;
-    delete this->currentCellInformation;
-    this->currentCellInformation = NULL;
-    delete this->currentGNSSdata;
-    delete[] this->socketTargetted->IpDirection; // Libera la memoria asignada a IpDirection
-    this->socketTargetted->IpDirection = NULL;
-    delete this->socketTargetted; // Libera la memoria asignada al socketTargetted
-    this->socketTargetted = NULL;
-    delete this->latency;
-    this->latency = NULL; 
-    delete this->currentGNSSModule;
-    this->currentGNSSModule = NULL;
-    delete this->cellularTransceiver;
-    this->cellularTransceiver = NULL;
-    */
+
 }
 
 
@@ -95,6 +69,91 @@ void tracker::update () {
     char message[50];
     char buffer[64];
 
+     const time_t    TIMEOUT = 5;    // Connection timeout time
+    time_t          timeOut;
+    //char            data[] = "GET / HTTP/1.1\r\nHost: ifconfig.io\r\nConnection: close\r\n\r\n";
+    char            data[] = "Hola Mundo!\r\n";
+    char*           remaining;
+    uint8_t*        recvBuf;
+    int             result;
+
+    printf("Starting ...\r\n");
+
+    //net.set_network(IP, NETMASK, GATEWAY);  // include this to use static IP address
+    net.connect();
+
+    // Show the network address
+    const char*     ip = net.get_ip_address();
+    const char*     netmask = net.get_netmask();
+    const char*     gateway = net.get_gateway();
+    printf("IP address: %s\n", ip ? ip : "None");
+    printf("Netmask: %s\n", netmask ? netmask : "None");
+    printf("Gateway: %s\n", gateway ? gateway : "None");
+
+    // Open a socket on the network interface, and create a TCP connection to ifconfig.io
+    TcpClient   socket;
+
+    result = socket.open(&net);
+    if (result != 0) {
+        printf("Error! socket.open() returned: %d\n", result);
+    }
+
+    timeOut = time(NULL) + TIMEOUT;
+    //printf("Connecting to the 'ifconfig.io' server ...\r\n");
+    printf("Connecting to the TCP server ...\r\n");
+
+    result = socket.connect("186.19.62.251", 123); // modificar ip y puerto
+    if (result != 0) {
+        printf("Error! socket.connect() returned: %d\n", result);
+        goto DISCONNECT;
+    }
+
+    printf("Server connected.\r\n");
+    printf("Sending data to server:\r\n");
+    remaining = data;
+    result = strlen(remaining);
+    while (result) {
+        result = socket.send((uint8_t*)remaining, strlen(remaining));
+        if (result < 0) {
+            printf("Error! socket.send() returned: %d\n", result);
+            goto DISCONNECT;
+        }
+        printf("%.*s", result, remaining);
+        remaining += result;
+    }
+
+    printf("Waiting for data from server:\r\n");
+    while (socket.available() == 0) {
+        if (time(NULL) > timeOut) {
+            printf("Connection time out.\r\n");
+            goto DISCONNECT;
+        }
+    }
+
+    printf("Data received:\r\n");
+    while ((result = socket.available()) > 0) {
+        recvBuf = (uint8_t*)malloc(result);
+        result = socket.recv(recvBuf, result);
+        if (result < 0) {
+            printf("Error! socket.recv() returned: %d\n", result);
+            goto DISCONNECT;
+        }
+        printf("%.*s\r\n", result, recvBuf);
+        free(recvBuf);
+    }
+
+    printf("\r\n");
+
+DISCONNECT:
+    // Close the socket to return its memory and bring down the network interface
+    socket.close();
+
+    // Bring down the ethernet interface
+    net.disconnect();
+    printf("Done\n");
+
+
+/*
       // try to parse packet
     int packetSize = this->LoRaTransciver->parsePacket();
     if (packetSize) {
@@ -118,147 +177,9 @@ void tracker::update () {
     //Serial.println(LoRa.packetRssi());
     }
 
+*/
 
 
-    /*
-    static char* formattedMessage;
-    static char receivedMessage [200];
-    static GNSSState_t GnssCurrentStatus;
-    static CellularConnectionStatus_t currentConnectionStatus;
-    static CellularTransceiverStatus_t currentTransmitionStatus;
-    static bool newDataAvailable = false;
-
-    static bool GNSSAdquisitionSuccesful = false;
-    static bool enableTransmission = false; 
-    static bool transimissionSecuenceActive =  false;
-    static bool messageFormatted = false;
-    static bool batterySensed = false;
-    static bool enablingGoingToSleep = false; 
-
-    static std::vector<CellInformation*> neighborsCellInformation;
-    static int numberOfNeighbors = 0;
-    Watchdog &watchdog = Watchdog::get_instance(); // singletom
-
-    watchdog.kick();
-    this->cellularTransceiver->startStopUpdate();
-    //this->currentGNSSModule->startStopUpdate();
-
-    if (this->latency->read() && transimissionSecuenceActive == false) { // WRITE
-        transimissionSecuenceActive = true;
-        batterySensed = false;
-        this->cellularTransceiver->awake();
-    }
-
-    if (batterySensed == false &&  transimissionSecuenceActive == true) {
-        if (this->cellularTransceiver->measureBattery(this->batteryStatus)) {
-           batterySensed = true;
-            this->currentGNSSModule->enableGNSS();
-        }
-    }
-    
-    ////////////////////////// GNSS ////////////////////////////////
-    GnssCurrentStatus = this->currentGNSSModule->retrivGeopositioning(this->currentGNSSdata);
-    if (GnssCurrentStatus == GNSS_STATE_CONNECTION_OBTAIN ) {
-        GNSSAdquisitionSuccesful = true;
-        char StringToSendUSB [40] = "GNSS OBTAIN!!!!";
-        uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
-        uartUSB.write ( "\r\n",  3 );  // debug only
-        this->cellularTransceiver->enableConnection();
-    }
-    if (GnssCurrentStatus == GNSS_STATE_CONNECTION_UNAVAILABLE ) {
-        GNSSAdquisitionSuccesful = false;
-        char StringToSendUSB [40] = "GNSS UNAVAILABLE!!!!";
-        uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
-        uartUSB.write ( "\r\n",  3 );  // debug only}
-        this->cellularTransceiver->enableConnection();
-    }
-
-    ////////////////////////////////////////////////////////////////////
-    
-    ////////////////////CELULLAR  CONNECTION/////////////////// 
-    currentConnectionStatus = this->cellularTransceiver->connectToMobileNetwork(this->currentCellInformation);
-        if (currentConnectionStatus == CELLULAR_CONNECTION_STATUS_CONNECTED_TO_NETWORK) { 
-            if (GNSSAdquisitionSuccesful == false) {
-                if (messageFormatted == false) {
-                
-                    if (this->cellularTransceiver->retrivNeighborCellsInformation(
-                    neighborsCellInformation, numberOfNeighbors)) {
-                        formattedMessage = this->formMessage(this->currentCellInformation,
-                        neighborsCellInformation, this->batteryStatus);
-                        for (auto* cellInfo : neighborsCellInformation) {
-                            delete cellInfo;  // Libera la memoria de cada puntero
-                            cellInfo = nullptr;
-                        }
-                        neighborsCellInformation.clear();  // Limpia el vector 
-                        messageFormatted = true;
-                        uartUSB.write (formattedMessage , strlen (formattedMessage ));  // debug only
-                        uartUSB.write ( "\r\n",  3 );  // debug only
-                        this->cellularTransceiver->enableTransceiver();
-                    } 
-                    //messageFormatted = true; // ELIMINAR
-                    //this->cellularTransmitter->enableTransmission();
-                }
-            } else {
-                if (messageFormatted == false) {
-                    formattedMessage = this->formMessage(this->currentCellInformation,
-                     this->currentGNSSdata, this->batteryStatus);
-                    messageFormatted = true;
-                    uartUSB.write (formattedMessage , strlen (formattedMessage ));  // debug only
-                    uartUSB.write ( "\r\n",  3 );  // debug only    
-                    this->cellularTransceiver->enableTransceiver();
-                }
-            }
-    } else if (currentConnectionStatus != CELLULAR_CONNECTION_STATUS_UNAVAIBLE && 
-    currentConnectionStatus != CELLULAR_CONNECTION_STATUS_TRYING_TO_CONNECT) {
-        char StringToSendUSB [50] = "Access to mobile network UNAVAILABLE!!!!";
-        uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
-        uartUSB.write ( "\r\n",  3 );  // debug only}
-        messageFormatted = false;
-        enablingGoingToSleep = true;
-    }
-    ///////////////////////////////////////////////////
-
-
-    ////////////////////CELULLAR  TRANSMISSION/////////////////// 
-    currentTransmitionStatus = this->cellularTransceiver->exchangeMessages (formattedMessage,
-     this->socketTargetted, receivedMessage, &newDataAvailable);
-     if (currentTransmitionStatus == CELLULAR_TRANSCEIVER_STATUS_SEND_OK) {
-        char StringToSendUSB [50] = "The message was send with success";
-        uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
-        uartUSB.write ( "\r\n",  3 );  // debug only}
-        messageFormatted = false;
-        enablingGoingToSleep = true;
-     }  else if (currentTransmitionStatus != CELLULAR_TRANSCEIVER_STATUS_TRYNING_TO_SEND
-       && currentTransmitionStatus != CELLULAR_TRANSCEIVER_STATUS_UNAVAIBLE) {
-        char StringToSendUSB [50] = "The message couldn't be sent";
-        uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
-        uartUSB.write ( "\r\n",  3 );  // debug only}
-        messageFormatted = false;
-        enablingGoingToSleep = true;
-     }
-     if (newDataAvailable == true) {
-        char StringToSendUSB [50] = "new Message received:";
-        uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
-        uartUSB.write ( "\r\n",  3 );  // debug only
-        snprintf(StringToSendUSB, sizeof(StringToSendUSB), "%s",  receivedMessage);
-        uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
-        uartUSB.write ( "\r\n",  3 );  // debug only
-        newDataAvailable = false;
-     }
-     //////////////////////////////////
-      
-    
-
-    if (enablingGoingToSleep == true) {
-        if (this->cellularTransceiver->goToSleep()) { 
-            transimissionSecuenceActive = false;
-            enablingGoingToSleep = false;
-            this->latency->restart();
-        }
-    }
-
-    watchdog.kick();
-    */
 }
 
 //=====[Implementations of private methods]==================================
