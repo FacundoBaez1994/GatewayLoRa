@@ -11,7 +11,8 @@
 #define NETMASK "255.255.255.0"
 
 const uint8_t   MAC[6] = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05 };
-UipEthernet     net(MAC, PB_5, PB_4, PB_3, PA_11);   // mac, mosi, miso, sck, cs
+UipEthernet     net(MAC, PB_5, PB_4, PB_3, PA_4);   // mac, mosi, miso, sck, cs
+DigitalOut resetEth (PA_1);
 
 /**
  * @brief
@@ -78,6 +79,7 @@ void tracker::update () {
     int             result;
 
     printf("Starting ...\r\n");
+    resetEth.write(HIGH);
 
     //net.set_network(IP, NETMASK, GATEWAY);  // include this to use static IP address
     net.connect();
