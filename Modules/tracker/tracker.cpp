@@ -94,7 +94,39 @@ tracker::~tracker() {
 void tracker::update () {
     char message[50];
     char buffer[64];
+    static bool messageRead = false;
 
+
+    // Intenta analizar el paquete
+    int packetSize = this->LoRaTransciver->parsePacket();
+    if (packetSize) {
+        uartUSB.write("Packet Received!\r\n", strlen("Packet Received!\r\n")); // Debug
+
+        int maxIterations = 100; // Límite para evitar un ciclo infinito
+        int iterations = 0;
+
+        // Leer los datos disponibles
+        while (this->LoRaTransciver->available() > 0 && iterations < maxIterations) {
+            ssize_t bytesRead = this->LoRaTransciver->read(reinterpret_cast<uint8_t*>(buffer), sizeof(buffer));
+            if (bytesRead > 0) {
+                // Enviar los bytes leídos al puerto serie
+                uartUSB.write(buffer, bytesRead);
+            }
+            iterations++;
+        }
+
+        if (iterations >= maxIterations) {
+            uartUSB.write("Warning: Exceeded max iterations\r\n", strlen("Warning: Exceeded max iterations\r\n"));
+        }
+
+        // Leer el RSSI del paquete recibido
+        int packetRSSI = this->LoRaTransciver->packetRssi();
+        snprintf(message, sizeof(message), "packet RSSI: %d\r\n", packetRSSI);
+        uartUSB.write(message, strlen(message));
+    }
+
+
+/*
       // try to parse packet
     int packetSize = this->LoRaTransciver->parsePacket();
     if (packetSize) {
@@ -103,22 +135,27 @@ void tracker::update () {
     uartUSB.write ( "\r\n",  3 );  // debug only
 
     // read packet
-    while (this->LoRaTransciver->available()) {
+    while (this->LoRaTransciver->available() ) {
         ssize_t bytesRead = LoRa.read(buffer, sizeof(buffer)); // Lee hasta 64 bytes o lo que esté disponible
         if (bytesRead > 0) {
             for (ssize_t i = 0; i < bytesRead; i++) {
                 uartUSB.write(&buffer[i], 1); // Envía cada byte al puerto serie
             }
         }
+        //int available = this->LoRaTransciver->available();
+        //snprintf(message, sizeof(message), "available %d bytesRead: %d", available, bytesRead);
+        //uartUSB.write (message, strlen (message));  // debug only
+        //uartUSB.write ( "\r\n",  3 );  // debug onl
+       
     }
+    int packetRSSI = LoRa.packetRssi();
+    snprintf(message, sizeof(message), "packet RSSI: %d", packetRSSI);
+    uartUSB.write (message, strlen (message));  // debug only
     uartUSB.write ( "\r\n",  3 );  // debug only
-
     // print RSSI of packet
-   // Serial.print("' with RSSI ");
-    //Serial.println(LoRa.packetRssi());
     }
 
-
+*/
 
     /*
     static char* formattedMessage;

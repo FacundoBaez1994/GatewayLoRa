@@ -14,6 +14,9 @@ public:
     int begin(long frequency);
     void end();
 
+
+    ssize_t read(uint8_t* buffer, size_t length);
+
     int beginPacket(int implicitHeader = false);
     int endPacket();
 
