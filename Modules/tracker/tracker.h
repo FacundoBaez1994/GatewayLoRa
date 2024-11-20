@@ -29,18 +29,16 @@ public:
     tracker ();
     virtual ~tracker ();
     void update();
+
 private:
-    char* formMessage (GNSSData * GNSSInfo);
-    char* formMessage(CellInformation* aCellInfo, std::vector<CellInformation*> 
-    &neighborsCellInformation, BatteryData  * batteryStatus); 
-    char* formMessage(CellInformation* aCellInfo, GNSSData* GNSSInfo, BatteryData  * batteryStatus);
+    void LoRa_rxMode();
+    void LoRa_txMode();
+
     CellularModule* cellularTransceiver;
     TcpSocket * socketTargetted;
     CellInformation * currentCellInformation; 
     LoRaClass * LoRaTransciver;
 
-    GNSSModule* currentGNSSModule;
-    GNSSData * currentGNSSdata;
     NonBlockingDelay * latency;
     BatteryData  * batteryStatus;
 

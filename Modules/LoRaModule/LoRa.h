@@ -17,6 +17,9 @@ public:
 
     ssize_t read(uint8_t* buffer, size_t length);
 
+    void enableInvertIQ();
+    void disableInvertIQ();
+
     int beginPacket(int implicitHeader = false);
     int endPacket();
 

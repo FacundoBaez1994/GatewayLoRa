@@ -29,6 +29,10 @@
 #define REG_DIO_MAPPING_1        0x40
 #define REG_VERSION              0x42
 
+
+#define REG_INVERTIQ             0x33
+#define REG_INVERTIQ2            0x3b
+
 // modes
 #define MODE_LONG_RANGE_MODE     0x80
 #define MODE_SLEEP               0x00
@@ -48,6 +52,9 @@
 #define MAX_PKT_LENGTH           255
 
 
+
+
+////////////////////////////////////////////
 #define LORA_DEFAULT_SPI_FREQUENCY 8E6
 #define LORA_DEFAULT_SS_PIN     PA_11       
 #define LORA_DEFAULT_RESET_PIN  PA_8  //OK    
@@ -134,9 +141,6 @@ void LoRaClass::end()
   sleep();
 }
 
-
-
-
 ssize_t LoRaClass::read(uint8_t* buffer, size_t length) {
     int availableBytes = available(); // Bytes disponibles en el FIFO
 
@@ -154,11 +158,6 @@ ssize_t LoRaClass::read(uint8_t* buffer, size_t length) {
     _packetIndex += bytesToRead; // Incrementar el índice de paquetes
     return bytesToRead;
 }
-
-
-
-
-
 
 int LoRaClass::beginPacket(int implicitHeader)
 {
@@ -504,6 +503,19 @@ void LoRaClass::handleDio0Rise()
     // reset FIFO address
     writeRegister(REG_FIFO_ADDR_PTR, 0);
   }
+}
+
+
+void LoRaClass::enableInvertIQ()
+{
+  writeRegister(REG_INVERTIQ,  0x66);
+  writeRegister(REG_INVERTIQ2, 0x19);
+}
+
+void LoRaClass::disableInvertIQ()
+{
+  writeRegister(REG_INVERTIQ,  0x27);
+  writeRegister(REG_INVERTIQ2, 0x1d);
 }
 
 uint8_t LoRaClass::readRegister(uint8_t address)
