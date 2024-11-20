@@ -127,6 +127,7 @@ void tracker::update () {
             uartUSB.write ("\r\n", strlen("\r\n"));
             snprintf(message, sizeof(message), "packet RSSI: %d\r\n", packetRSSI);
             uartUSB.write(message, strlen(message));
+            wait_us (200000);
             messageSent = true;
         }
     }
@@ -138,7 +139,7 @@ void tracker::update () {
         this->LoRaTransciver->beginPacket();
         this->LoRaTransciver->write((uint8_t *)ACKmessage, strlen(ACKmessage));
         this->LoRaTransciver->endPacket();
-        messageSent = false; 
+       // messageSent = false; 
     }
 
     // enviar por 
