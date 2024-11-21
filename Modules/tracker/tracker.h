@@ -10,6 +10,7 @@
 #include "string.h"
 #include "CellularModule.h"
 #include "LoRa.h"
+#include "UipEthernet.h"
 
 
 

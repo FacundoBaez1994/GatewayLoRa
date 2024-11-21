@@ -4,10 +4,20 @@
 #include "Debugger.h" // due to global usbUart
 
 
+
+
+
 //=====[Declaration of private defines]========================================
 #define LATENCY        5000
 #define TIMEOUT_MS     5000
 #define POWERCHANGEDURATION  700
+#define IP      "192.168.1.35"
+#define GATEWAY "192.168.1.1"
+#define NETMASK "255.255.255.0"
+
+const uint8_t   MAC[6] = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05 };
+UipEthernet     net(MAC, PB_5, PB_4, PB_3, PA_4);   // mac, mosi, miso, sck, cs
+DigitalOut resetEth (PA_1);
 
 //=====[Declaration of private data types]=====================================
 
@@ -39,7 +49,7 @@ tracker::tracker () {
     char StringToSendUSB [50] = "Tracker initialization";
     uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
 
-    this->latency = new NonBlockingDelay (LATENCY);
+    
     this->cellularTransceiver = new CellularModule ( );
     this->currentGNSSModule = new GNSSModule (this->cellularTransceiver->getPowerManager()
     , this->cellularTransceiver->getATHandler());
@@ -92,14 +102,25 @@ tracker::~tracker() {
 *
 */
 void tracker::update () {
-    char ACKmessage[10] = "ACK";
+    char ACKmessage[20] = {0};
     char message[50];
     char buffer[64];
-    static bool messageSent = false;
+    static bool messageReceived = false;
+    static bool ACKSent = false; 
+    int deviceId = 0;
+    int messageNumber = 0;
+    char payload[50] = {0}; // Espacio suficiente para almacenar el payload
+
+    const time_t    TIMEOUT = 5;    // Connection timeout time
+    time_t          timeOut;
+    //char            data[] = "GET / HTTP/1.1\r\nHost: ifconfig.io\r\nConnection: close\r\n\r\n";
+    char*           remaining;
+    uint8_t*        recvBuf;
+    int             result;
 
 
     // Intenta analizar el paquete
-    if (messageSent == false) {
+    if (messageReceived  == false) {
         this->LoRa_rxMode ();
         int packetSize = this->LoRaTransciver->parsePacket();
         if (packetSize) {
@@ -114,6 +135,7 @@ void tracker::update () {
                 if (bytesRead > 0) {
                     // Enviar los bytes leídos al puerto serie
                     uartUSB.write(buffer, bytesRead);
+                    uartUSB.write ("\r\n", strlen("\r\n"));
                 }
                 iterations++;
             }
@@ -121,29 +143,120 @@ void tracker::update () {
             if (iterations >= maxIterations) {
                 uartUSB.write("Warning: Exceeded max iterations\r\n", strlen("Warning: Exceeded max iterations\r\n"));
             }
+            //
+            if (sscanf(buffer, "%d,%d,%49s", &deviceId, &messageNumber, payload) == 3) {
+                // Desglose exitoso
+                snprintf(message, sizeof(message), "Device ID: %d\r\n", deviceId);
+                uartUSB.write(message, strlen(message));
 
+                snprintf(message, sizeof(message), "Message Number: %d\r\n", messageNumber);
+                uartUSB.write(message, strlen(message));
+
+                snprintf(message, sizeof(message), "Payload: %s\r\n", payload);
+                uartUSB.write(message, strlen(message));
+            } else {
+                uartUSB.write("Error parsing message.\r\n", strlen("Error parsing message.\r\n"));
+            }
             // Leer el RSSI del paquete recibido
             int packetRSSI = this->LoRaTransciver->packetRssi();
-            uartUSB.write ("\r\n", strlen("\r\n"));
             snprintf(message, sizeof(message), "packet RSSI: %d\r\n", packetRSSI);
             uartUSB.write(message, strlen(message));
-            wait_us (200000);
-            messageSent = true;
+            wait_us (200000); // eliminar bloqueo
+            messageReceived  = true;
         }
     }
 
     /// ACK Sending
-    if (messageSent == true) {
+    if (messageReceived  == true && ACKSent == false) {
+        snprintf(ACKmessage, sizeof(ACKmessage), "%d,%d,ACK", deviceId, messageNumber);
         this->LoRa_txMode ();
         uartUSB.write("Sending Acknowledgment Message\r\n", strlen("Sending Acknowledgment Message\r\n")); // Debug
         this->LoRaTransciver->beginPacket();
         this->LoRaTransciver->write((uint8_t *)ACKmessage, strlen(ACKmessage));
         this->LoRaTransciver->endPacket();
-       // messageSent = false; 
+        ACKSent = true; 
     }
 
-    // enviar por 
+    if (messageReceived  == true && ACKSent == true) {
+        printf("Starting ...\r\n");
+        resetEth.write(HIGH);
 
+        //net.set_network(IP, NETMASK, GATEWAY);  // include this to use static IP address
+        net.connect();
+
+        // Show the network address
+        const char*     ip = net.get_ip_address();
+        const char*     netmask = net.get_netmask();
+        const char*     gateway = net.get_gateway();
+        printf("IP address: %s\n", ip ? ip : "None");
+        printf("Netmask: %s\n", netmask ? netmask : "None");
+        printf("Gateway: %s\n", gateway ? gateway : "None");
+
+        // Open a socket on the network interface, and create a TCP connection to ifconfig.io
+        TcpClient   socket;
+
+        result = socket.open(&net);
+        if (result != 0) {
+            printf("Error! socket.open() returned: %d\n", result);
+        }
+
+        timeOut = time(NULL) + TIMEOUT;
+        //printf("Connecting to the 'ifconfig.io' server ...\r\n");
+        printf("Connecting to the TCP server ...\r\n");
+
+        result = socket.connect("186.19.62.251", 123); // modificar ip y puerto
+        if (result != 0) {
+            printf("Error! socket.connect() returned: %d\n", result);
+            goto DISCONNECT;
+        }
+
+        printf("Server connected.\r\n");
+        printf("Sending data to server:\r\n");
+        snprintf(message, sizeof(message), "%d,%s\r\n",deviceId, payload);
+        remaining = message;
+        result = strlen(remaining);
+        while (result) {
+            result = socket.send((uint8_t*)remaining, strlen(remaining));
+            if (result < 0) {
+                printf("Error! socket.send() returned: %d\n", result);
+                goto DISCONNECT;
+            }
+            printf("%.*s", result, remaining);
+            remaining += result;
+        }
+
+        printf("Waiting for data from server:\r\n");
+        while (socket.available() == 0) {
+            if (time(NULL) > timeOut) {
+                printf("Connection time out.\r\n");
+                goto DISCONNECT;
+            }
+        }
+
+        printf("Data received:\r\n");
+        while ((result = socket.available()) > 0) {
+            recvBuf = (uint8_t*)malloc(result);
+            result = socket.recv(recvBuf, result);
+            if (result < 0) {
+                printf("Error! socket.recv() returned: %d\n", result);
+                goto DISCONNECT;
+            }
+            printf("%.*s\r\n", result, recvBuf);
+            free(recvBuf);
+        }
+
+        printf("\r\n");
+
+    DISCONNECT:
+        // Close the socket to return its memory and bring down the network interface
+        socket.close();
+
+        // Bring down the ethernet interface
+        net.disconnect();
+        printf("Done\n");
+        messageReceived = false;
+        ACKSent = false; 
+    }
 }
 
 //=====[Implementations of private methods]==================================
@@ -156,16 +269,3 @@ void tracker::LoRa_txMode() {
     LoRa.idle();                          // Standby mode
     LoRa.enableInvertIQ();                // Enable I/Q inversion for transmission
 }
-
-
-/*
-void tracker::LoRa_rxMode(){
-  LoRa.disableInvertIQ();               // normal mode
-  LoRa.receive();                       // set receive mode
-}
-
-void tracker::LoRa_txMode() {
-  LoRa.idle();                          // set standby mode
-  LoRa.enableInvertIQ();                // active invert I and Q signals
-}
-*/
