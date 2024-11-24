@@ -106,7 +106,7 @@ Gateway::~Gateway() {
 void Gateway::update () {
     this->currentState->receiveMessage (this->LoRaTransciever, this->timer);
     this->currentState->sendAcknowledgement (this->LoRaTransciever, this->timer);
-    this->currentState->sendTCPMessage (this->ethernetModule, this->timer);
+    //this->currentState->sendTCPMessage (this->ethernetModule, this->timer);
 
     Watchdog &watchdog = Watchdog::get_instance(); // singletom
     watchdog.kick();

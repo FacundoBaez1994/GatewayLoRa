@@ -76,8 +76,8 @@ void SendingAck::sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay *
     LoRaModule->write((uint8_t *)ACKmessage, strlen(ACKmessage));
     LoRaModule->endPacket();
 
-    uartUSB.write("Changing To Sending TPC Message State\r\n", strlen("Changing To Sending TPC Message State\r\n\r\n"));
-    this->gateway->changeState (new SendingTCPMessage(this->gateway, this->IdDevice, this->messageNumber, this->payload));
+    uartUSB.write("Changing To WaitingForMessage State\r\n", strlen("Changing To WaitingForMessage State\r\n\r\n"));
+    this->gateway->changeState (new WaitingForMessage (this->gateway));
 
     return;
 }
