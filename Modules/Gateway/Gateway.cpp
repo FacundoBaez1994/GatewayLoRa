@@ -9,6 +9,7 @@
 
 //=====[Declaration of private defines]========================================
 #define LATENCY        50
+#define TIMEOUT_MS     20000
 #define IP      "192.168.1.35"
 #define GATEWAY "192.168.1.1"
 #define NETMASK "255.255.255.0"
@@ -33,21 +34,31 @@ const uint8_t   MAC[6] = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05 };
 * @brief Contructor method creates a new trackerGPS instance ready to be used
 */
 Gateway::Gateway () {
+    uartUSB.write ("Gateway Initializing\r\n", strlen ("Gateway Initializing\r\n"));  // debug only
+
     this->LoRaTransciever = new LoRaClass ();
     if (!this->LoRaTransciever->begin (915E6)) {
         uartUSB.write ("LoRa Module Failed to Start!", strlen ("LoRa Module Failed to Start"));  // debug only
         uartUSB.write ( "\r\n",  3 );  // debug only
     }
+    this->LoRaTransciever->setSpreadingFactor(12);   // ranges from 6-12,default 7
+    this->LoRaTransciever->setSyncWord(0xF3);  // ranges from 0-0xFF, default 0x34,
+    this->LoRaTransciever->setSignalBandwidth(125E3); // 125 kHz
+
     this->ethernetModule = new UipEthernet (MAC, PB_5, PB_4, PB_3, PA_4);  // mac, mosi, miso, sck, cs
     this->resetEth =  new DigitalOut (PA_1);
     this->resetEth->write(HIGH);
+
     this->timer = new NonBlockingDelay (LATENCY);
+
     this->currentState = new WaitingForMessage (this);
+
+    Watchdog &watchdog = Watchdog::get_instance(); // singletom
+    watchdog.start(TIMEOUT_MS);
 
 
     /*
-    Watchdog &watchdog = Watchdog::get_instance(); // singletom
-    watchdog.start(TIMEOUT_MS);
+
     char StringToSendUSB [50] = "Tracker initialization";
     uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
 
@@ -96,6 +107,9 @@ void Gateway::update () {
     this->currentState->receiveMessage (this->LoRaTransciever, this->timer);
     this->currentState->sendAcknowledgement (this->LoRaTransciever, this->timer);
     this->currentState->sendTCPMessage (this->ethernetModule, this->timer);
+
+    Watchdog &watchdog = Watchdog::get_instance(); // singletom
+    watchdog.kick();
 }
 
 
