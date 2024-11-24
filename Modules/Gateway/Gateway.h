@@ -1,16 +1,16 @@
 //=====[#include guards - begin]===============================================
 
-#ifndef _TRACKER_H_
-#define _TRACKER_H_
+#ifndef _GATEWAY_H_
+#define _GATEWAY_H_
 
 #include "mbed.h"
-#include "GNSSModule.h"
+#include "GatewayState.h"
 #include "Non_Blocking_Delay.h"
 #include "arm_book_lib.h"
 #include "string.h"
-#include "CellularModule.h"
 #include "LoRa.h"
 #include "UipEthernet.h"
+#include "WaitingForMessage.h"
 
 
 
@@ -25,27 +25,30 @@
  * High hierarchy class
  * it will be instantiated and used from the main function
  */
-class tracker {
+class Gateway {
 public:
-    tracker ();
-    virtual ~tracker ();
+    Gateway ();
+    virtual ~Gateway ();
     void update();
+    void changeState  (GatewayState * newState);
 
 private:
+
     void LoRa_rxMode();
     void LoRa_txMode();
 
-    CellularModule* cellularTransceiver;
-    TcpSocket * socketTargetted;
-    CellInformation * currentCellInformation; 
-    LoRaClass * LoRaTransciver;
+    // CellularModule* cellularTransceiver;
+    LoRaClass * LoRaTransciever;
+    UipEthernet * ethernetModule;
+    DigitalOut * resetEth;
+    GatewayState * currentState;
 
-    NonBlockingDelay * latency;
-    BatteryData  * batteryStatus;
+    NonBlockingDelay * timer;
+   // BatteryData  * batteryStatus;
 
 };
 
 
 //=====[#include guards - end]=================================================
 
-#endif // _TRACKER_H_
+#endif // _GATEWAY_H_
