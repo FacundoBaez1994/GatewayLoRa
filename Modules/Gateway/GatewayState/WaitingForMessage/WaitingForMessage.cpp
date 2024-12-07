@@ -55,13 +55,17 @@ WaitingForMessage::~WaitingForMessage () {
 
 void WaitingForMessage::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
     static bool messageReceived = false; 
-    char buffer[64];
-    char message[50];
-    char payload[50] = {0}; // Espacio suficiente para almacenar el payload
+    char buffer[100];
+    char message[100];
+    char payload[100] = {0}; // Espacio suficiente para almacenar el payload
+
     int deviceId = 0;
     int messageNumber = 0;
     static int delayCounter = 0;
     static int delayMax = 3; 
+
+    uint8_t receivedBuffer[64];
+    MbedCRC <POLY_32BIT_ANSI, 32> crc32;
 
     if (messageReceived  == false) {
         LoRaModule->disableInvertIQ (); // rx mode -> phase Quadrature invertion
@@ -86,6 +90,43 @@ void WaitingForMessage::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay
             if (iterations >= maxIterations) {
                 uartUSB.write("Warning: Exceeded max iterations\r\n", strlen("Warning: Exceeded max iterations\r\n"));
                 return;
+            }
+
+             // Separar payload y CRC
+            if (packetSize < 4) {
+                uartUSB.write("Error: Packet too small for CRC\r\n", strlen("Error: Packet too small for CRC\r\n"));
+                return;
+            }
+
+            // Extraer el CRC
+            packetSize -= 4; // Ajustar tamaño del paquete sin CRC
+            uint32_t receivedCRC = (buffer[packetSize] << 24) |
+                                (buffer[packetSize + 1] << 16) |
+                                (buffer[packetSize + 2] << 8) |
+                                buffer[packetSize + 3];
+
+            // Verificar el CRC
+            uint32_t calculatedCRC;
+            // Formatear el CRC en hexadecimal
+            char crcString[64]; 
+   
+            if (crc32.compute(reinterpret_cast<uint8_t*>(buffer), packetSize, &calculatedCRC) == 0) {
+
+                snprintf(crcString, sizeof(crcString), "Recieved CRC32: 0x%08X\r\n", receivedCRC);
+                // Enviar el mensaje por UART
+                uartUSB.write(crcString, strlen(crcString));  // Enviar el CRC
+
+                            // Formatear el CRC en hexadecimal
+                snprintf(crcString, sizeof(crcString), "calculated CRC32: 0x%08X\r\n", calculatedCRC);
+                // Enviar el mensaje por UART
+                uartUSB.write(crcString, strlen(crcString));  // Enviar el CRC
+
+                if (calculatedCRC == receivedCRC) {
+                    uartUSB.write("Checksum OK!\r\n", strlen("Checksum OK!\r\n")); // Debug
+                } else {
+                    uartUSB.write("Checksum Error\r\n", strlen("Checksum Error\r\n")); // Debug
+                    return; 
+                }
             }
             //
             if (sscanf(buffer, "%d,%d,%49s", &deviceId, &messageNumber, payload) == 3) {

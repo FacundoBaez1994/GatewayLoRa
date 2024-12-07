@@ -10,6 +10,7 @@
 #include "GatewayState.h"
 #include "Non_Blocking_Delay.h"
 #include "SendingAck.h"
+#include "MbedCRC.h"
 
 //=====[Declaration of public data types]======================================
 class Gateway; //debido a declaracion adelantada
