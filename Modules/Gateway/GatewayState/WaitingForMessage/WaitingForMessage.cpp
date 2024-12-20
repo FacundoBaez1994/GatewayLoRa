@@ -55,7 +55,7 @@ WaitingForMessage::~WaitingForMessage () {
 
 void WaitingForMessage::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
     static bool messageReceived = false; 
-    char buffer[100];
+    char buffer[256];
     char message[100];
     char payload[100] = {0}; // Espacio suficiente para almacenar el payload
 
@@ -65,7 +65,6 @@ void WaitingForMessage::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay
     static int delayMax = 3; 
 
     uint8_t receivedBuffer[64];
-    MbedCRC <POLY_32BIT_ANSI, 32> crc32;
 
     if (messageReceived  == false) {
         LoRaModule->disableInvertIQ (); // rx mode -> phase Quadrature invertion
@@ -77,11 +76,14 @@ void WaitingForMessage::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay
             int iterations = 0;
 
             // Leer los datos disponibles
+            
             while (LoRaModule->available() > 0 && iterations < maxIterations) {
                 ssize_t bytesRead = LoRaModule->read(reinterpret_cast<uint8_t*>(buffer), sizeof(buffer));
+               // ssize_t bytesRead = LoRaModule->read(reinterpret_cast<uint8_t*>(buffer), strlen (buffer));
                 if (bytesRead > 0) {
                     // Enviar los bytes leídos al puerto serie
-                    uartUSB.write(buffer, bytesRead);
+                   // uartUSB.write(buffer, bytesRead);
+                    uartUSB.write(buffer, strlen(buffer));
                     uartUSB.write ("\r\n", strlen("\r\n"));
                 }
                 iterations++;
@@ -92,43 +94,10 @@ void WaitingForMessage::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay
                 return;
             }
 
-             // Separar payload y CRC
-            if (packetSize < 4) {
-                uartUSB.write("Error: Packet too small for CRC\r\n", strlen("Error: Packet too small for CRC\r\n"));
+            if (this->gateway->processMessage(buffer) == false) {
                 return;
             }
 
-            // Extraer el CRC
-            packetSize -= 4; // Ajustar tamaño del paquete sin CRC
-            uint32_t receivedCRC = (buffer[packetSize] << 24) |
-                                (buffer[packetSize + 1] << 16) |
-                                (buffer[packetSize + 2] << 8) |
-                                buffer[packetSize + 3];
-
-            // Verificar el CRC
-            uint32_t calculatedCRC;
-            // Formatear el CRC en hexadecimal
-            char crcString[64]; 
-   
-            if (crc32.compute(reinterpret_cast<uint8_t*>(buffer), packetSize, &calculatedCRC) == 0) {
-
-                snprintf(crcString, sizeof(crcString), "Recieved CRC32: 0x%08X\r\n", receivedCRC);
-                // Enviar el mensaje por UART
-                uartUSB.write(crcString, strlen(crcString));  // Enviar el CRC
-
-                            // Formatear el CRC en hexadecimal
-                snprintf(crcString, sizeof(crcString), "calculated CRC32: 0x%08X\r\n", calculatedCRC);
-                // Enviar el mensaje por UART
-                uartUSB.write(crcString, strlen(crcString));  // Enviar el CRC
-
-                if (calculatedCRC == receivedCRC) {
-                    uartUSB.write("Checksum OK!\r\n", strlen("Checksum OK!\r\n")); // Debug
-                } else {
-                    uartUSB.write("Checksum Error\r\n", strlen("Checksum Error\r\n")); // Debug
-                    return; 
-                }
-            }
-            //
             if (sscanf(buffer, "%d,%d,%49s", &deviceId, &messageNumber, payload) == 3) {
                 // Desglose exitoso
                 snprintf(message, sizeof(message), "Device ID: %d\r\n", deviceId);
@@ -151,7 +120,7 @@ void WaitingForMessage::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay
             snprintf(message, sizeof(message), "packet RSSI: %d\r\n", packetRSSI);
             uartUSB.write(message, strlen(message));
             messageReceived  = true;
-            delay->restart();
+        
         }
     }
 
@@ -162,9 +131,9 @@ void WaitingForMessage::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay
             delayCounter = 0;
             delayMax = 0;
             messageReceived  = false;
-            uartUSB.write("Changing To Sending ACK State\r\n", strlen("Changing To Sending ACK State\r\n"));
-            this->gateway->changeState (new SendingAck (this->gateway, this->IdDeviceReceived, 
-            this->messageNumberReceived , this->payload));
+           // uartUSB.write("Changing To Sending ACK State\r\n", strlen("Changing To Sending ACK State\r\n"));
+           // this->gateway->changeState (new SendingAck (this->gateway, this->IdDeviceReceived, 
+           // this->messageNumberReceived , this->payload));
             return;
         //}
     }

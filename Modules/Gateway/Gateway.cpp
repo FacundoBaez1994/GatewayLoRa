@@ -53,6 +53,14 @@ Gateway::Gateway () {
 
     this->currentState = new WaitingForMessage (this);
 
+    this->encrypter = new Encrypter ();
+    this->authgen = new AuthenticationGenerator ();
+    this->ckgen = new ChecksumGenerator ();
+
+    this->checksumVerifier = new ChecksumVerifier ();
+    this->authVer = new AuthenticationVerifier ();
+    this->decrypter = new Decrypter ();
+
     Watchdog &watchdog = Watchdog::get_instance(); // singletom
     watchdog.start(TIMEOUT_MS);
 
@@ -95,6 +103,19 @@ Gateway::~Gateway() {
     this->resetEth = NULL;
     delete this->timer;
     this->timer = NULL;
+
+    delete this->encrypter;
+    this->encrypter = NULL;
+    delete this->authgen;
+    this->authgen = NULL;
+    delete this->ckgen;
+    this->ckgen = NULL;
+    delete this->checksumVerifier;
+    this->checksumVerifier = NULL;
+    delete this->authVer;
+    this->authVer = NULL;
+    delete this->decrypter;
+    this->decrypter = NULL;
 }
 
 
@@ -118,13 +139,23 @@ void Gateway::changeState  (GatewayState * newState) {
     this->currentState = newState;
 }
 
-//=====[Implementations of private methods]==================================
-void Gateway::LoRa_rxMode() {
-    LoRa.disableInvertIQ();               // Disable I/Q inversion for reception
-   // LoRa.receive();                       // Set receive mode
+bool Gateway::prepareMessage (char * messageOutput) {
+    this->encrypter->setNextHandler(this->authgen)->setNextHandler(this->ckgen);
+    if (this->encrypter->handleMessage (messageOutput) == MESSAGE_HANDLER_STATUS_PROCESSED) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
-void Gateway::LoRa_txMode() {
-    LoRa.idle();                          // Standby mode
-    LoRa.enableInvertIQ();                // Enable I/Q inversion for transmission
+bool Gateway::processMessage (char * incomingMessage) {
+    this->checksumVerifier->setNextHandler(this->authVer)->setNextHandler(this->decrypter);
+    if (this->checksumVerifier->handleMessage (incomingMessage) == MESSAGE_HANDLER_STATUS_PROCESSED) {
+        return true;
+    } else {
+        return false;
+    }
 }
+
+
+//=====[Implementations of private methods]==================================

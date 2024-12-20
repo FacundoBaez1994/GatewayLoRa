@@ -66,9 +66,14 @@ void SendingAck::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay * dela
 }
 
 void SendingAck::sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
-    char ACKmessage[20] = {0};
+    char ACKmessage[226] = {0};
 
     snprintf(ACKmessage, sizeof(ACKmessage), "%d,%d,ACK", this->IdDevice, this->messageNumber);
+
+    if (this->gateway->prepareMessage(ACKmessage) == false) {
+        return;
+    }
+
     LoRaModule->idle();                          // Standby mode
     LoRaModule->enableInvertIQ();                // Enable I/Q inversion for transmission
     uartUSB.write("Sending Acknowledgment Message\r\n", strlen("Sending Acknowledgment Message\r\n")); // Debug
