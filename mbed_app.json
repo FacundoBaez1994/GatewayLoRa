@@ -1,11 +1,11 @@
 {
     "target_overrides": {
-        "*": {       
+        "*": {
             "target.features_add": ["RTOS", "STORAGE"],
             "target.extra_labels_add": ["NFC"],
-            "target.c_lib": "small",
-            "target.cxx_lib": "small",
-            "target.printf_lib": "small",
+            "target.c_lib": "std",
+            "target.cxx_lib": "std",
+            "target.printf_lib": "minimal-printf",
             "platform.stdio-baud-rate": 115200,
             "platform.stdio-buffered-serial": true,
             "platform.default-serial-baud-rate": 115200,

@@ -55,6 +55,10 @@ WaitingForMessage::~WaitingForMessage () {
 
 void WaitingForMessage::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
     static bool messageReceived = false; 
+    static std::vector<char> accumulatedBuffer; // Acumulador de fragmentos
+    static std::string fullMessage;
+
+    char processedMessageReceived  [256];
     char buffer[256];
     char message[100];
     char payload[100] = {0}; // Espacio suficiente para almacenar el payload
@@ -85,60 +89,77 @@ void WaitingForMessage::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay
                    // uartUSB.write(buffer, bytesRead);
                     uartUSB.write(buffer, strlen(buffer));
                     uartUSB.write ("\r\n", strlen("\r\n"));
-                }
-                iterations++;
-            }
+                    accumulatedBuffer.insert(accumulatedBuffer.end(), buffer, buffer + bytesRead);
 
-            if (iterations >= maxIterations) {
-                uartUSB.write("Warning: Exceeded max iterations\r\n", strlen("Warning: Exceeded max iterations\r\n"));
-                return;
-            }
+                    // Buscar el delimitador `|`
+                    auto delimiterPos = std::find(accumulatedBuffer.begin(), accumulatedBuffer.end(), '|');
+                    if (delimiterPos != accumulatedBuffer.end()) {
+                        // Reconstruir el mensaje completo
+                        //static std::string fullMessage(accumulatedBuffer.begin(), delimiterPos);
+                        fullMessage.assign(accumulatedBuffer.begin(), delimiterPos);
+                        accumulatedBuffer.erase(accumulatedBuffer.begin(), delimiterPos + 1); // Eliminar procesado
 
-            if (this->gateway->processMessage(buffer) == false) {
-                return;
-            }
+                        // Debug del mensaje completo
+                        uartUSB.write("Full Message: ", strlen("Full Message: "));
+                        uartUSB.write(fullMessage.c_str(), fullMessage.length());
+                        uartUSB.write("\r\n", strlen("\r\n"));
+                        messageReceived = true;
 
-            if (sscanf(buffer, "%d,%d,%49s", &deviceId, &messageNumber, payload) == 3) {
-                // Desglose exitoso
-                snprintf(message, sizeof(message), "Device ID: %d\r\n", deviceId);
-                uartUSB.write(message, strlen(message));
-                this->IdDeviceReceived = deviceId;
-
-                snprintf(message, sizeof(message), "Message Number: %d\r\n", messageNumber);
-                uartUSB.write(message, strlen(message));
-                this->messageNumberReceived = messageNumber;
-
-                snprintf(message, sizeof(message), "Payload: %s\r\n", payload);
-                uartUSB.write(message, strlen(message));
-                strcpy (this->payload, payload);
-            } else {
-                uartUSB.write("Error parsing message.\r\n", strlen("Error parsing message.\r\n"));
-                return;
-            }
-            // Leer el RSSI del paquete recibido
-            int packetRSSI = LoRaModule->packetRssi();
-            snprintf(message, sizeof(message), "packet RSSI: %d\r\n", packetRSSI);
-            uartUSB.write(message, strlen(message));
-            messageReceived  = true;
-        
+                        int packetRSSI = LoRaModule->packetRssi();
+                        snprintf(message, sizeof(message), "packet RSSI: %d\r\n", packetRSSI);
+                        uartUSB.write(message, strlen(message));
+                    }
+                    iterations++;
+                    if (iterations >= maxIterations) {
+                        uartUSB.write("Warning: Exceeded max iterations\r\n", strlen("Warning: Exceeded max iterations\r\n"));
+                        messageReceived = false;
+                        return;
+                    }
+                } //  if (bytesRead > 0) end
+            } // while (LoRaModule->available() > 0 && iterations < maxIterations)  end
+        } //  if (packetSize)  end
+        // messageReceived  == false if end
+    }  else { 
+        if (fullMessage.empty()) {
+            messageReceived = false;
+            uartUSB.write("Fail to process received message\r\n", strlen("Fail to process received message\r\n"));
+            return;
         }
-    }
+        const char* constCharPtr = fullMessage.c_str(); 
 
+        //char* processedMessageReceived = new char[fullMessage.size() + 1]; // +1 para '\0'
+        strcpy(processedMessageReceived, constCharPtr);
 
-    if (delay->read () && messageReceived == true) {
-        //delayCounter ++;
-        //if (delayCounter >= delayMax) {
-            delayCounter = 0;
-            delayMax = 0;
-            messageReceived  = false;
-           // uartUSB.write("Changing To Sending ACK State\r\n", strlen("Changing To Sending ACK State\r\n"));
+        if (this->gateway->processMessage(processedMessageReceived) == false) {
+            uartUSB.write("Fail to process received message\r\n", strlen("Fail to process received message\r\n")); // Debug
+            messageReceived = false;
+            return;
+        }
+        if (sscanf(processedMessageReceived, "%d,%d,%s", &deviceId, &messageNumber, payload) == 3) {
+            // Desglose exitoso
+            snprintf(message, sizeof(message), "Device ID: %d\r\n", deviceId);
+            uartUSB.write(message, strlen(message));
+            this->IdDeviceReceived = deviceId;
+
+            snprintf(message, sizeof(message), "Message Number: %d\r\n", messageNumber);
+            uartUSB.write(message, strlen(message));
+            this->messageNumberReceived = messageNumber;
+
+            snprintf(message, sizeof(message), "Payload: %s\r\n", payload);
+            uartUSB.write(message, strlen(message));
+            strcpy (this->payload, payload);
+        } else {
+            uartUSB.write("Error parsing message.\r\n", strlen("Error parsing message.\r\n"));
+            return;
+        }
+        messageReceived  = false;
+        accumulatedBuffer.clear(); // Elimina todos los elementos del vector
+        fullMessage.clear();       // Elimina todo el contenido de la cadena
+        uartUSB.write("Changing To Sending ACK State\r\n", strlen("Changing To Sending ACK State\r\n"));
            // this->gateway->changeState (new SendingAck (this->gateway, this->IdDeviceReceived, 
            // this->messageNumberReceived , this->payload));
-            return;
-        //}
+         return;
     }
-
-
     return;
 }
 
@@ -152,130 +173,3 @@ void WaitingForMessage::sendTCPMessage (UipEthernet * ethernetModule, NonBlockin
 
 //=====[Implementations of private functions]==================================
 
-
-
-
-
-/** 
-* @brief 
-* 
-* 
-* @returns 
-*/
-/*
- CellularTransceiverStatus_t  Receiving::exchangeMessages (ATCommandHandler * ATHandler,
-    NonBlockingDelay * refreshTime, char * message, TcpSocket * socketTargetted,
-     char * receivedMessage, bool * newDataAvailable) {
-
-    char ATcommandFirstPart [15] = "AT+QIRD= ";
-    char StringToBeSend [16];
-    char StringToBeSendUSB [20]  = "RECV Data";
-    char noDataResponse [15] = "+QIRD: 0";
-    char expectedResponse [15] = "OK";
-
-    char retrivedMessage [200];
-    char StringToBeRead [200];
-
-    static bool readyToSend = false;
-    static int attempts = 0; 
-    static int maxConnectionAttempts = MAXATTEMPTS; 
-    static bool thereIsdataToRetriv = false;
-    static bool dataRetrieved;
-
-   
-    //char protocol[] = "\"TCP\"";
-    int noErrorCode = 0;
-    int contextID = 1; // Usualmente 1
-    int connectID = 0; // Puede ser entre 0 y 11
-    int access_mode = 0; // Modo de acceso al buffer
-
-
-    snprintf(StringToBeSend, sizeof(StringToBeSend ), "%s%d", ATcommandFirstPart, connectID);
-    if (readyToSend == true) {
-        ATHandler->sendATCommand(StringToBeSend);
-        readyToSend  = false;
-        ////   ////   ////   ////   ////   ////
-        uartUSB.write (StringToBeSendUSB , strlen (StringToBeSendUSB ));  // debug only
-        uartUSB.write ( "\r\n",  3 );  // debug only
-        uartUSB.write (StringToBeSend  , strlen (StringToBeSend  ));  // debug only
-        uartUSB.write ( "\r\n",  3 );  // debug only
-        ////   ////   ////   ////   ////   ////   
-    }
-
-    if ( ATHandler->readATResponse ( StringToBeRead) == true) {
-        uartUSB.write (StringToBeRead  , strlen (StringToBeRead  ));  // debug only
-        uartUSB.write ( "\r\n",  3 );  // debug only
-
-        if (thereIsdataToRetriv == true) {
-            thereIsdataToRetriv = false;
-            dataRetrieved = true;
-            strcpy (receivedMessage, StringToBeRead);
-            char StringToSendUSB [40] = "Message retrived";
-            uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
-            uartUSB.write ( "\r\n",  3 );  // debug only
-        }
-
-        /// seach for OK confirmation
-        if (dataRetrieved == true) {
-            if (strcmp (StringToBeRead, expectedResponse) == 0) {
-
-                *newDataAvailable = true; 
-
-                attempts = 0;
-                char StringToSendUSB [40] = "Cambiando de estado 80?";
-                uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
-                uartUSB.write ( "\r\n",  3 );  // debug only
-                this->mobileNetworkModule->changeTransceiverState
-                 (new CloseSocket (this->mobileNetworkModule, true));
-                return CELLULAR_TRANSCEIVER_STATUS_TRYNING_TO_SEND;
-            }
-        }
-
-        if ( strcmp (StringToBeRead, noDataResponse) == 0) {
-            // No data to recv keep trying 
-            attempts++;
-            readyToSend  = false;
-            return CELLULAR_TRANSCEIVER_STATUS_TRYNING_TO_SEND;
-        }
-        
-        if (checkResponse(StringToBeRead, retrivedMessage) == true ) {
-            thereIsdataToRetriv =  true;
-            ////   ////   ////   ////   ////   ////    
-        }
-    }
-
-
-
-    if (refreshTime->read()) {
-        readyToSend = true;
-        attempts++;
-        if (attempts >= maxConnectionAttempts) {
-            attempts = 0;
-             this->mobileNetworkModule->changeTransceiverState (new CloseSocket (this->mobileNetworkModule, true));
-            return CELLULAR_TRANSCEIVER_STATUS_TRYNING_TO_SEND;
-        }
-    }
-    return CELLULAR_TRANSCEIVER_STATUS_TRYNING_TO_SEND;
-}
-
-
-//=====[Implementations of private functions]==================================
-bool Receiving::checkResponse(char * response, char * retrivMessage) {
-    char expectedFistPartResponse[15] = "+QIRD: ";
-    
-    // Verificar que la respuesta sea del tipo esperado
-    if (strncmp(response, expectedFistPartResponse, strlen(expectedFistPartResponse)) == 0) {
-        int messageLength = 0;
-        
-        // Extraer el número entero después de "+QIRD: "
-        if (sscanf(response + strlen(expectedFistPartResponse), "%d", &messageLength) == 1) {
-            // Verificar si el número es mayor a cero
-            if (messageLength > 0) {
-                return true;
-            }
-        }
-    }
-
-    return false; // Si no coincide o hay algún error en el parseo
-}
-*/

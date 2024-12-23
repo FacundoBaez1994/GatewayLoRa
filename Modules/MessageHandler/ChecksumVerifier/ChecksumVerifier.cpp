@@ -48,59 +48,54 @@ ChecksumVerifier::~ChecksumVerifier () {
     this->nextHandler = nullptr;
 }
 
-MessageHandlerStatus_t  ChecksumVerifier::handleMessage (char * message) {
+MessageHandlerStatus_t ChecksumVerifier::handleMessage(char *message) {
     MbedCRC<POLY_32BIT_ANSI, 32> crc32;
 
-    int packetSize = strlen (message);
-    // Separar payload y CRC
-     if (packetSize < 4) {
+    int packetSize = strlen(message);
+    if (packetSize < 8) { // Si el mensaje es demasiado corto para contener un CRC de 8 caracteres
         uartUSB.write("Error: Packet too small for CRC\r\n", strlen("Error: Packet too small for CRC\r\n"));
-        return  MESSAGE_HANDLER_STATUS_ERROR_PACKET_TOO_SMALL;
+        return MESSAGE_HANDLER_STATUS_ERROR_PACKET_TOO_SMALL;
     }
-        // Extraer el CRC
-    packetSize -= 4; // Ajustar tamaño del paquete sin CRC
-    uint32_t receivedCRC = (message[packetSize] << 24) |
-                            (message[packetSize + 1] << 16) |
-                            (message[packetSize + 2] << 8) |
-                            message[packetSize + 3];
 
-    // Verificar el CRC
+    // Separar el CRC (últimos 8 caracteres del mensaje)
+    packetSize -= 8; // Ajustamos el tamaño del paquete para que solo tenga el mensaje sin el CRC
+    uint32_t receivedCRC;
+    sscanf(&message[packetSize], "%8X", &receivedCRC); // Extraemos el CRC como valor hexadecimal de 8 caracteres
+
+    // Verificar el CRC calculado
     uint32_t calculatedCRC;
-    // Formatear el CRC en hexadecimal
-    char crcString[64]; 
-   
     if (crc32.compute(reinterpret_cast<uint8_t*>(message), packetSize, &calculatedCRC) == 0) {
-        snprintf(crcString, strlen(crcString), "Recieved CRC32: 0x%08X\r\n", receivedCRC);
-        
-        // Enviar el mensaje por UART
-        uartUSB.write(crcString, strlen(crcString));  // Enviar el CRC
-        uartUSB.write ( "\r\n",  3 );  // debug only
-        // Formatear el CRC en hexadecimal
-        snprintf(crcString, strlen(crcString), "calculated CRC32: 0x%08X\r\n", calculatedCRC);
-        // Enviar el mensaje por UART
-        uartUSB.write(crcString, strlen(crcString));  // Enviar el CRC
-        uartUSB.write ( "\r\n",  3 );  // debug only
+        // Enviar información sobre el CRC calculado y recibido
+        char crcString[64];
+        snprintf(crcString, sizeof(crcString), "Received CRC32: 0x%08X\r\n", receivedCRC);
+        uartUSB.write(crcString, strlen(crcString));
 
+        snprintf(crcString, sizeof(crcString), "Calculated CRC32: 0x%08X\r\n", calculatedCRC);
+        uartUSB.write(crcString, strlen(crcString));
+
+        // Verificar si el CRC coincide
         if (calculatedCRC == receivedCRC) {
-            uartUSB.write ( "\r\n",  3 );  // debug only
-            uartUSB.write("Checksum OK!\r\n", strlen("Checksum OK!\r\n")); // Debug
+            uartUSB.write("\r\nChecksum OK!\r\n", strlen("\r\nChecksum OK!\r\n"));
         } else {
-            uartUSB.write ( "\r\n",  3 );  // debug only
-             uartUSB.write("Checksum Error\r\n", strlen("Checksum Error\r\n")); // Debug
-            return MESSAGE_HANDLER_STATUS_CHECKSUM_ERROR; 
-            }
+            uartUSB.write("\r\nChecksum Error\r\n", strlen("\r\nChecksum Error\r\n"));
+            return MESSAGE_HANDLER_STATUS_CHECKSUM_ERROR;
+        }
+    } else {
+        uartUSB.write("Failed to compute CRC\r\n", strlen("Failed to compute CRC\r\n"));
+        return MESSAGE_HANDLER_STATUS_FAIL_TO_COMPUTE_CHECKSUM;
     }
 
-    message [packetSize] = '\0';
-    uartUSB.write ( "\r\n",  3 );  // debug only
-    uartUSB.write ("Mensaje Without CRC:\r\n", strlen ("Mensaje Without CRC:\r\n"));  // debug only
-    uartUSB.write (message, strlen (message));  // debug only
-    uartUSB.write ( "\r\n",  3 );  // debug only
-    
+    // Eliminar el CRC del mensaje original
+    message[packetSize] = '\0';  // Asegurarse de que el mensaje tenga un terminador nulo
+    uartUSB.write("\r\nMessage Without CRC:\r\n", strlen("\r\nMessage Without CRC:\r\n"));
+    uartUSB.write(message, strlen(message));
+    uartUSB.write("\r\n", 3);  // Debug
+
+    // Pasar el mensaje al siguiente manejador si existe
     if (this->nextHandler == nullptr) {
-        return  MESSAGE_HANDLER_STATUS_PROCESSED;
+        return MESSAGE_HANDLER_STATUS_PROCESSED;
     } else {
-        return this->nextHandler->handleMessage (message);
+        return this->nextHandler->handleMessage(message);
     }
 }
 

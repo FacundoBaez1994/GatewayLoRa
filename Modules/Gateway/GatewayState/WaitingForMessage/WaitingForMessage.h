@@ -11,7 +11,10 @@
 #include "Non_Blocking_Delay.h"
 #include "SendingAck.h"
 #include "MbedCRC.h"
-
+#include <algorithm> // Para std::find
+#include <string>
+#include <vector>
+#include <cstring> 
 //=====[Declaration of public data types]======================================
 class Gateway; //debido a declaracion adelantada
 
