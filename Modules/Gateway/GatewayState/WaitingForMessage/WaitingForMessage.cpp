@@ -68,6 +68,8 @@ void WaitingForMessage::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay
     static int delayCounter = 0;
     static int delayMax = 3; 
 
+    static int stringInsertCount = 0;
+
     uint8_t receivedBuffer[64];
 
     if (messageReceived  == false) {
@@ -90,14 +92,26 @@ void WaitingForMessage::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay
                     uartUSB.write(buffer, strlen(buffer));
                     uartUSB.write ("\r\n", strlen("\r\n"));
                     accumulatedBuffer.insert(accumulatedBuffer.end(), buffer, buffer + bytesRead);
+                    stringInsertCount ++;
+
+                    if (stringInsertCount > 15) {
+                        // Eliminar todos los elementos del vector
+                        accumulatedBuffer.clear();
+                        stringInsertCount = 0;
+
+                        // Acción adicional, si es necesario
+                        uartUSB.write("Buffer cleared size reach limit\r\n", strlen("Buffer cleared size reach limit\r\n"));
+                        messageReceived = false;
+                        return;
+                    }
 
                     // Buscar el delimitador `|`
-                    auto delimiterPos = std::find(accumulatedBuffer.begin(), accumulatedBuffer.end(), '|');
+                    auto delimiterPos = std::search(accumulatedBuffer.begin(), accumulatedBuffer.end(), "||", "||" + 2);
                     if (delimiterPos != accumulatedBuffer.end()) {
                         // Reconstruir el mensaje completo
-                        //static std::string fullMessage(accumulatedBuffer.begin(), delimiterPos);
                         fullMessage.assign(accumulatedBuffer.begin(), delimiterPos);
-                        accumulatedBuffer.erase(accumulatedBuffer.begin(), delimiterPos + 1); // Eliminar procesado
+                        accumulatedBuffer.erase(accumulatedBuffer.begin(), delimiterPos + 2); // Eliminar procesado
+                        stringInsertCount = 0;
 
                         // Debug del mensaje completo
                         uartUSB.write("Full Message: ", strlen("Full Message: "));
@@ -118,9 +132,9 @@ void WaitingForMessage::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay
                 } //  if (bytesRead > 0) end
             } // while (LoRaModule->available() > 0 && iterations < maxIterations)  end
         } //  if (packetSize)  end
-        // messageReceived  == false if end
-    }  else { 
+    }  else {   // messageReceived  == false if end
         if (fullMessage.empty()) {
+            accumulatedBuffer.clear();
             messageReceived = false;
             uartUSB.write("Fail to process received message\r\n", strlen("Fail to process received message\r\n"));
             return;
@@ -135,6 +149,7 @@ void WaitingForMessage::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay
             messageReceived = false;
             return;
         }
+        // message interpretation
         if (sscanf(processedMessageReceived, "%d,%d,%s", &deviceId, &messageNumber, payload) == 3) {
             // Desglose exitoso
             snprintf(message, sizeof(message), "Device ID: %d\r\n", deviceId);
@@ -150,15 +165,17 @@ void WaitingForMessage::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay
             strcpy (this->payload, payload);
         } else {
             uartUSB.write("Error parsing message.\r\n", strlen("Error parsing message.\r\n"));
+            messageReceived = false;
             return;
         }
         messageReceived  = false;
         accumulatedBuffer.clear(); // Elimina todos los elementos del vector
+        stringInsertCount = 0;
         fullMessage.clear();       // Elimina todo el contenido de la cadena
         uartUSB.write("Changing To Sending ACK State\r\n", strlen("Changing To Sending ACK State\r\n"));
-           // this->gateway->changeState (new SendingAck (this->gateway, this->IdDeviceReceived, 
-           // this->messageNumberReceived , this->payload));
-         return;
+        this->gateway->changeState (new SendingAck (this->gateway, this->IdDeviceReceived, 
+        this->messageNumberReceived , this->payload));
+        return;
     }
     return;
 }

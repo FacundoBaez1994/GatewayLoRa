@@ -67,22 +67,24 @@ void SendingAck::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay * dela
 
 void SendingAck::sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
     char ACKmessage[226] = {0};
-
     snprintf(ACKmessage, sizeof(ACKmessage), "%d,%d,ACK", this->IdDevice, this->messageNumber);
 
-    if (this->gateway->prepareMessage(ACKmessage) == false) {
-        return;
+    if (delay->read()) {
+        if (this->gateway->prepareMessage(ACKmessage) == false) {
+            uartUSB.write("Fail to prepare message to be send\r\n", strlen("Fail to prepare message to be send\r\n"));
+            return;
+        }
+
+        LoRaModule->idle();                          // Standby mode
+        LoRaModule->enableInvertIQ();                // Enable I/Q inversion for transmission
+        uartUSB.write("Sending Acknowledgment Message\r\n", strlen("Sending Acknowledgment Message\r\n")); // Debug
+        LoRaModule->beginPacket();
+        LoRaModule->write((uint8_t *)ACKmessage, strlen(ACKmessage));
+        LoRaModule->endPacket();
+
+        uartUSB.write("Changing To WaitingForMessage State\r\n", strlen("Changing To WaitingForMessage State\r\n\r\n"));
+        this->gateway->changeState (new WaitingForMessage (this->gateway));
     }
-
-    LoRaModule->idle();                          // Standby mode
-    LoRaModule->enableInvertIQ();                // Enable I/Q inversion for transmission
-    uartUSB.write("Sending Acknowledgment Message\r\n", strlen("Sending Acknowledgment Message\r\n")); // Debug
-    LoRaModule->beginPacket();
-    LoRaModule->write((uint8_t *)ACKmessage, strlen(ACKmessage));
-    LoRaModule->endPacket();
-
-    uartUSB.write("Changing To WaitingForMessage State\r\n", strlen("Changing To WaitingForMessage State\r\n\r\n"));
-    this->gateway->changeState (new WaitingForMessage (this->gateway));
 
     return;
 }
