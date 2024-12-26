@@ -8,7 +8,7 @@
 
 
 //=====[Declaration of private defines]========================================
-#define LATENCY        50
+#define LATENCY        500
 #define TIMEOUT_MS     20000
 #define IP      "192.168.1.35"
 #define GATEWAY "192.168.1.1"
