@@ -50,9 +50,14 @@ ChecksumGenerator::~ChecksumGenerator () {
 }
 
 MessageHandlerStatus_t ChecksumGenerator::handleMessage(char *message) {
+
     // Crear una instancia de MbedCRC con el polinomio 32-bit ANSI
     MbedCRC<POLY_32BIT_ANSI, 32> crc32;
     uint32_t crc; // Variable para almacenar el resultado del CRC de 32 bits
+
+    uartUSB.write("message on  ChecksumGenerator:\r\n", strlen("message on  ChecksumGenerator:\r\n"));
+    uartUSB.write(message, strlen(message));
+    uartUSB.write("\r\n", 3);
 
     // Calcular el CRC32 del mensaje original (sin el CRC agregado)
     size_t messageLength = strlen(message);  // Longitud del mensaje original
@@ -66,14 +71,21 @@ MessageHandlerStatus_t ChecksumGenerator::handleMessage(char *message) {
         uartUSB.write("\r\n", 3);
 
         // Calcular la longitud total del mensaje (incluyendo el CRC)
-        size_t totalLength = messageLength + strlen(crcStr) + 1; // +1 para el terminador nulo
+        size_t totalLength = messageLength + strlen(crcStr); // +1 para el terminador nulo
         if (totalLength >= 256) { // Asegurarse de que el mensaje no supere el límite de 255 caracteres
             uartUSB.write("Message too long to append CRC\r\n", strlen("Message too long to append CRC\r\n"));
             return MESSAGE_HANDLER_STATUS_FAIL_TO_COMPUTE_CHECKSUM;
         }
 
-        // Anexar el CRC al final del mensaje
-        strcat(message, crcStr);
+        size_t crcLen = strlen(crcStr);
+        // Copiar el CRC directamente al final del mensaje original
+        // Copiar el CRC carácter por carácter al final del mensaje
+        for (size_t i = 0; i < crcLen; ++i) {
+            message[messageLength + i] = crcStr[i];
+        }
+
+        // Asegurar la terminación nula del mensaje
+        message[totalLength] = '\0'; 
 
         // Depuración: imprimir el mensaje completo con CRC
         uartUSB.write("Complete message with CRC:\r\n", strlen("Complete message with CRC:\r\n"));
@@ -92,13 +104,6 @@ MessageHandlerStatus_t ChecksumGenerator::handleMessage(char *message) {
         return this->nextHandler->handleMessage(message);
     }
 }
-
-
-
-
-
-
-
 
 
 

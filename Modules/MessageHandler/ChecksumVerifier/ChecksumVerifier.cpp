@@ -51,6 +51,7 @@ ChecksumVerifier::~ChecksumVerifier () {
 MessageHandlerStatus_t ChecksumVerifier::handleMessage(char *message) {
     MbedCRC<POLY_32BIT_ANSI, 32> crc32;
 
+
     int packetSize = strlen(message);
     if (packetSize < 8) { // Si el mensaje es demasiado corto para contener un CRC de 8 caracteres
         uartUSB.write("Error: Packet too small for CRC\r\n", strlen("Error: Packet too small for CRC\r\n"));
@@ -98,7 +99,6 @@ MessageHandlerStatus_t ChecksumVerifier::handleMessage(char *message) {
         return this->nextHandler->handleMessage(message);
     }
 }
-
 
 
 

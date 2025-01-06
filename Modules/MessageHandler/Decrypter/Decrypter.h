@@ -27,7 +27,7 @@ public:
     Decrypter();
     virtual ~Decrypter ();
     virtual MessageHandlerStatus_t handleMessage (char * message) override;
-    //virtual MessageHandler setNextHandler (MessageHandler * nextHandler);
+
 private:
     AES  * aes; 
     const char key[32] = {

@@ -14,7 +14,6 @@
  
 //=====[Declaration of public data types]======================================
 class MessageHandler; //debido a declaracion adelantada
-//struct CellInformation;
 
 //=====[Declaration of public classes]=========================================
 /*

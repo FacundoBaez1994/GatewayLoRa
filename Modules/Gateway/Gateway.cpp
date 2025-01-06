@@ -8,8 +8,8 @@
 
 
 //=====[Declaration of private defines]========================================
-#define LATENCY        500
-#define TIMEOUT_MS     20000
+#define LATENCY        1000
+#define TIMEOUT_MS     40000
 #define IP      "192.168.1.35"
 #define GATEWAY "192.168.1.1"
 #define NETMASK "255.255.255.0"
@@ -61,8 +61,8 @@ Gateway::Gateway () {
     this->authVer = new AuthenticationVerifier ();
     this->decrypter = new Decrypter ();
 
-    Watchdog &watchdog = Watchdog::get_instance(); // singletom
-    watchdog.start(TIMEOUT_MS);
+   // Watchdog &watchdog = Watchdog::get_instance(); // singletom
+   // watchdog.start(TIMEOUT_MS);
 
 
     /*
@@ -129,8 +129,8 @@ void Gateway::update () {
     this->currentState->sendAcknowledgement (this->LoRaTransciever, this->timer);
     //this->currentState->sendTCPMessage (this->ethernetModule, this->timer);
 
-    Watchdog &watchdog = Watchdog::get_instance(); // singletom
-    watchdog.kick();
+   // Watchdog &watchdog = Watchdog::get_instance(); // singletom
+   // watchdog.kick();
 }
 
 

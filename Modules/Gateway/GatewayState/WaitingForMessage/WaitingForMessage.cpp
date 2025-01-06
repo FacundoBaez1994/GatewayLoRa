@@ -82,10 +82,9 @@ void WaitingForMessage::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay
             int iterations = 0;
 
             // Leer los datos disponibles
-            
             while (LoRaModule->available() > 0 && iterations < maxIterations) {
                 ssize_t bytesRead = LoRaModule->read(reinterpret_cast<uint8_t*>(buffer), sizeof(buffer));
-               // ssize_t bytesRead = LoRaModule->read(reinterpret_cast<uint8_t*>(buffer), strlen (buffer));
+                // ssize_t bytesRead = LoRaModule->read(reinterpret_cast<uint8_t*>(buffer), strlen (buffer));
                 if (bytesRead > 0) {
                     // Enviar los bytes leídos al puerto serie
                    // uartUSB.write(buffer, bytesRead);
@@ -94,7 +93,7 @@ void WaitingForMessage::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay
                     accumulatedBuffer.insert(accumulatedBuffer.end(), buffer, buffer + bytesRead);
                     stringInsertCount ++;
 
-                    if (stringInsertCount > 15) {
+                    if (stringInsertCount > 51) {
                         // Eliminar todos los elementos del vector
                         accumulatedBuffer.clear();
                         stringInsertCount = 0;

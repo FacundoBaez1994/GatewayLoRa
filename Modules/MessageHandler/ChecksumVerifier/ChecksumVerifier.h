@@ -14,11 +14,10 @@
  
 //=====[Declaration of public data types]======================================
 class MessageHandler; //debido a declaracion adelantada
-//struct CellInformation;
 
 //=====[Declaration of public classes]=========================================
 /*
- *  Abstract class 
+ *  
  * 
  */
 class ChecksumVerifier : public BaseMessageHandler {
@@ -27,7 +26,7 @@ public:
     ChecksumVerifier();
     virtual ~ChecksumVerifier ();
     virtual MessageHandlerStatus_t handleMessage (char * message) override;
-    //virtual MessageHandler setNextHandler (MessageHandler * nextHandler);
+
 private:
 //=====[Declaration of privates atributes]=========================================
 
