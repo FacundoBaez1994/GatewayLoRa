@@ -8,8 +8,8 @@
 
 
 //=====[Declaration of private defines]========================================
-#define LATENCY        1000
-#define TIMEOUT_MS     40000
+#define LATENCY        300
+//#define TIMEOUT_MS     3000
 #define IP      "192.168.1.35"
 #define GATEWAY "192.168.1.1"
 #define NETMASK "255.255.255.0"
