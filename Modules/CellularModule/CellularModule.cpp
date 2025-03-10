@@ -5,10 +5,12 @@
 
 //=====[Declaration of private defines]========================================
 #define REFRESHTIME  1000
-#define CELLULAR_MODULE_TX_UART PA_9
-#define CELLULAR_MODULE_RX_UART PA_10
+#define CELLULAR_MODULE_TX_UART PA_9 // tx nucleo
+#define CELLULAR_MODULE_RX_UART PA_10 // rx nucleo
+
+
 #define CELLULAR_MODULE_BAUD_RATE 115200
-#define CELLULAR_MODULE_SIMCARD_SWITCH_OUTPUT PA_8
+#define CELLULAR_MODULE_SIMCARD_SWITCH_OUTPUT D7
 
 
 //=====[Declaration of private data types]=====================================
@@ -45,6 +47,7 @@ CellularModule::CellularModule () {
     this->modulePowerManager = new PowerManager (this->ATHandler);
 
     this->simCardSwitchOutput =  new DigitalOut (CELLULAR_MODULE_SIMCARD_SWITCH_OUTPUT);
+    this->simCardSwitchOutput->write(ON);
     this->currentPowerStatus = POWER_OFF;
 }
 

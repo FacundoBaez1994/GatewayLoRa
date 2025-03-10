@@ -147,7 +147,7 @@ GNSSState_t ObtainingPositionInformation::retrivGeopositioning (GNSSData * Geoda
         uartUSB.write ( "\r\n",  3 );  // debug only
         if (this->numberOfTries >= this->maxTries) {
              ////   ////   ////   ////   ////   ////
-            char StringToSendUSB [40] = "GNSS UNAVAILABLE, TURNING OFF";
+            char StringToSendUSB [40] = "GNSS UNAVAILABLE, TURNING OFF GNSS";
             uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
             uartUSB.write ( "\r\n",  3 );  // debug only
             ////   ////   ////   ////   ////   ////    

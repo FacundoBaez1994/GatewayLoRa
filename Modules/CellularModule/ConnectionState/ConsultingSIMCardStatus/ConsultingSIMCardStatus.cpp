@@ -68,6 +68,7 @@ CellInformation * currentCellInformation) {
     static char StringToBeRead [256];
     char expectedResponse [15] = "OK";
     char noSimCardError [20] = "+CME ERROR: 10";
+    char noSimCardError2 [20] = "+CME ERROR: 13";
     char simCardReady [20] = "+CPIN: READY";
     char StringToSend [15] = "AT+CPIN?";
    
@@ -92,7 +93,7 @@ CellInformation * currentCellInformation) {
             uartUSB.write (StringToBeRead , strlen (StringToBeRead));  // debug only
             uartUSB.write ( "\r\n",  3 );  // debug only
             ////   ////   ////   ////   ////   ////
-             if (strcmp (StringToBeRead, noSimCardError) == 0) {
+             if (strcmp (StringToBeRead, noSimCardError) == 0 ||  strcmp (StringToBeRead, noSimCardError2) == 0) {
                 this->mobileNetworkModule->switchSIMCARD();
                 char StringToSendUSB [40] = "SWITCHING SIM CARD SLOT";
                 uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
