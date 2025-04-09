@@ -51,7 +51,9 @@ Gateway::Gateway () {
 
     this->timer = new NonBlockingDelay (LATENCY);
 
-    this->currentState = new WaitingForMessage (this);
+    //this->currentState = new WaitingForMessage (this);
+    char pay [250] = "this->payloadLaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaarrrrrrrrrrrrrrrrrgoooooooooo";
+    this->currentState =  new SendingTCPMessage(this, 1, 1, pay);
 
     Watchdog &watchdog = Watchdog::get_instance(); // singletom
     watchdog.start(TIMEOUT_MS);
@@ -104,12 +106,14 @@ Gateway::~Gateway() {
 *
 */
 void Gateway::update () {
+    
+    Watchdog &watchdog = Watchdog::get_instance(); // singletom
+    watchdog.kick();
+
     this->currentState->receiveMessage (this->LoRaTransciever, this->timer);
     this->currentState->sendAcknowledgement (this->LoRaTransciever, this->timer);
     this->currentState->sendTCPMessage (this->ethernetModule, this->timer);
 
-    Watchdog &watchdog = Watchdog::get_instance(); // singletom
-    watchdog.kick();
 }
 
 

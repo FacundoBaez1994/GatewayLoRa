@@ -33,7 +33,7 @@ private:
     int IdDevice;
     int messageNumber;
     int connectionRetries;
-    char payload [50];
+    char payload [250];
 //=====[Declaration of privates atributes]=========================================
 
 //=====[Declaration of privates methods]=========================================

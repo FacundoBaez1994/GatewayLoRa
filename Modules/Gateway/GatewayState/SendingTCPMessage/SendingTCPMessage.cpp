@@ -6,6 +6,7 @@
 
 //=====[Declaration of private defines]========================================
 #define MAX_RETRIES 3
+#define TIMEOUT_MS 20000
 //=====[Declaration of private data types]=====================================
 
 //=====[Declaration and initialization of public global objects]===============
@@ -79,11 +80,23 @@ void SendingTCPMessage::sendTCPMessage (UipEthernet * ethernetModule, NonBlockin
     char*           remaining;
     uint8_t*        recvBuf;
     int             result;
-    char logMessage [50];
-    char message [50];
+    char logMessage [251];
+    char message [251];
+    Watchdog &watchdog = Watchdog::get_instance(); // singletom
+    watchdog.kick();
+
+    snprintf(logMessage, sizeof(logMessage), "Sending TCP Message through Ethernet\n");
+     uartUSB.write(logMessage, strlen(logMessage)); // Debug
 
     //net.set_network(IP, NETMASK, GATEWAY);  // include this to use static IP address
-    ethernetModule->connect();
+    if (ethernetModule->connect(15) != 0) {
+        snprintf(logMessage, sizeof(logMessage), "Ethernet connection not available\n");
+        uartUSB.write(logMessage, strlen(logMessage)); // Debug
+        return;
+    }
+
+    watchdog.kick();
+
 
     // Show the network address
     const char*     ip = ethernetModule->get_ip_address();
@@ -104,6 +117,8 @@ void SendingTCPMessage::sendTCPMessage (UipEthernet * ethernetModule, NonBlockin
     if (result != 0) {
         snprintf(logMessage, sizeof(logMessage), "Error! socket.open() returned: %d\n", result);
         uartUSB.write(logMessage, strlen(logMessage)); // Debug
+        return;
+        // change state
     }
 
     timeOut = time(NULL) + TIMEOUT;
@@ -111,16 +126,21 @@ void SendingTCPMessage::sendTCPMessage (UipEthernet * ethernetModule, NonBlockin
     snprintf(logMessage, sizeof(logMessage), "Connecting to the TCP server ...\r\n");
     uartUSB.write(logMessage, strlen(logMessage)); // Debug
 
+    //watchdog.stop();
+    watchdog.kick();
     result = socket.connect("186.19.62.251", 123); // modificar ip y puerto
     if (result != 0) {
         snprintf(logMessage, sizeof(logMessage), "Error! socket.connect() returned: %d\n", result);
         uartUSB.write(logMessage, strlen(logMessage)); // Debug
         this->connectionRetries ++;
+       // watchdog.start(TIMEOUT_MS);
         if (this->connectionRetries >= MAX_RETRIES) {
             this->disconnect (ethernetModule, &socket);
+            return;
         }
         return;
     }
+    // watchdog.start(TIMEOUT_MS);
     snprintf(logMessage, sizeof(logMessage), "Server connected.\r\n");
     uartUSB.write(logMessage, strlen(logMessage)); // Debug
     snprintf(logMessage, sizeof(logMessage), "Sending data to server:\r\n");
@@ -180,5 +200,5 @@ void SendingTCPMessage::disconnect (UipEthernet * ethernetModule, TcpClient * so
     socket->close();
     ethernetModule->disconnect();
     uartUSB.write("Changing Waiting For Message State\r\n", strlen("Changing To Waiting For Message State\r\n"));
-    this->gateway->changeState (new WaitingForMessage(this->gateway));
+    //this->gateway->changeState (new WaitingForMessage(this->gateway));
 }
