@@ -25,7 +25,7 @@
 
 /* periodic timer for uip (in ms) */
 
-#define UIP_PERIODIC_TIMEOUT    250
+#define UIP_PERIODIC_TIMEOUT    100
 
 /* timer to poll client for data after last write (in ms) */
 
