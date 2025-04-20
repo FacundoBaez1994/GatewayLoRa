@@ -6,7 +6,9 @@
 #include "SendingTCPMessage.h"
 
 //=====[Declaration of private defines]========================================
-
+#define BACKOFFTIME        300
+#define MAX_CHUNK_SIZE     10
+#define FLY_TIME           500
 //=====[Declaration of private data types]=====================================
 
 //=====[Declaration and initialization of public global objects]===============
@@ -67,9 +69,18 @@ void SendingAck::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay * dela
 
 void SendingAck::sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
     static char ACKmessage[226] = {0};
+    static bool firstChunkSent = false;
     static bool firstDelayPassed = false;
     static bool messageFormatted = false;
+    static bool firstEntryOnThisMethod = true;
     static size_t stringIndex = 0;
+
+    if (firstEntryOnThisMethod == true) {
+        delay->write(BACKOFFTIME);
+        delay->restart();
+        firstEntryOnThisMethod = false;
+    }
+
 
     if (firstDelayPassed == false) {
         if (delay->read()) {
@@ -95,9 +106,14 @@ void SendingAck::sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay *
         messageFormatted = true;
         uartUSB.write("Sending Acknowledgment Message\r\n", strlen("Sending Acknowledgment Message\r\n")); // Debug 
     }
-    if (delay->read()) {
+
+    if (delay->read() || firstChunkSent == false) {
+        firstChunkSent = true;
+        delay->write(FLY_TIME);
+        delay->restart();
+
         size_t totalLength = strlen(ACKmessage);
-        size_t chunkSize = 5;  // Fragmentos de 50 bytes
+        size_t chunkSize = MAX_CHUNK_SIZE;  // Fragmentos de 50 bytes
         LoRaModule->idle();                          // set standby mode
         LoRaModule->enableInvertIQ();             // normal mode
         size_t currentChunkSize = (totalLength - stringIndex  < chunkSize) ? (totalLength - stringIndex ) : chunkSize;
