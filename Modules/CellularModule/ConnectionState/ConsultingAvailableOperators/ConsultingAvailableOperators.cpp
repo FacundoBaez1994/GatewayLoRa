@@ -119,7 +119,7 @@ CellInformation * currentCellInformation) {
                 currentCellInformation->mcc = this->mcc;
                 currentCellInformation->mnc = this->mnc;
                 currentCellInformation->channel = this->channel;
-                currentCellInformation->band = this->band;             
+                strcpy (currentCellInformation->band, this->band);             
                 this->mobileNetworkModule->changeConnectionState (new RetrievingTimeAndDate (this->mobileNetworkModule));
                 return CELLULAR_CONNECTION_STATUS_TRYING_TO_CONNECT;
             }

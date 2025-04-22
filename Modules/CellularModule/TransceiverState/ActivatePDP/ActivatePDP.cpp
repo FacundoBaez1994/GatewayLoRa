@@ -5,7 +5,7 @@
 #include "Debugger.h" // due to global usbUart
 
 //=====[Declaration of private defines]========================================
-#define MAXATTEMPTS 20
+#define MAXATTEMPTS 30
 //=====[Declaration of private data types]=====================================
 
 //=====[Declaration and initialization of public global objects]===============

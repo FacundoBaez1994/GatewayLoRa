@@ -5,7 +5,7 @@
 #include "Debugger.h" // due to global usbUart
 
 //=====[Declaration of private defines]========================================
-#define APN_TUENTI "AT+CGDCONT=1,\"IP\",\"internet.movil\"" // APN de Tuenti Argentina
+#define APN_MOVISTAR "AT+CGDCONT=1,\"IP\",\"internet.movistar.com.ar\"" //APN / username / password   internet.gprs.unifon.com.ar
 #define MAXATTEMPTS 20
 //=====[Declaration of private sdata types]=====================================
 
@@ -79,11 +79,11 @@ NonBlockingDelay * refreshTime,
 CellInformation * currentCellInformation) {
     char StringToBeRead [256];
     char ExpectedResponse [15] = "OK";
-    char StringToSend [50] = APN_TUENTI;
+    char StringToSend [50] = APN_MOVISTAR;
     char StringToSendUSB [40] = "DEFINING PDP CONTEXT";
 
     if (this->readyToSend == true) {
-        ATHandler->sendATCommand(APN_TUENTI);
+        ATHandler->sendATCommand(APN_MOVISTAR);
         this->readyToSend  = false;
         ////   ////   ////   ////   ////   ////
         uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only

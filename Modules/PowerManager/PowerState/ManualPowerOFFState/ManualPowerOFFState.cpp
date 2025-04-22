@@ -131,8 +131,8 @@ powerStatus_t ManualPowerOFFState::startStopUpdate (ATCommandHandler  * AThandle
 * 
 * @returns 
 */
-void ManualPowerOFFState::reboot (ATCommandHandler  * AThandler, NonBlockingDelay * powerChangeDurationTimer) {
-    return;
+bool ManualPowerOFFState::reboot (ATCommandHandler  * AThandler, NonBlockingDelay * powerChangeDurationTimer) {
+    return false;
 }
 
 /** 

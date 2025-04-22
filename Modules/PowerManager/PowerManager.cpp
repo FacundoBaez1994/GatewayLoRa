@@ -16,6 +16,8 @@
 #define CELLULAR_MODULE_DTR_PIN_OUTPUT PB_6
 
 
+
+
 //=====[Declaration of private data types]=====================================
 
 //=====[Declaration and initialization of public global objects]===============
@@ -103,8 +105,8 @@ void PowerManager::awake ( ) {
 * 
 * @returns 
 */
-void PowerManager::reboot ( ) {
-    this->currentPowerState->reboot(this->ATHandler, this->powerChangeDurationTimer);
+bool PowerManager::reboot ( ) {
+    return this->currentPowerState->reboot(this->ATHandler, this->powerChangeDurationTimer);
 }
 
 

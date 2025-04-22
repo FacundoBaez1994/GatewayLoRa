@@ -76,9 +76,16 @@ PowerONState::~PowerONState () {
 * @returns 
 */
 powerStatus_t PowerONState::startStopUpdate (ATCommandHandler  * AThandler, NonBlockingDelay * powerChangeDurationTimer) {
-
+    int static turnOffCounter = 0;
     // PowerStatus ON equals 
+
+    if (this->manager->readPowerStatus()  == OFF) {
+        turnOffCounter = 0;
+    }
     if (this->manager->readPowerStatus()  == ON) {
+         turnOffCounter ++;
+    }
+    if (turnOffCounter == 10) {
         ////////////  //////////// ////////////
             char StringToSend [30] = "POWER OFF DETECTED";;
             uartUSB.write (StringToSend, strlen (StringToSend));  // debug only
@@ -147,7 +154,7 @@ powerStatus_t PowerONState::startStopUpdate (ATCommandHandler  * AThandler, NonB
 * 
 * @returns 
 */
-void PowerONState::reboot (ATCommandHandler  * AThandler, NonBlockingDelay * powerChangeDurationTimer) {
+bool PowerONState::reboot (ATCommandHandler  * AThandler, NonBlockingDelay * powerChangeDurationTimer) {
     static bool readyToSend = true;
     char StringToSend [15] = "AT+QPOWD";
     char StringToBeRead [256];
@@ -179,12 +186,14 @@ void PowerONState::reboot (ATCommandHandler  * AThandler, NonBlockingDelay * pow
             uartUSB.write ( "\r\n",  3 );  // debug only
             ////   ////   ////   ////   ////   ////            
             this->manager->changePowerState (new PowerOFFState (this->manager));
+            return true;
         }
     }
 
     if (powerChangeDurationTimer->read()) {
         readyToSend = true;
     }
+    return false;
 }
 
 /** 

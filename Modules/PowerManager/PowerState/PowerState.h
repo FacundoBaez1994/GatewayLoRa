@@ -29,7 +29,7 @@ class PowerState {
 public:
 //=====[Declaration of public methods]=========================================
     virtual powerStatus_t startStopUpdate (ATCommandHandler  * AThandler, NonBlockingDelay * powerChangeDurationTimer);
-    virtual void reboot (ATCommandHandler  * AThandler, NonBlockingDelay * powerChangeDurationTimer);
+    virtual bool reboot (ATCommandHandler  * AThandler, NonBlockingDelay * powerChangeDurationTimer);
     virtual bool goToSleep (ATCommandHandler  * AThandler, NonBlockingDelay * powerChangeDurationTimer);
     virtual void awake (ATCommandHandler  * AThandler, NonBlockingDelay * powerChangeDurationTimer);
     virtual bool measureBattery (ATCommandHandler  * AThandler, NonBlockingDelay * powerChangeDurationTimer

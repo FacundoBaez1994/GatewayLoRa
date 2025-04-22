@@ -103,8 +103,8 @@ powerStatus_t PowerOFFState::startStopUpdate (ATCommandHandler  * AThandler, Non
 * 
 * @returns 
 */
-void PowerOFFState::reboot (ATCommandHandler  * AThandler, NonBlockingDelay * powerChangeDurationTimer) {
-    return;
+bool PowerOFFState::reboot (ATCommandHandler  * AThandler, NonBlockingDelay * powerChangeDurationTimer) {
+    return false;
 }
 
 /** 

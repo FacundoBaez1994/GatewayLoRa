@@ -30,7 +30,7 @@ public:
     SleepState(PowerManager * newManager);
     virtual ~SleepState ();
     powerStatus_t startStopUpdate (ATCommandHandler  * AThandler, NonBlockingDelay * powerChangeDurationTimer);
-    void reboot (ATCommandHandler  * AThandler, NonBlockingDelay * powerChangeDurationTimer);
+    bool reboot (ATCommandHandler  * AThandler, NonBlockingDelay * powerChangeDurationTimer);
     bool goToSleep (ATCommandHandler  * AThandler, NonBlockingDelay * powerChangeDurationTimer);
     void awake (ATCommandHandler  * AThandler, NonBlockingDelay * powerChangeDurationTimer);
     bool measureBattery (ATCommandHandler  * AThandler, NonBlockingDelay * powerChangeDurationTimer

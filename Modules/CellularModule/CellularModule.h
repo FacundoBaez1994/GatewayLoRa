@@ -58,7 +58,7 @@ public:
     CellularModule ( );
     virtual ~CellularModule ();
     void startStopUpdate ();
-    void reboot ();
+    bool reboot ();
     void awake ();
     bool goToSleep ();
     bool measureBattery (BatteryData * currentBatteryData);

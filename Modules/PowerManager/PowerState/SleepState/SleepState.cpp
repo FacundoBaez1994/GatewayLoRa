@@ -85,8 +85,8 @@ powerStatus_t SleepState::startStopUpdate (ATCommandHandler  * AThandler, NonBlo
 * 
 * @returns 
 */
-void SleepState::reboot (ATCommandHandler  * AThandler, NonBlockingDelay * powerChangeDurationTimer) {
-    return;
+bool SleepState::reboot (ATCommandHandler  * AThandler, NonBlockingDelay * powerChangeDurationTimer) {
+    return false;
 }
 
 /** 

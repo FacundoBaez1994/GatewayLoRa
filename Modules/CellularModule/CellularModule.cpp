@@ -101,8 +101,8 @@ bool CellularModule::goToSleep () {
 * 
 *
 */
-void CellularModule::reboot () {
-    this->modulePowerManager->reboot ();
+bool CellularModule::reboot () {
+    return this->modulePowerManager->reboot ();
 }
 
 /** 

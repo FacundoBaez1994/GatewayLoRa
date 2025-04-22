@@ -24,6 +24,9 @@ public:
     bool read( void );
     void write(  tick_t durationValue );
     void restart ();
+    tick_t getStartTime();
+    bool getRunningStatus ();
+    static tick_t getCurrentTick();  // Nuevo método estátic
 private:
 //=====[Declaration of privates atributes]=========================================
     tick_t startTime;

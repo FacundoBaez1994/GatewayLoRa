@@ -33,7 +33,7 @@ public:
     PowerManager(ATCommandHandler * AThandler);
     virtual ~PowerManager ();
     powerStatus_t startStopUpdate ();
-    void reboot ();
+    bool reboot ();
     bool goToSleep ();
     void awake ();
     void changePowerState (PowerState * newPowerState);

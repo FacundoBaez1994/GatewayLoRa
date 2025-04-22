@@ -90,8 +90,9 @@ bool ConnectedState::retrivNeighborCellsInformation(ATCommandHandler * handler,
     
     static bool cellDataRetrived = false;
     static bool readyToSend = true;
+    static bool vectorCleared = false;
     
-    char StringToBeRead[100];
+    char StringToBeRead[200];
     char ExpectedResponse[15] = "OK";
     char buffer [60];
     
@@ -108,8 +109,16 @@ bool ConnectedState::retrivNeighborCellsInformation(ATCommandHandler * handler,
     int lac;
     float prx;
 
-    char readString [30][100];
+    static char readString [30][200];
     static int index = 0; 
+
+    if (!vectorCleared) {
+        for (auto cell : neighborsCellInformation) {
+            delete cell;
+        }
+        neighborsCellInformation.clear();
+        vectorCleared = true;
+    }
 
     if (readyToSend == true && cellDataRetrived == false) {
         uartUSB.write(StringToSendUSB, strlen(StringToSendUSB));  // debug only
@@ -150,6 +159,7 @@ bool ConnectedState::retrivNeighborCellsInformation(ATCommandHandler * handler,
             }
             index = 0;
             cellDataRetrived = false;
+            vectorCleared = false;
             counterTimeOut = 0;
             return true;
         }
@@ -169,6 +179,7 @@ bool ConnectedState::retrivNeighborCellsInformation(ATCommandHandler * handler,
             index = 0;
             cellDataRetrived = false;
             counterTimeOut = 0;
+            vectorCleared = false;
             return true;
         }
         
@@ -252,3 +263,4 @@ bool ConnectedState::retrivCellData(const char *response, int *tech, int *idCell
 
     return true;
 }
+

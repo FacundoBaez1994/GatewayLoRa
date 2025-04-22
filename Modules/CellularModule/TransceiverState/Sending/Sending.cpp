@@ -88,6 +88,7 @@ void Sending::enableTransceiver () {
 CellularTransceiverStatus_t Sending::exchangeMessages (ATCommandHandler * ATHandler,
     NonBlockingDelay * refreshTime, char * message, TcpSocket * socketTargetted,
      char * receivedMessage, bool * newDataAvailable) {
+    char buffer[100];
 
     static size_t currentMessagePosition = 0;  // Posición actual del mensaje
     size_t messageLength = strlen(message);    // Longitud total del mensaje
@@ -100,7 +101,6 @@ CellularTransceiverStatus_t Sending::exchangeMessages (ATCommandHandler * ATHand
 
     // Mostrar depuración solo una vez
     if (!debugFlag) {
-        char buffer[100];
         snprintf(buffer, sizeof(buffer), "currentMessagePosition = %zu, messageLength = %zu", currentMessagePosition, messageLength);
         uartUSB.write(buffer, strlen(buffer));  // Debug only
         uartUSB.write("\r\n", 3);               // Debug only
@@ -117,18 +117,22 @@ CellularTransceiverStatus_t Sending::exchangeMessages (ATCommandHandler * ATHand
         currentMessagePosition += sizeToSend;  // Avanzar en la posición del mensaje
 
         // Depuración después de enviar cada fragmento
-        char buffer[100];
+        
         snprintf(buffer, sizeof(buffer), "Sent chunk, new currentMessagePosition = %zu", currentMessagePosition);
         uartUSB.write(buffer, strlen(buffer));  // Debug only
         uartUSB.write("\r\n", 3);               // Debug only
 
+    }
+
         // Si ya hemos enviado todo el mensaje
-        if (currentMessagePosition >= messageLength) {
-            currentMessagePosition = 0;  // Reiniciar para el próximo mensaje
-            debugFlag = false;           // Reiniciar flag de depuración para el próximo mensaje
-            this->mobileNetworkModule->changeTransceiverState(new Receiving(this->mobileNetworkModule));
-            return CELLULAR_TRANSCEIVER_STATUS_TRYNING_TO_SEND;  // Mensaje completamente enviado
-        }
+    if (currentMessagePosition >= messageLength) {
+        snprintf(buffer, sizeof(buffer), "all the chunks were sent");
+        uartUSB.write(buffer, strlen(buffer));  // Debug only
+        uartUSB.write("\r\n", 3);       
+        currentMessagePosition = 0;  // Reiniciar para el próximo mensaje
+        debugFlag = false;           // Reiniciar flag de depuración para el próximo mensaje
+        this->mobileNetworkModule->changeTransceiverState(new Receiving(this->mobileNetworkModule));
+        return CELLULAR_TRANSCEIVER_STATUS_TRYNING_TO_SEND;  // Mensaje completamente enviado
     }
 
     return CELLULAR_TRANSCEIVER_STATUS_TRYNING_TO_SEND;  // Aún quedan fragmentos por enviar

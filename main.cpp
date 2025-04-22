@@ -6,15 +6,15 @@
 #include "mbed.h"
 #include "arm_book_lib.h"
 #include "string.h"
-#include "Tracker.h"
+#include "Gateway.h"
 
 
 //=====[Main function, the program entry point after power on or reset]========
 
 int main() {
-    Tracker tracker;
+    Gateway gateway;
     while (true) {
-        tracker.update();
+        gateway.update();
     }
 }
 
