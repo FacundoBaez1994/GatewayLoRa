@@ -49,6 +49,20 @@ FormattingMessage::~FormattingMessage () {
     this->gateway = NULL;
 }
 
+
+void FormattingMessage::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
+    return;
+}
+
+void FormattingMessage::sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
+    return;
+}
+
+void FormattingMessage::sendTCPMessage (UipEthernet * ethernetModule, NonBlockingDelay * delay) {
+    return;
+}
+
+
 void FormattingMessage::updatePowerStatus (CellularModule * cellularTransceiver,
  BatteryData * currentBatteryStatus) {
     cellularTransceiver->startStopUpdate();

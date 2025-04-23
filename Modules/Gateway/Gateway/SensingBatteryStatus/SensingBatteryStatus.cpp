@@ -51,6 +51,18 @@ SensingBatteryStatus::~SensingBatteryStatus ( ) {
     this->gateway = NULL;
 }
 
+void SensingBatteryStatus::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
+    return;
+}
+
+void SensingBatteryStatus::sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
+    return;
+}
+
+void SensingBatteryStatus::sendTCPMessage (UipEthernet * ethernetModule, NonBlockingDelay * delay) {
+    return;
+}
+
 void SensingBatteryStatus::updatePowerStatus (CellularModule * cellularTransceiver,
  BatteryData * currentBatteryStatus) {
     cellularTransceiver->startStopUpdate();

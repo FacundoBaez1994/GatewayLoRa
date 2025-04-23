@@ -50,6 +50,19 @@ ExchangingMessages::~ExchangingMessages () {
     this->gateway = NULL;
 }
 
+
+void ExchangingMessages::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
+    return;
+}
+
+void ExchangingMessages::sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
+    return;
+}
+
+void ExchangingMessages::sendTCPMessage (UipEthernet * ethernetModule, NonBlockingDelay * delay) {
+    return;
+}
+
 void ExchangingMessages::updatePowerStatus (CellularModule * cellularTransceiver,
  BatteryData * currentBatteryStatus) {
     cellularTransceiver->startStopUpdate();

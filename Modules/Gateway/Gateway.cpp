@@ -10,6 +10,14 @@
 #define TIMEOUT_MS     5000
 #define POWERCHANGEDURATION  700
 
+#define LATENCY2        300
+
+#define IP      "192.168.1.35"
+#define GATEWAY "192.168.1.1"
+#define NETMASK "255.255.255.0"
+
+const uint8_t   MAC[6] = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05 };
+
 //=====[Declaration of private data types]=====================================
 
 //=====[Declaration and initialization of public global objects]===============
@@ -27,10 +35,13 @@
 * @brief Contructor method creates a new gatewayGPS instance ready to be used
 */
 Gateway::Gateway () {
+    char StringToSendUSB [50] = "Gateway initialization\r\n";
+    uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
+
+
     Watchdog &watchdog = Watchdog::get_instance(); // singletom
     watchdog.start(TIMEOUT_MS);
-    char StringToSendUSB [50] = "Gateway initialization";
-    uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
+
 
     this->latency = new NonBlockingDelay (LATENCY);
     this->cellularTransceiver = new CellularModule ( );
@@ -52,9 +63,32 @@ Gateway::Gateway () {
     this->batteryStatus = new BatteryData;
 
 
-    this->currentState =  new SensingBatteryStatus (this);
+    //this->currentState =  new SensingBatteryStatus (this);
 
     this->jwt = new CustomJWT (this->JWTKey, 256);
+
+
+    this->LoRaTransciever = new LoRaClass ();
+
+    this->LoRaTransciever->setSpreadingFactor(12);   // ranges from 6-12,default 7
+    this->LoRaTransciever->setSyncWord(0xF3);  // ranges from 0-0xFF, default 0x34,
+    this->LoRaTransciever->setSignalBandwidth(125E3); // 125 kHz
+
+    this->ethernetModule = new UipEthernet (MAC, PB_5, PB_4, PB_3, PA_4);  // mac, mosi, miso, sck, cs
+    this->resetEth =  new DigitalOut (PA_1);
+    this->resetEth->write(HIGH);
+
+    this->timer = new NonBlockingDelay (LATENCY);
+
+    this->currentState = new WaitingForMessage (this);
+
+    this->encrypter = new Encrypter ();
+    this->authgen = new AuthenticationGenerator ();
+    this->ckgen = new ChecksumGenerator ();
+
+    this->checksumVerifier = new ChecksumVerifier ();
+    this->authVer = new AuthenticationVerifier ();
+    this->decrypter = new Decrypter ();
 }
 
 
@@ -78,6 +112,31 @@ Gateway::~Gateway() {
     this->currentGNSSModule = NULL;
     delete this->cellularTransceiver;
     this->cellularTransceiver = NULL;
+
+    delete this->currentState;
+    this->currentState = NULL;
+
+    delete this->LoRaTransciever; 
+    this->LoRaTransciever = NULL;
+    delete this->ethernetModule; 
+    this->ethernetModule = NULL;
+    delete this->resetEth; 
+    this->resetEth = NULL;
+    delete this->timer;
+    this->timer = NULL;
+
+    delete this->encrypter;
+    this->encrypter = NULL;
+    delete this->authgen;
+    this->authgen = NULL;
+    delete this->ckgen;
+    this->ckgen = NULL;
+    delete this->checksumVerifier;
+    this->checksumVerifier = NULL;
+    delete this->authVer;
+    this->authVer = NULL;
+    delete this->decrypter;
+    this->decrypter = NULL;
 }
 
 
@@ -88,6 +147,7 @@ Gateway::~Gateway() {
 */
 void Gateway::update () {
     
+    static bool LoRaTranscieverInit = false;
     static char formattedMessage [2024];
     static char inertialData [200];
     float temperature;
@@ -95,11 +155,23 @@ void Gateway::update () {
 
     static std::vector<CellInformation*> neighborsCellInformation;
     static int numberOfNeighbors = 0;
+
     Watchdog &watchdog = Watchdog::get_instance(); // singletom
-
-
-
     watchdog.kick();
+    if (LoRaTranscieverInit == false) {
+        if (!this->LoRaTransciever->begin (915E6)) {
+            uartUSB.write ("LoRa Module Failed to Start!", strlen ("LoRa Module Failed to Start"));  // debug only
+            uartUSB.write ( "\r\n",  3 );  // debug only
+            return;
+        }
+     LoRaTranscieverInit = true;
+    }
+
+
+    this->currentState->receiveMessage (this->LoRaTransciever, this->timer);
+    this->currentState->sendAcknowledgement (this->LoRaTransciever, this->timer);
+    this->currentState->sendTCPMessage (this->ethernetModule, this->timer);
+
     this->currentState->awake(this->cellularTransceiver, this->latency);
     this->currentState->updatePowerStatus (this->cellularTransceiver, this->batteryStatus);
     this->currentState->obtainGNSSPosition (this->currentGNSSModule, this->currentGNSSdata);
@@ -188,6 +260,25 @@ void Gateway::decodeJWT (char * jwtToDecode, char * payloadRetrived) {
     
     strcpy (payloadRetrived, this->jwt->payload);
     this->jwt->clear();
+}
+
+
+bool Gateway::prepareMessage (char * messageOutput) {
+    this->encrypter->setNextHandler(this->authgen)->setNextHandler(this->ckgen);
+    if (this->encrypter->handleMessage (messageOutput) == MESSAGE_HANDLER_STATUS_PROCESSED) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool Gateway::processMessage (char * incomingMessage) {
+    this->checksumVerifier->setNextHandler(this->authVer)->setNextHandler(this->decrypter);
+    if (this->checksumVerifier->handleMessage (incomingMessage) == MESSAGE_HANDLER_STATUS_PROCESSED) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 

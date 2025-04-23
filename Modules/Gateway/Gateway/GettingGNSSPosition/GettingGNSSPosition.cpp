@@ -49,6 +49,20 @@ GettingGNSSPosition::~GettingGNSSPosition () {
     this->gateway = NULL;
 }
 
+
+void GettingGNSSPosition::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
+    return;
+}
+
+void GettingGNSSPosition::sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
+    return;
+}
+
+void GettingGNSSPosition::sendTCPMessage (UipEthernet * ethernetModule, NonBlockingDelay * delay) {
+    return;
+}
+
+
 void GettingGNSSPosition::updatePowerStatus (CellularModule * cellularTransceiver,
  BatteryData * currentBatteryStatus) {
     cellularTransceiver->startStopUpdate();

@@ -4,6 +4,7 @@
 #include "Slepping.h"
 #include "Gateway.h" //debido a declaracion adelantada
 #include "Debugger.h" // due to global usbUart
+#include "WaitingForMessage.h"
 
 //=====[Declaration of private defines]========================================
 #define MAXATTEMPTS 20
@@ -49,10 +50,23 @@ GoingToSleep::~GoingToSleep () {
     this->gateway = NULL;
 }
 
+void GoingToSleep::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
+    return;
+}
+
+void GoingToSleep::sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay * delay){
+    return;
+}
+
+void GoingToSleep::sendTCPMessage (UipEthernet * ethernetModule, NonBlockingDelay * delay){
+    return;
+}
+
 void GoingToSleep::updatePowerStatus (CellularModule * cellularTransceiver,
  BatteryData * currentBatteryStatus) {
     cellularTransceiver->startStopUpdate();
- }
+    return;
+}
 
 void GoingToSleep::obtainGNSSPosition (GNSSModule * currentGNSSModule, GNSSData * currentGNSSdata) {
     return;
@@ -83,7 +97,7 @@ void GoingToSleep::exchangeMessages (CellularModule * cellularTransceiver,
     // agregar LoRa // exchageMessages (Lora * LoRaModule);
 void GoingToSleep::goToSleep (CellularModule * cellularTransceiver ) {
     if (cellularTransceiver->goToSleep()) {
-        this->gateway->changeState  (new Slepping (this->gateway));
+        this->gateway->changeState  (new WaitingForMessage (this->gateway));
         return;
     }
     return;

@@ -23,6 +23,11 @@ public:
 //=====[Declaration of public methods]=========================================
     GettingGNSSPosition (Gateway * gateway);
     virtual ~GettingGNSSPosition ();
+    
+    virtual void receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay * delay);
+    virtual void sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay * delay);
+    virtual void sendTCPMessage (UipEthernet * ethernetModule, NonBlockingDelay * delay);
+
     virtual void updatePowerStatus (CellularModule * cellularTransceiver, BatteryData * currentBatteryStatus);
     virtual void obtainGNSSPosition (GNSSModule * currentGNSSModule, GNSSData * currentGNSSdata);
     virtual void connectToMobileNetwork (CellularModule * cellularTransceiver,

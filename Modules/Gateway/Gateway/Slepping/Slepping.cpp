@@ -49,6 +49,18 @@ Slepping::~Slepping () {
     this->gateway = NULL;
 }
 
+void Slepping::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
+    return;
+}
+
+void Slepping::sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
+    return;
+}
+
+void Slepping::sendTCPMessage (UipEthernet * ethernetModule, NonBlockingDelay * delay) {
+    return;
+}
+
 void Slepping::updatePowerStatus (CellularModule * cellularTransceiver,
  BatteryData * currentBatteryStatus) {
     cellularTransceiver->startStopUpdate();
@@ -88,10 +100,8 @@ void Slepping::goToSleep (CellularModule * cellularTransceiver ) {
 }
 
 void Slepping::awake (CellularModule * cellularTransceiver, NonBlockingDelay * latency ) {
-    if (latency->read()) {
-        cellularTransceiver->awake();
-        this->gateway->changeState  (new SensingBatteryStatus (this->gateway));
-    }
+    cellularTransceiver->awake();
+    this->gateway->changeState  (new SensingBatteryStatus (this->gateway));
     return;
  }
 

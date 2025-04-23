@@ -52,6 +52,18 @@ ConnectingToMobileNetwork::~ConnectingToMobileNetwork ( ) {
     this->gateway = NULL;
 }
 
+void ConnectingToMobileNetwork::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
+    return;
+}
+
+void ConnectingToMobileNetwork::sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
+    return;
+}
+
+void ConnectingToMobileNetwork::sendTCPMessage (UipEthernet * ethernetModule, NonBlockingDelay * delay) {
+    return;
+}
+
 void ConnectingToMobileNetwork::updatePowerStatus (CellularModule * cellularTransceiver,
  BatteryData * currentBatteryStatus) {
     cellularTransceiver->startStopUpdate();

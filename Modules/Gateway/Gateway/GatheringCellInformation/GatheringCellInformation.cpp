@@ -49,6 +49,19 @@ GatheringCellInformation::~GatheringCellInformation () {
     this->gateway = NULL;
 }
 
+
+void GatheringCellInformation::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
+    return;
+}
+
+void GatheringCellInformation::sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
+    return;
+}
+
+void GatheringCellInformation::sendTCPMessage (UipEthernet * ethernetModule, NonBlockingDelay * delay) {
+    return;
+}
+
 void GatheringCellInformation::updatePowerStatus (CellularModule * cellularTransceiver,
  BatteryData * currentBatteryStatus) {
     cellularTransceiver->startStopUpdate();
