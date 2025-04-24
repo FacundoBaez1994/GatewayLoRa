@@ -1,10 +1,8 @@
 //=====[Libraries]=============================================================
-#include "SendingMessageEthernet.h"
+#include "SendingTCPMessage.h"
 #include "Gateway.h" //debido a declaracion adelantada
 #include "Debugger.h" // due to global usbUart
 #include "WaitingForMessage.h"
-#include "SendingAck.h"
-#include "Slepping.h"
 
 //=====[Declaration of private defines]========================================
 #define MAX_RETRIES 3
@@ -37,7 +35,7 @@
 * 
 * @param 
 */
-SendingMessageEthernet::SendingMessageEthernet (Gateway * gateway, int IdDevice, int messageNumber, char * payload) {
+SendingTCPMessage::SendingTCPMessage (Gateway * gateway, int IdDevice, int messageNumber, char * payload) {
     this->gateway = gateway;
     this->IdDevice = IdDevice;
     this->messageNumber = messageNumber;
@@ -57,23 +55,25 @@ SendingMessageEthernet::SendingMessageEthernet (Gateway * gateway, int IdDevice,
 * 
 * @param 
 */
-SendingMessageEthernet::~SendingMessageEthernet() {
+SendingTCPMessage::~SendingTCPMessage() {
      this->gateway = NULL;
 }
 
 
 
-void SendingMessageEthernet::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
+void SendingTCPMessage::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
     return;
 }
 
-void SendingMessageEthernet::sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
+void SendingTCPMessage::sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
+
+
 
     return;
 }
 
 
-void SendingMessageEthernet::sendTCPMessage (UipEthernet * ethernetModule, NonBlockingDelay * delay) {
+void SendingTCPMessage::sendTCPMessage (UipEthernet * ethernetModule, NonBlockingDelay * delay) {
     const time_t    TIMEOUT = 5;    // Connection timeout time
     time_t          timeOut;
     //char            data[] = "GET / HTTP/1.1\r\nHost: ifconfig.io\r\nConnection: close\r\n\r\n";
@@ -117,7 +117,7 @@ void SendingMessageEthernet::sendTCPMessage (UipEthernet * ethernetModule, NonBl
     if (result != 0) {
         snprintf(logMessage, sizeof(logMessage), "Error! socket.open() returned: %d\n", result);
         uartUSB.write(logMessage, strlen(logMessage)); // Debug
-        this->gateway->changeState (new Slepping (this->gateway));
+        this->gateway->changeState (new WaitingForMessage(this->gateway));
         return;
         // change state
     }
@@ -137,9 +137,6 @@ void SendingMessageEthernet::sendTCPMessage (UipEthernet * ethernetModule, NonBl
 
         if (this->connectionRetries >= MAX_RETRIES) {
             this->disconnect (ethernetModule, &socket);
-            snprintf(logMessage, sizeof(logMessage), "Ethernet not available, sending through MN\r\n");
-            uartUSB.write(logMessage, strlen(logMessage));
-            this->gateway->changeState (new Slepping(this->gateway));
             return;
         }
         return;
@@ -161,9 +158,6 @@ void SendingMessageEthernet::sendTCPMessage (UipEthernet * ethernetModule, NonBl
             this->connectionRetries ++;
             if (this->connectionRetries >= MAX_RETRIES) {
                 this->disconnect (ethernetModule, &socket);
-                snprintf(logMessage, sizeof(logMessage), "Ethernet not available, sending through MN\r\n");
-                uartUSB.write(logMessage, strlen(logMessage));
-                this->gateway->changeState (new Slepping(this->gateway));  
             }
             return;
         }
@@ -179,9 +173,6 @@ void SendingMessageEthernet::sendTCPMessage (UipEthernet * ethernetModule, NonBl
             snprintf(logMessage, sizeof(logMessage),"Connection time out.\r\n");
             uartUSB.write(logMessage, strlen(logMessage)); // Debug
             this->disconnect (ethernetModule, &socket);
-            snprintf(logMessage, sizeof(logMessage), "OK Waiting For another Message\r\n");
-            uartUSB.write(logMessage, strlen(logMessage));
-            this->gateway->changeState (new WaitingForMessage(this->gateway));  
             return;
         }
     }
@@ -195,9 +186,6 @@ void SendingMessageEthernet::sendTCPMessage (UipEthernet * ethernetModule, NonBl
             snprintf(logMessage, sizeof(logMessage),"Error! socket.recv() returned: %d\n", result);
             uartUSB.write(logMessage, strlen(logMessage)); // Debug
             this->disconnect (ethernetModule, &socket);
-            snprintf(logMessage, sizeof(logMessage), "OK Waiting For another Message\r\n");
-            uartUSB.write(logMessage, strlen(logMessage));
-            this->gateway->changeState (new WaitingForMessage(this->gateway));  
             return;
         }
         snprintf(logMessage, sizeof(logMessage),"%.*s\r\n", result, recvBuf);
@@ -207,52 +195,11 @@ void SendingMessageEthernet::sendTCPMessage (UipEthernet * ethernetModule, NonBl
     uartUSB.write("\r\n", strlen("\r\n")); // Debug
 }
 
-
-
-void SendingMessageEthernet::updatePowerStatus (CellularModule * cellularTransceiver,
- BatteryData * currentBatteryStatus) {
-    cellularTransceiver->startStopUpdate();
- }
-
-void SendingMessageEthernet::obtainGNSSPosition (GNSSModule * currentGNSSModule, GNSSData * currentGNSSdata) {
-    return;
-}
-
- void SendingMessageEthernet::connectToMobileNetwork (CellularModule * cellularTransceiver,
-    CellInformation * currentCellInformation) {
-    return; 
-}
-
-
-void SendingMessageEthernet::obtainNeighborCellsInformation (CellularModule* cellularTransceiver, 
-    std::vector<CellInformation*> &neighborsCellInformation, int numberOfNeighbors ) {
-    return;
-}
-
-
-void SendingMessageEthernet::formatMessage (char * formattedMessage, CellInformation* aCellInfo,
-    GNSSData* GNSSInfo, std::vector<CellInformation*> &neighborsCellInformation,
-    BatteryData  * batteryStatus) {
-    return;
-}
-
-void SendingMessageEthernet::exchangeMessages (CellularModule * cellularTransceiver,
-    char * message, TcpSocket * socketTargetted, char * receivedMessage ){
-
-    return;
-}
-    // agregar LoRa // exchageMessages (Lora * LoRaModule);
-void SendingMessageEthernet::goToSleep (CellularModule * cellularTransceiver ) {
-    return;
-}
-
-void SendingMessageEthernet::awake (CellularModule * cellularTransceiver, NonBlockingDelay * latency ) {
-    return;
- }
-
 //=====[Implementations of private functions]==================================
-void SendingMessageEthernet::disconnect (UipEthernet * ethernetModule, TcpClient * socket) {
+void SendingTCPMessage::disconnect (UipEthernet * ethernetModule, TcpClient * socket) {
     uartUSB.write("disconnecting\r\n", strlen("disconnecting\r\n"));
     socket->close();
     ethernetModule->disconnect();
+    uartUSB.write("Changing Waiting For Message State\r\n", strlen("Changing To Waiting For Message State\r\n"));
+    this->gateway->changeState (new WaitingForMessage(this->gateway));
 }

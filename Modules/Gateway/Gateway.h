@@ -3,23 +3,14 @@
 #ifndef _GATEWAY_H_
 #define _GATEWAY_H_
 
-#include "Non_Blocking_Delay.h"
-#include "arm_book_lib.h"
-#include "CellularModule.h"
-#include "GNSSModule.h"
 #include "mbed.h"
+#include "GatewayState.h"
 #include "Non_Blocking_Delay.h"
 #include "arm_book_lib.h"
 #include "string.h"
-#include "GatewayState.h"
-#include "GatewayStatus.h"
-
-#include <CustomJWT.h>
-
 #include "LoRa.h"
 #include "UipEthernet.h"
 #include "WaitingForMessage.h"
-
 
 #include "MessageHandler.h"
 #include "MessageHandlerStatus.h"
@@ -32,6 +23,13 @@
 #include "Encrypter.h"
 
 
+#include "CellularModule.h"
+#include "GNSSModule.h"
+#include "mbed.h"
+
+
+#include "GatewayStatus.h"
+#include <CustomJWT.h>
 
 
 
@@ -42,7 +40,7 @@
 
 //=====[Declaration of public classes]=========================
 /*
- * Class implementation for a GPS gateway
+ * Class implementation for a GPS tracker
  * High hierarchy class
  * it will be instantiated and used from the main function
  */
@@ -51,34 +49,24 @@ public:
     Gateway ();
     virtual ~Gateway ();
     void update();
-    void changeState  (GatewayState * newGatewayState);
-    void encodeJWT(char * payloadToJWT, char * jwtEncoded);
-    void decodeJWT (char * jwtToDecode, char * payloadRetrived);
+    void changeState  (GatewayState * newState);
     bool prepareMessage (char * messageOutput);
     bool processMessage (char * incomingMessage);
-    
+    void encodeJWT(char * payloadToJWT, char * jwtEncoded);
+    void decodeJWT (char * jwtToDecode, char * payloadRetrived);
+
 private:
-    GatewayState * currentState;
-    
-    CellularModule* cellularTransceiver;
-    TcpSocket * socketTargetted;
-    CellInformation * currentCellInformation; 
 
-    GNSSModule* currentGNSSModule;
-    GNSSData * currentGNSSdata;
-    NonBlockingDelay * latency; // timer EC21 
-    BatteryData  * batteryStatus;
-
-    CustomJWT * jwt;
-    char JWTKey [40] = "a-string-secret-at-least-256-bits-long";
-
+    // CellularModule* cellularTransceiver;
     LoRaClass * LoRaTransciever;
-    NonBlockingDelay * timer; // timer LoRa
-
     UipEthernet * ethernetModule;
     DigitalOut * resetEth;
+    GatewayState * currentState;
 
-    // Message Handlers
+    NonBlockingDelay * timer;
+   // BatteryData  * batteryStatus;
+
+   // Message Handlers
     MessageHandler * encrypter;
     MessageHandler * authgen;
     MessageHandler * ckgen;
@@ -86,6 +74,19 @@ private:
     MessageHandler * authVer;
     MessageHandler * decrypter;
 
+
+    
+    CellularModule* cellularTransceiver;
+    TcpSocket * socketTargetted;
+    CellInformation * currentCellInformation; 
+
+    GNSSModule* currentGNSSModule;
+    GNSSData * currentGNSSdata;
+    NonBlockingDelay * latency;
+    BatteryData  * batteryStatus;
+
+    CustomJWT * jwt;
+    char JWTKey [40] = "a-string-secret-at-least-256-bits-long";
 };
 
 

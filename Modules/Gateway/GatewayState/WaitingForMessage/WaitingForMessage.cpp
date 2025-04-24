@@ -72,13 +72,6 @@ void WaitingForMessage::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay
 
     uint8_t receivedBuffer[64];
 
-    static bool a = false;
-    if (a == false) {
-        uartUSB.write ("HOLA!", strlen ("HOLA!"));  // debug only
-        uartUSB.write ( "\r\n",  3 );  // debug only
-        a = true;
-    }
-
     if (messageReceived  == false) {
         LoRaModule->disableInvertIQ (); // rx mode -> phase Quadrature invertion
         int packetSize = LoRaModule->parsePacket();
@@ -193,49 +186,6 @@ void WaitingForMessage::sendAcknowledgement (LoRaClass * LoRaModule, NonBlocking
 void WaitingForMessage::sendTCPMessage (UipEthernet * ethernetModule, NonBlockingDelay * delay) {
     return;
 }
-
-
-
-void WaitingForMessage::updatePowerStatus (CellularModule * cellularTransceiver,
- BatteryData * currentBatteryStatus) {
-    cellularTransceiver->startStopUpdate();
- }
-
-void WaitingForMessage::obtainGNSSPosition (GNSSModule * currentGNSSModule, GNSSData * currentGNSSdata) {
-    return;
-}
-
- void WaitingForMessage::connectToMobileNetwork (CellularModule * cellularTransceiver,
-    CellInformation * currentCellInformation) {
-    return; 
-}
-
-
-void WaitingForMessage::obtainNeighborCellsInformation (CellularModule* cellularTransceiver, 
-    std::vector<CellInformation*> &neighborsCellInformation, int numberOfNeighbors ) {
-    return;
-}
-
-
-void WaitingForMessage::formatMessage (char * formattedMessage, CellInformation* aCellInfo,
-    GNSSData* GNSSInfo, std::vector<CellInformation*> &neighborsCellInformation,
-    BatteryData  * batteryStatus) {
-    return;
-}
-
-void WaitingForMessage::exchangeMessages (CellularModule * cellularTransceiver,
-    char * message, TcpSocket * socketTargetted, char * receivedMessage ){
-
-    return;
-}
-    // agregar LoRa // exchageMessages (Lora * LoRaModule);
-void WaitingForMessage::goToSleep (CellularModule * cellularTransceiver ) {
-    return;
-}
-
-void WaitingForMessage::awake (CellularModule * cellularTransceiver, NonBlockingDelay * latency ) {
-    return;
- }
 
 //=====[Implementations of private functions]==================================
 

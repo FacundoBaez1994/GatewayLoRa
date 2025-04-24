@@ -67,20 +67,6 @@ bool NonBlockingDelay::read (void) {
 }
 
 /** 
-* @brief get the start time of the ticker
-* @note 
-*/
-tick_t NonBlockingDelay::getStartTime() {
-   return this->startTime;
-}
-
-
-bool NonBlockingDelay::getRunningStatus(){
-    return this->isRunning;
-}
-
-
-/** 
 * @brief sets a new duration value for the delay
 * @note durationValue the new duration to be set into the delay
 */
@@ -95,16 +81,6 @@ void NonBlockingDelay::write( tick_t durationValue ) {
 void NonBlockingDelay::restart(  ) {
     this->startTime = tickCounter;
     this->isRunning = true;
-}
-
-
-
-/** 
-* @brief returns current counter
-* @return tickCounter a counter value
-*/
-tick_t NonBlockingDelay::getCurrentTick() {
-    return tickCounter;
 }
 
 //=====[Implementations of private functions]==================================
@@ -123,5 +99,3 @@ void tickerCallback( void )  {
 tick_t tickRead() {
     return tickCounter;
 }
-
-

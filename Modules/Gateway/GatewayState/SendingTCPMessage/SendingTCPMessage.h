@@ -1,7 +1,7 @@
 //=====[#include guards - begin]===============================================
 
-#ifndef _SENDING_MESSAGE_ETHERNET_H_
-#define _SENDING_MESSAGE_ETHERNET_H_
+#ifndef _SENDING_TCP_MESSAGE_H_
+#define _SENDING_TCP_MESSAGE_H_
 
 //==================[Libraries]===============================================
 
@@ -19,31 +19,14 @@ class Gateway; //debido a declaracion adelantada
  *  class - State desing pattern
  * 
  */
-class SendingMessageEthernet : public GatewayState {
+class SendingTCPMessage : public GatewayState {
 public:
 //=====[Declaration of public methods]=========================================
-    SendingMessageEthernet (Gateway * gateway, int IdDevice, int messageNumber, char * payload);
-    virtual ~SendingMessageEthernet ();
+    SendingTCPMessage (Gateway * gateway, int IdDevice, int messageNumber, char * payload);
+    virtual ~SendingTCPMessage ();
     virtual void receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay * delay);
     virtual void sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay * delay);
     virtual void sendTCPMessage (UipEthernet * ethernetModule, NonBlockingDelay * delay);
-
-    virtual void updatePowerStatus (CellularModule * cellularTransceiver, BatteryData * currentBatteryStatus);
-    virtual void obtainGNSSPosition (GNSSModule * currentGNSSModule, GNSSData * currentGNSSdata);
-    virtual void connectToMobileNetwork (CellularModule * cellularTransceiver,
-    CellInformation * currentCellInformation);
-
-    virtual void obtainNeighborCellsInformation (CellularModule* cellularTransceiver, 
-    std::vector<CellInformation*> &neighborsCellInformation, int numberOfNeighbors );
-    
-    virtual void formatMessage (char * formattedMessage, CellInformation* aCellInfo,
-    GNSSData* GNSSInfo, std::vector<CellInformation*> &neighborsCellInformation,
-    BatteryData  * batteryStatus); 
-    // agregar LoRa // exchageMessages (Lora * LoRaModule);
-    virtual void exchangeMessages (CellularModule * cellularTransceiver,
-    char * message, TcpSocket * socketTargetted, char * receivedMessage );
-    virtual void goToSleep (CellularModule * cellularTransceiver);
-    virtual void awake (CellularModule * cellularTransceiver, NonBlockingDelay * latency);
 private:
     void disconnect (UipEthernet * ethernetModule, TcpClient * socket);
     Gateway * gateway;
@@ -61,4 +44,4 @@ private:
 
 //=====[#include guards - end]=================================================
 
-#endif //  _SENDING_MESSAGE_ETHERNET_H_
+#endif //  _SENDING_TCP_MESSAGE_H_

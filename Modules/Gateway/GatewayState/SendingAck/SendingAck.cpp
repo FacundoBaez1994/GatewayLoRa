@@ -3,7 +3,7 @@
 #include "SendingAck.h"
 #include "Gateway.h" //debido a declaracion adelantada
 #include "Debugger.h" // due to global usbUart
-#include "SendingMessageEthernet.h"
+#include "SendingTCPMessage.h"
 
 //=====[Declaration of private defines]========================================
 #define BACKOFFTIME        300
@@ -125,8 +125,8 @@ void SendingAck::sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay *
         LoRaModule->endPacket();
         stringIndex += chunkSize;
         if (stringIndex  > totalLength) {
-            uartUSB.write("Changing State\r\n", strlen("Changing State\r\n"));
-            this->gateway->changeState (new SendingMessageEthernet (this->gateway,  this->IdDevice, this->messageNumber, this->payload));
+            uartUSB.write("Changing To WaitingForMessage State\r\n", strlen("Changing To WaitingForMessage State\r\n"));
+            this->gateway->changeState (new WaitingForMessage (this->gateway));
             std::fill(std::begin(ACKmessage), std::end(ACKmessage), '\0');
             firstDelayPassed = false;
             messageFormatted = false;
@@ -141,47 +141,6 @@ void SendingAck::sendTCPMessage (UipEthernet * ethernetModule, NonBlockingDelay 
     return;
 }
 
-
-void SendingAck::updatePowerStatus (CellularModule * cellularTransceiver,
- BatteryData * currentBatteryStatus) {
-    cellularTransceiver->startStopUpdate();
- }
-
-void SendingAck::obtainGNSSPosition (GNSSModule * currentGNSSModule, GNSSData * currentGNSSdata) {
-    return;
-}
-
- void SendingAck::connectToMobileNetwork (CellularModule * cellularTransceiver,
-    CellInformation * currentCellInformation) {
-    return; 
-}
-
-
-void SendingAck::obtainNeighborCellsInformation (CellularModule* cellularTransceiver, 
-    std::vector<CellInformation*> &neighborsCellInformation, int numberOfNeighbors ) {
-    return;
-}
-
-
-void SendingAck::formatMessage (char * formattedMessage, CellInformation* aCellInfo,
-    GNSSData* GNSSInfo, std::vector<CellInformation*> &neighborsCellInformation,
-    BatteryData  * batteryStatus) {
-    return;
-}
-
-void SendingAck::exchangeMessages (CellularModule * cellularTransceiver,
-    char * message, TcpSocket * socketTargetted, char * receivedMessage ){
-
-    return;
-}
-    // agregar LoRa // exchageMessages (Lora * LoRaModule);
-void SendingAck::goToSleep (CellularModule * cellularTransceiver ) {
-    return;
-}
-
-void SendingAck::awake (CellularModule * cellularTransceiver, NonBlockingDelay * latency ) {
-    return;
- }
 
 
 //=====[Implementations of private functions]==================================
