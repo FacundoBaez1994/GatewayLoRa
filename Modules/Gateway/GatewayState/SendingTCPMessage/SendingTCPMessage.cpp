@@ -3,6 +3,7 @@
 #include "Gateway.h" //debido a declaracion adelantada
 #include "Debugger.h" // due to global usbUart
 #include "WaitingForMessage.h"
+#include "SensingBatteryStatus.h"
 
 //=====[Declaration of private defines]========================================
 #define MAX_RETRIES 3
@@ -117,7 +118,7 @@ void SendingTCPMessage::sendTCPMessage (UipEthernet * ethernetModule, NonBlockin
     if (result != 0) {
         snprintf(logMessage, sizeof(logMessage), "Error! socket.open() returned: %d\n", result);
         uartUSB.write(logMessage, strlen(logMessage)); // Debug
-        this->gateway->changeState (new WaitingForMessage(this->gateway));
+        this->gateway->changeState (new SensingBatteryStatus(this->gateway));
         return;
         // change state
     }
@@ -137,6 +138,7 @@ void SendingTCPMessage::sendTCPMessage (UipEthernet * ethernetModule, NonBlockin
 
         if (this->connectionRetries >= MAX_RETRIES) {
             this->disconnect (ethernetModule, &socket);
+            this->gateway->changeState (new SensingBatteryStatus (this->gateway));
             return;
         }
         return;
@@ -158,6 +160,7 @@ void SendingTCPMessage::sendTCPMessage (UipEthernet * ethernetModule, NonBlockin
             this->connectionRetries ++;
             if (this->connectionRetries >= MAX_RETRIES) {
                 this->disconnect (ethernetModule, &socket);
+                this->gateway->changeState (new SensingBatteryStatus (this->gateway));
             }
             return;
         }
@@ -173,6 +176,7 @@ void SendingTCPMessage::sendTCPMessage (UipEthernet * ethernetModule, NonBlockin
             snprintf(logMessage, sizeof(logMessage),"Connection time out.\r\n");
             uartUSB.write(logMessage, strlen(logMessage)); // Debug
             this->disconnect (ethernetModule, &socket);
+            this->gateway->changeState (new WaitingForMessage (this->gateway));
             return;
         }
     }
@@ -186,6 +190,7 @@ void SendingTCPMessage::sendTCPMessage (UipEthernet * ethernetModule, NonBlockin
             snprintf(logMessage, sizeof(logMessage),"Error! socket.recv() returned: %d\n", result);
             uartUSB.write(logMessage, strlen(logMessage)); // Debug
             this->disconnect (ethernetModule, &socket);
+            this->gateway->changeState (new WaitingForMessage (this->gateway));
             return;
         }
         snprintf(logMessage, sizeof(logMessage),"%.*s\r\n", result, recvBuf);

@@ -156,10 +156,9 @@ void Gateway::update () {
     static std::vector<CellInformation*> neighborsCellInformation;
     static int numberOfNeighbors = 0;
 
-
     this->currentState->receiveMessage (this->LoRaTransciever, this->timer);
     this->currentState->sendAcknowledgement (this->LoRaTransciever, this->timer);
-    //this->currentState->sendTCPMessage (this->ethernetModule, this->timer);
+    this->currentState->sendTCPMessage (this->ethernetModule, this->timer);
 
     Watchdog &watchdog = Watchdog::get_instance(); // singletom
     watchdog.kick();
@@ -173,7 +172,6 @@ void Gateway::update () {
     neighborsCellInformation, numberOfNeighbors );
     this->currentState->formatMessage (formattedMessage, this->currentCellInformation,
     this->currentGNSSdata, neighborsCellInformation, this->batteryStatus); 
-    // agregar dato IMU
     this->currentState->exchangeMessages (this->cellularTransceiver,
     formattedMessage, this->socketTargetted, receivedMessage ); // agregar modulo LoRa al argumento
     this->currentState->goToSleep (this->cellularTransceiver);

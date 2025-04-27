@@ -6,9 +6,9 @@
 #include "SendingTCPMessage.h"
 
 //=====[Declaration of private defines]========================================
-#define BACKOFFTIME        300
-#define MAX_CHUNK_SIZE     10
-#define FLY_TIME           500
+#define BACKOFFTIME        500
+#define MAX_CHUNK_SIZE     5
+#define FLY_TIME           800
 //=====[Declaration of private data types]=====================================
 
 //=====[Declaration and initialization of public global objects]===============
@@ -126,7 +126,7 @@ void SendingAck::sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay *
         stringIndex += chunkSize;
         if (stringIndex  > totalLength) {
             uartUSB.write("Changing To WaitingForMessage State\r\n", strlen("Changing To WaitingForMessage State\r\n"));
-            this->gateway->changeState (new WaitingForMessage (this->gateway));
+            this->gateway->changeState (new SendingTCPMessage (this->gateway, this->IdDevice, this->messageNumber, this->payload));
             std::fill(std::begin(ACKmessage), std::end(ACKmessage), '\0');
             firstDelayPassed = false;
             messageFormatted = false;
