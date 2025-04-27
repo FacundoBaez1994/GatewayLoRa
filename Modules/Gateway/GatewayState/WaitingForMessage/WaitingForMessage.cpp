@@ -187,5 +187,52 @@ void WaitingForMessage::sendTCPMessage (UipEthernet * ethernetModule, NonBlockin
     return;
 }
 
+
+
+
+
+void WaitingForMessage::updatePowerStatus (CellularModule * cellularTransceiver,
+ BatteryData * currentBatteryStatus) {
+     return;
+ }
+
+void WaitingForMessage::obtainGNSSPosition (GNSSModule * currentGNSSModule, GNSSData * currentGNSSdata) {
+    return;
+}
+
+ void WaitingForMessage::connectToMobileNetwork (CellularModule * cellularTransceiver,
+    CellInformation * currentCellInformation) {
+    return; 
+}
+
+
+void WaitingForMessage::obtainNeighborCellsInformation (CellularModule* cellularTransceiver, 
+    std::vector<CellInformation*> &neighborsCellInformation, int numberOfNeighbors ) {
+    return;
+}
+
+
+void WaitingForMessage::formatMessage (char * formattedMessage, CellInformation* aCellInfo,
+    GNSSData* GNSSInfo, std::vector<CellInformation*> &neighborsCellInformation,
+    BatteryData  * batteryStatus) {
+    return;
+}
+
+void WaitingForMessage::exchangeMessages (CellularModule * cellularTransceiver,
+    char * message, TcpSocket * socketTargetted, char * receivedMessage ){
+
+    return;
+}
+
+void WaitingForMessage::goToSleep (CellularModule * cellularTransceiver ) {
+    return;
+}
+
+void WaitingForMessage::awake (CellularModule * cellularTransceiver, NonBlockingDelay * latency ) {
+    return;
+ }
+
+
+
 //=====[Implementations of private functions]==================================
 

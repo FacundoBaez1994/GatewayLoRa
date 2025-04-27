@@ -148,12 +148,35 @@ Gateway::~Gateway() {
 *
 */
 void Gateway::update () {
+    static char formattedMessage [2024];
+    static char inertialData [200];
+    float temperature;
+    static char receivedMessage [2024];
+
+    static std::vector<CellInformation*> neighborsCellInformation;
+    static int numberOfNeighbors = 0;
+
+
     this->currentState->receiveMessage (this->LoRaTransciever, this->timer);
     this->currentState->sendAcknowledgement (this->LoRaTransciever, this->timer);
     //this->currentState->sendTCPMessage (this->ethernetModule, this->timer);
 
     Watchdog &watchdog = Watchdog::get_instance(); // singletom
     watchdog.kick();
+
+    this->currentState->awake(this->cellularTransceiver, this->latency);
+    this->currentState->updatePowerStatus (this->cellularTransceiver, this->batteryStatus);
+    this->currentState->obtainGNSSPosition (this->currentGNSSModule, this->currentGNSSdata);
+    this->currentState->connectToMobileNetwork (this->cellularTransceiver,
+    this->currentCellInformation);
+    this->currentState->obtainNeighborCellsInformation (this->cellularTransceiver, 
+    neighborsCellInformation, numberOfNeighbors );
+    this->currentState->formatMessage (formattedMessage, this->currentCellInformation,
+    this->currentGNSSdata, neighborsCellInformation, this->batteryStatus); 
+    // agregar dato IMU
+    this->currentState->exchangeMessages (this->cellularTransceiver,
+    formattedMessage, this->socketTargetted, receivedMessage ); // agregar modulo LoRa al argumento
+    this->currentState->goToSleep (this->cellularTransceiver);
 }
 
 

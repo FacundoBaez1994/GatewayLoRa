@@ -143,4 +143,48 @@ void SendingAck::sendTCPMessage (UipEthernet * ethernetModule, NonBlockingDelay 
 
 
 
+void SendingAck::updatePowerStatus (CellularModule * cellularTransceiver,
+ BatteryData * currentBatteryStatus) {
+     return;
+ }
+
+void SendingAck::obtainGNSSPosition (GNSSModule * currentGNSSModule, GNSSData * currentGNSSdata) {
+    return;
+}
+
+ void SendingAck::connectToMobileNetwork (CellularModule * cellularTransceiver,
+    CellInformation * currentCellInformation) {
+    return; 
+}
+
+
+void SendingAck::obtainNeighborCellsInformation (CellularModule* cellularTransceiver, 
+    std::vector<CellInformation*> &neighborsCellInformation, int numberOfNeighbors ) {
+    return;
+}
+
+
+void SendingAck::formatMessage (char * formattedMessage, CellInformation* aCellInfo,
+    GNSSData* GNSSInfo, std::vector<CellInformation*> &neighborsCellInformation,
+    BatteryData  * batteryStatus) {
+    return;
+}
+
+void SendingAck::exchangeMessages (CellularModule * cellularTransceiver,
+    char * message, TcpSocket * socketTargetted, char * receivedMessage ){
+
+    return;
+}
+
+void SendingAck::goToSleep (CellularModule * cellularTransceiver ) {
+    return;
+}
+
+void SendingAck::awake (CellularModule * cellularTransceiver, NonBlockingDelay * latency ) {
+    return;
+ }
+
+
+
+
 //=====[Implementations of private functions]==================================

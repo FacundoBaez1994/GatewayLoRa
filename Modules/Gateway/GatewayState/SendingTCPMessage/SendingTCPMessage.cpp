@@ -195,6 +195,51 @@ void SendingTCPMessage::sendTCPMessage (UipEthernet * ethernetModule, NonBlockin
     uartUSB.write("\r\n", strlen("\r\n")); // Debug
 }
 
+
+
+
+void SendingTCPMessage::updatePowerStatus (CellularModule * cellularTransceiver,
+ BatteryData * currentBatteryStatus) {
+     return;
+ }
+
+void SendingTCPMessage::obtainGNSSPosition (GNSSModule * currentGNSSModule, GNSSData * currentGNSSdata) {
+    return;
+}
+
+ void SendingTCPMessage::connectToMobileNetwork (CellularModule * cellularTransceiver,
+    CellInformation * currentCellInformation) {
+    return; 
+}
+
+
+void SendingTCPMessage::obtainNeighborCellsInformation (CellularModule* cellularTransceiver, 
+    std::vector<CellInformation*> &neighborsCellInformation, int numberOfNeighbors ) {
+    return;
+}
+
+
+void SendingTCPMessage::formatMessage (char * formattedMessage, CellInformation* aCellInfo,
+    GNSSData* GNSSInfo, std::vector<CellInformation*> &neighborsCellInformation,
+    BatteryData  * batteryStatus) {
+    return;
+}
+
+void SendingTCPMessage::exchangeMessages (CellularModule * cellularTransceiver,
+    char * message, TcpSocket * socketTargetted, char * receivedMessage ){
+
+    return;
+}
+
+void SendingTCPMessage::goToSleep (CellularModule * cellularTransceiver ) {
+    return;
+}
+
+void SendingTCPMessage::awake (CellularModule * cellularTransceiver, NonBlockingDelay * latency ) {
+    return;
+ }
+
+
 //=====[Implementations of private functions]==================================
 void SendingTCPMessage::disconnect (UipEthernet * ethernetModule, TcpClient * socket) {
     uartUSB.write("disconnecting\r\n", strlen("disconnecting\r\n"));
