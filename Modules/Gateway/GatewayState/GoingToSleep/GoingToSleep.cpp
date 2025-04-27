@@ -1,9 +1,9 @@
 //=====[Libraries]=============================================================
 
 #include "GoingToSleep.h"
-#include "Slepping.h"
 #include "Gateway.h" //debido a declaracion adelantada
 #include "Debugger.h" // due to global usbUart
+#include "WaitingForMessage.h"
 
 //=====[Declaration of private defines]========================================
 #define MAXATTEMPTS 20
@@ -96,7 +96,7 @@ void GoingToSleep::exchangeMessages (CellularModule * cellularTransceiver,
 
 void GoingToSleep::goToSleep (CellularModule * cellularTransceiver ) {
     if (cellularTransceiver->goToSleep()) {
-        this->gateway->changeState  (new Slepping (this->gateway));
+        this->gateway->changeState  (new WaitingForMessage (this->gateway));
         return;
     }
     return;

@@ -16,7 +16,7 @@
 
 const uint8_t   MAC[6] = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05 };
 
-#define TIMEOUT_MS     5000
+#define TIMEOUT_MS     20000
 
 
 //=====[Declaration of private data types]=====================================
@@ -152,16 +152,19 @@ void Gateway::update () {
     static char inertialData [200];
     float temperature;
     static char receivedMessage [2024];
+    Watchdog &watchdog = Watchdog::get_instance(); // singletom
 
     static std::vector<CellInformation*> neighborsCellInformation;
     static int numberOfNeighbors = 0;
 
     this->currentState->receiveMessage (this->LoRaTransciever, this->timer);
     this->currentState->sendAcknowledgement (this->LoRaTransciever, this->timer);
-    this->currentState->sendTCPMessage (this->ethernetModule, this->timer);
-
-    Watchdog &watchdog = Watchdog::get_instance(); // singletom
     watchdog.kick();
+    this->currentState->sendTCPMessage (this->ethernetModule, this->timer);
+    watchdog.kick();
+
+
+
 
     this->currentState->awake(this->cellularTransceiver, this->latency);
     this->currentState->updatePowerStatus (this->cellularTransceiver, this->batteryStatus);

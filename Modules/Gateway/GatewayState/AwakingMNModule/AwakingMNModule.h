@@ -1,7 +1,7 @@
 //=====[#include guards - begin]===============================================
 
-#ifndef _SLEEPING_H_
-#define _SLEEPING_H_
+#ifndef _AWAKING_MN_MODULE_H_
+#define _AWAKING_MN_MODULE_H_
 
 //==================[Libraries]===============================================
 
@@ -18,11 +18,11 @@ class Gateway; //debido a declaracion adelantada
  *  class - State desing pattern
  * 
  */
-class Slepping : public GatewayState {
+class AwakingMNModule : public GatewayState {
 public:
 //=====[Declaration of public methods]=========================================
-    Slepping (Gateway * gateway);
-    virtual ~Slepping ();
+    AwakingMNModule (Gateway * gateway);
+    virtual ~AwakingMNModule ();
 
     virtual void receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay * delay);
     virtual void sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay * delay);
@@ -57,4 +57,4 @@ private:
 
 //=====[#include guards - end]=================================================
 
-#endif // _SLEEPING_H_
+#endif // _AWAKING_MN_MODULE_H_

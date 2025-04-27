@@ -1,6 +1,6 @@
 //=====[Libraries]=============================================================
 
-#include "Slepping.h"
+#include "AwakingMNModule.h"
 #include "Gateway.h" //debido a declaracion adelantada
 #include "Debugger.h" // due to global usbUart
 #include "SensingBatteryStatus.h"
@@ -36,7 +36,7 @@
 * 
 * @param 
 */
-Slepping::Slepping (Gateway * gateway) {
+AwakingMNModule::AwakingMNModule (Gateway * gateway) {
     this->gateway = gateway;
 }
 
@@ -45,63 +45,61 @@ Slepping::Slepping (Gateway * gateway) {
 * 
 * @param 
 */
-Slepping::~Slepping () {
+AwakingMNModule::~AwakingMNModule () {
     this->gateway = NULL;
 }
 
-void Slepping::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
+void AwakingMNModule::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
     return;
 }
 
-void Slepping::sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
+void AwakingMNModule::sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
     return;
 }
 
-void Slepping::sendTCPMessage (UipEthernet * ethernetModule, NonBlockingDelay * delay) {
+void AwakingMNModule::sendTCPMessage (UipEthernet * ethernetModule, NonBlockingDelay * delay) {
     return;
 }
 
-void Slepping::updatePowerStatus (CellularModule * cellularTransceiver,
+void AwakingMNModule::updatePowerStatus (CellularModule * cellularTransceiver,
  BatteryData * currentBatteryStatus) {
     cellularTransceiver->startStopUpdate();
  }
 
-void Slepping::obtainGNSSPosition (GNSSModule * currentGNSSModule, GNSSData * currentGNSSdata) {
+void AwakingMNModule::obtainGNSSPosition (GNSSModule * currentGNSSModule, GNSSData * currentGNSSdata) {
     return;
 }
 
- void Slepping::connectToMobileNetwork (CellularModule * cellularTransceiver,
+ void AwakingMNModule::connectToMobileNetwork (CellularModule * cellularTransceiver,
     CellInformation * currentCellInformation) {
     return; 
 }
 
 
-void Slepping::obtainNeighborCellsInformation (CellularModule* cellularTransceiver, 
+void AwakingMNModule::obtainNeighborCellsInformation (CellularModule* cellularTransceiver, 
     std::vector<CellInformation*> &neighborsCellInformation, int numberOfNeighbors ) {
     return;
 }
 
-void Slepping::formatMessage (char * formattedMessage, CellInformation* aCellInfo,
+void AwakingMNModule::formatMessage (char * formattedMessage, CellInformation* aCellInfo,
     GNSSData* GNSSInfo, std::vector<CellInformation*> &neighborsCellInformation,
     BatteryData  * batteryStatus) {
     return;
 }
 
-void Slepping::exchangeMessages (CellularModule * cellularTransceiver,
+void AwakingMNModule::exchangeMessages (CellularModule * cellularTransceiver,
     char * message, TcpSocket * socketTargetted, char * receivedMessage ){
 
     return;
 }
 
-void Slepping::goToSleep (CellularModule * cellularTransceiver ) {
+void AwakingMNModule::goToSleep (CellularModule * cellularTransceiver ) {
     return;
 }
 
-void Slepping::awake (CellularModule * cellularTransceiver, NonBlockingDelay * latency ) {
-    if (latency->read()) {
-        cellularTransceiver->awake();
-        this->gateway->changeState  (new SensingBatteryStatus (this->gateway));
-    }
+void AwakingMNModule::awake (CellularModule * cellularTransceiver, NonBlockingDelay * latency ) {
+    cellularTransceiver->awake();
+    this->gateway->changeState  (new SensingBatteryStatus (this->gateway));
     return;
  }
 
