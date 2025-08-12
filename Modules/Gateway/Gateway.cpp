@@ -41,9 +41,9 @@ Gateway::Gateway () {
         uartUSB.write ("LoRa Module Failed to Start!", strlen ("LoRa Module Failed to Start"));  // debug only
         uartUSB.write ( "\r\n",  3 );  // debug only
     }
-    this->LoRaTransciever->setSpreadingFactor(12);   // ranges from 6-12,default 7
-    this->LoRaTransciever->setSyncWord(0xF3);  // ranges from 0-0xFF, default 0x34,
-    this->LoRaTransciever->setSignalBandwidth(125E3); // 125 kHz
+    //this->LoRaTransciever->setSpreadingFactor(12);   // ranges from 6-12,default 7
+    //this->LoRaTransciever->setSyncWord(0xF3);  // ranges from 0-0xFF, default 0x34,
+    //this->LoRaTransciever->setSignalBandwidth(125E3); // 125 kHz
 
     this->ethernetModule = new UipEthernet (MAC, PB_5, PB_4, PB_3, PA_4);  // mac, mosi, miso, sck, cs
     this->resetEth =  new DigitalOut (PA_1);

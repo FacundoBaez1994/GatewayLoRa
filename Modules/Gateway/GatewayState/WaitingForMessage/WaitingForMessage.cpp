@@ -52,12 +52,12 @@ WaitingForMessage::~WaitingForMessage () {
     this->gateway = NULL;
 }
 
-
+// FUNCIONA JUNTO ARDUINO LORASENDER
 void WaitingForMessage::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
     static bool messageReceived = false; 
-    char buffer[100];
-    char message[100];
-    char payload[100] = {0}; // Espacio suficiente para almacenar el payload
+    char buffer[1024];
+    char message[1024];
+    char payload[1024] = {0}; // Espacio suficiente para almacenar el payload
 
     int deviceId = 0;
     int messageNumber = 0;
@@ -172,6 +172,7 @@ void WaitingForMessage::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay
 
     return;
 }
+
 
 void WaitingForMessage::sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
     return;
