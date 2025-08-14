@@ -7,7 +7,7 @@
 
 //=====[Declaration of private defines]========================================
 #define BACKOFFTIME        300
-#define MAX_CHUNK_SIZE     10
+#define MAX_CHUNK_SIZE     256
 #define FLY_TIME           500
 //=====[Declaration of private data types]=====================================
 
@@ -38,17 +38,10 @@
 * 
 * @param 
 */
-SendingAck::SendingAck (Gateway * gateway, int IdDevice, int messageNumber, char * payload) {
+SendingAck::SendingAck (Gateway * gateway, int IdDevice, int messageNumber) {
     this->gateway = gateway;
     this->IdDevice = IdDevice;
     this->messageNumber = messageNumber;
-    
-    if (payload != nullptr) {
-        strncpy(this->payload, payload, sizeof(this->payload) - 1); // Copiar hasta 49 caracteres
-        this->payload[sizeof(this->payload) - 1] = '\0';            // Asegurar terminación nula
-    } else {
-        this->payload[0] = '\0'; // Si payload es nullptr, dejar vacío
-    }
 }
 
 
@@ -58,7 +51,7 @@ SendingAck::SendingAck (Gateway * gateway, int IdDevice, int messageNumber, char
 * @param 
 */
 SendingAck::~SendingAck () {
-     this->gateway = NULL;
+     this->gateway = nullptr;
 }
 
 
@@ -68,12 +61,18 @@ void SendingAck::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay * dela
 }
 
 void SendingAck::sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
-    static char ACKmessage[226] = {0};
+    static char ACKmessage[256];
     static bool firstChunkSent = false;
     static bool firstDelayPassed = false;
     static bool messageFormatted = false;
     static bool firstEntryOnThisMethod = true;
     static size_t stringIndex = 0;
+
+/*
+    Encrypter encrypt;
+    AuthenticationGenerator authgen;
+    ChecksumGenerator ckgen;
+*/
 
     if (firstEntryOnThisMethod == true) {
         delay->write(BACKOFFTIME);
@@ -92,12 +91,23 @@ void SendingAck::sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay *
     }
 
     if (messageFormatted == false) {
+        uartUSB.write("Message prepare 1\r\n", strlen("Message prepare 1\r\n"));
+        this->IdDevice = 0;
+        this->messageNumber = 1;
         snprintf(ACKmessage, sizeof(ACKmessage), "%d,%d,ACK", this->IdDevice, this->messageNumber); //
-        if (this->gateway->prepareMessage(ACKmessage) == false) {
+        uartUSB.write("Message prepare 2\r\n", strlen("Message prepare 2\r\n"));
+
+        //encrypt.setNextHandler(&authgen)->setNextHandler(&ckgen);
+        //encrypt.handleMessage(ACKmessage, sizeof (ACKmessage));
+
+        if (this->gateway->prepareMessage(ACKmessage, sizeof(ACKmessage)) == false) {
             uartUSB.write("Fail to prepare message to be send\r\n", strlen("Fail to prepare message to be send\r\n"));
             std::fill(std::begin(ACKmessage), std::end(ACKmessage), '\0');
             return;
         }
+        
+
+        uartUSB.write("Message prepare 3\r\n", strlen("Message prepare 3\r\n"));
         size_t originalLength = strlen(ACKmessage);
         // Copiar la cadena original y agregar '|'
         ACKmessage[originalLength ] = '|';  // Agregar '|'
@@ -113,7 +123,7 @@ void SendingAck::sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay *
         delay->restart();
 
         size_t totalLength = strlen(ACKmessage);
-        size_t chunkSize = MAX_CHUNK_SIZE;  // Fragmentos de 50 bytes
+        size_t chunkSize = MAX_CHUNK_SIZE;
         LoRaModule->idle();                          // set standby mode
         LoRaModule->enableInvertIQ();             // normal mode
         size_t currentChunkSize = (totalLength - stringIndex  < chunkSize) ? (totalLength - stringIndex ) : chunkSize;

@@ -49,7 +49,7 @@ WaitingForMessage::WaitingForMessage (Gateway * gateway) {
 * @returns 
 */
 WaitingForMessage::~WaitingForMessage () {
-    this->gateway = NULL;
+    this->gateway = nullptr;
 }
 
 
@@ -58,10 +58,10 @@ void WaitingForMessage::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay
     static std::vector<char> accumulatedBuffer; // Acumulador de fragmentos
     static std::string fullMessage;
 
-    char processedMessageReceived  [256];
-    char buffer[256];
+    char processedMessageReceived  [1024];
+    char buffer[1024];
     char message[100];
-    char payload[100] = {0}; // Espacio suficiente para almacenar el payload
+    char payload[1024]; // Espacio suficiente para almacenar el payload
 
     int deviceId = 0;
     int messageNumber = 0;
@@ -143,7 +143,7 @@ void WaitingForMessage::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay
         //char* processedMessageReceived = new char[fullMessage.size() + 1]; // +1 para '\0'
         strcpy(processedMessageReceived, constCharPtr);
 
-        if (this->gateway->processMessage(processedMessageReceived) == false) {
+        if (this->gateway->processMessage(processedMessageReceived, sizeof(processedMessageReceived)) == false) {
             uartUSB.write("Fail to process received message\r\n", strlen("Fail to process received message\r\n")); // Debug
             messageReceived = false;
             return;
@@ -173,7 +173,7 @@ void WaitingForMessage::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay
         fullMessage.clear();       // Elimina todo el contenido de la cadena
         uartUSB.write("Changing To Sending ACK State\r\n", strlen("Changing To Sending ACK State\r\n"));
         this->gateway->changeState (new SendingAck (this->gateway, this->IdDeviceReceived, 
-        this->messageNumberReceived , this->payload));
+        this->messageNumberReceived));
         return;
     }
     return;

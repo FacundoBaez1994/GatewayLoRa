@@ -13,14 +13,29 @@
 //=====[Declaration of public data types]======================================
 
 //=====[Declaration of public classes]=========================================
-/*
- *  Interface - Chaing Of Responsability desing pattern
- * 
+/**
+ * @class MessageHandler
+ * @brief Abstract interface for message processing in a chain of responsibility.
+ * @details This class defines the interface for handling messages in a modular,
+ * extendable way. It is intended to be subclassed by concrete message handlers.
+ * Implements the Chain of Responsibility design pattern.
  */
 class MessageHandler {
 public:
 //=====[Declaration of public methods]=========================================
-    virtual MessageHandlerStatus_t handleMessage (char * message);
+    /**
+     * @brief Attempts to handle the given message.
+     * @param message Pointer to the message to be processed.
+     * @param sizeOfMessage Length of the message in bytes.
+     * @return A status code indicating the result of the handling attempt.
+     */
+    virtual MessageHandlerStatus_t handleMessage (char * message, unsigned int sizeOfMessage);
+
+    /**
+     * @brief Sets the next handler in the chain.
+     * @param nextHandler Pointer to the next MessageHandler in the chain.
+     * @return A pointer to the same nextHandler, enabling fluent-style chaining.
+     */
     virtual MessageHandler * setNextHandler (MessageHandler * nextHandler);
 //=====[Declaration of privates atributes]=========================================
 

@@ -22,7 +22,7 @@ class Gateway; //debido a declaracion adelantada
 class SendingAck : public GatewayState {
 public:
 //=====[Declaration of public methods]=========================================
-    SendingAck (Gateway * gateway, int IdDevice, int messageNumber, char * payload);
+    SendingAck (Gateway * gateway, int IdDevice, int messageNumber);
     virtual ~SendingAck ();
     virtual void receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay * delay);
     virtual void sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay * delay);
@@ -31,7 +31,6 @@ private:
     Gateway * gateway;
     int IdDevice;
     int messageNumber;
-    char payload [50];
 //=====[Declaration of privates atributes]=========================================
 
 //=====[Declaration of privates methods]=========================================

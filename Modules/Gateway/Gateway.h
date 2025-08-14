@@ -11,6 +11,8 @@
 #include "LoRa.h"
 #include "UipEthernet.h"
 #include "WaitingForMessage.h"
+#include "SendingAck.h"
+
 
 #include "MessageHandler.h"
 #include "MessageHandlerStatus.h"
@@ -41,8 +43,8 @@ public:
     virtual ~Gateway ();
     void update();
     void changeState  (GatewayState * newState);
-    bool prepareMessage (char * messageOutput);
-    bool processMessage (char * incomingMessage);
+    bool prepareMessage (char * messageOutput, unsigned int messageSize);
+    bool processMessage (char * incomingMessage, unsigned int messageSize);
 
 private:
 

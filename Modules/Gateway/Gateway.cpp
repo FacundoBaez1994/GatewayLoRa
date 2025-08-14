@@ -41,17 +41,18 @@ Gateway::Gateway () {
         uartUSB.write ("LoRa Module Failed to Start!", strlen ("LoRa Module Failed to Start"));  // debug only
         uartUSB.write ( "\r\n",  3 );  // debug only
     }
-    this->LoRaTransciever->setSpreadingFactor(12);   // ranges from 6-12,default 7
-    this->LoRaTransciever->setSyncWord(0xF3);  // ranges from 0-0xFF, default 0x34,
-    this->LoRaTransciever->setSignalBandwidth(125E3); // 125 kHz
+    //this->LoRaTransciever->setSpreadingFactor(12);   // ranges from 6-12,default 7
+    //this->LoRaTransciever->setSyncWord(0xF3);  // ranges from 0-0xFF, default 0x34,
+    //this->LoRaTransciever->setSignalBandwidth(125E3); // 125 kHz
 
-    this->ethernetModule = new UipEthernet (MAC, PB_5, PB_4, PB_3, PA_4);  // mac, mosi, miso, sck, cs
-    this->resetEth =  new DigitalOut (PA_1);
-    this->resetEth->write(HIGH);
+    //this->ethernetModule = new UipEthernet (MAC, PB_5, PB_4, PB_3, PA_4);  // mac, mosi, miso, sck, cs
+   // this->resetEth =  new DigitalOut (PA_1);
+   // this->resetEth->write(HIGH);
 
     this->timer = new NonBlockingDelay (LATENCY);
 
     this->currentState = new WaitingForMessage (this);
+    //this->currentState = new SendingAck (this, 1 ,1);
 
     this->encrypter = new Encrypter ();
     this->authgen = new AuthenticationGenerator ();
@@ -125,6 +126,17 @@ Gateway::~Gateway() {
 *
 */
 void Gateway::update () {
+    /*
+    char incomingMessage [256] = "miraMargeSoyBrasileño";
+    static bool a = false;
+    if ( a == false) {
+        uartUSB.write("prepareMessage 1\r\n", strlen("prepareMessage 1\r\n"));
+        this->encrypter->setNextHandler(this->authgen)->setNextHandler(this->ckgen);
+        uartUSB.write("prepareMessage 2\r\n", strlen("prepareMessage 2\r\n"));
+        this->encrypter->handleMessage (incomingMessage,  sizeof (incomingMessage));
+        a = true;
+    }
+*/
     this->currentState->receiveMessage (this->LoRaTransciever, this->timer);
     this->currentState->sendAcknowledgement (this->LoRaTransciever, this->timer);
     //this->currentState->sendTCPMessage (this->ethernetModule, this->timer);
@@ -139,18 +151,20 @@ void Gateway::changeState  (GatewayState * newState) {
     this->currentState = newState;
 }
 
-bool Gateway::prepareMessage (char * messageOutput) {
+bool Gateway::prepareMessage (char * messageOutput, unsigned int messageSize) {
+    uartUSB.write("PREPMESSAGE1\r\n", strlen("PREPMESSAGE1\r\n"));
     this->encrypter->setNextHandler(this->authgen)->setNextHandler(this->ckgen);
-    if (this->encrypter->handleMessage (messageOutput) == MESSAGE_HANDLER_STATUS_PROCESSED) {
+    uartUSB.write("prepareMessage 2\r\n", strlen("prepareMessage 2\r\n"));
+    if (this->encrypter->handleMessage (messageOutput,  messageSize) == MESSAGE_HANDLER_STATUS_PROCESSED) {
         return true;
     } else {
         return false;
     }
 }
 
-bool Gateway::processMessage (char * incomingMessage) {
+bool Gateway::processMessage (char * incomingMessage, unsigned int messageSize) {
     this->checksumVerifier->setNextHandler(this->authVer)->setNextHandler(this->decrypter);
-    if (this->checksumVerifier->handleMessage (incomingMessage) == MESSAGE_HANDLER_STATUS_PROCESSED) {
+    if (this->checksumVerifier->handleMessage (incomingMessage,  messageSize) == MESSAGE_HANDLER_STATUS_PROCESSED) {
         return true;
     } else {
         return false;
