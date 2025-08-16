@@ -38,10 +38,10 @@
 * 
 * @param 
 */
-SendingAck::SendingAck (Gateway * gateway, int IdDevice, int messageNumber) {
+SendingAck::SendingAck (Gateway * gateway, int newIdDevice, int newMessageNumber) {
     this->gateway = gateway;
-    this->IdDevice = IdDevice;
-    this->messageNumber = messageNumber;
+    this->IdDevice = newIdDevice;
+    this->messageNumber = newMessageNumber;
 }
 
 
@@ -91,11 +91,7 @@ void SendingAck::sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay *
     }
 
     if (messageFormatted == false) {
-        uartUSB.write("Message prepare 1\r\n", strlen("Message prepare 1\r\n"));
-        this->IdDevice = 0;
-        this->messageNumber = 1;
         snprintf(ACKmessage, sizeof(ACKmessage), "%d,%d,ACK", this->IdDevice, this->messageNumber); //
-        uartUSB.write("Message prepare 2\r\n", strlen("Message prepare 2\r\n"));
 
         this->encrypt.setNextHandler(&authgen)->setNextHandler(&ckgen);
         this->encrypt.handleMessage(ACKmessage, strlen (ACKmessage));

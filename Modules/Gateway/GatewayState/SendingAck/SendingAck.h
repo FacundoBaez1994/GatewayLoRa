@@ -25,7 +25,7 @@ class Gateway; //debido a declaracion adelantada
 class SendingAck : public GatewayState {
 public:
 //=====[Declaration of public methods]=========================================
-    SendingAck (Gateway * gateway, int IdDevice, int messageNumber);
+    SendingAck (Gateway * gateway, int newIdDevice, int newMessageNumber);
     virtual ~SendingAck ();
     virtual void receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay * delay);
     virtual void sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay * delay);

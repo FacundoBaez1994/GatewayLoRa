@@ -63,8 +63,8 @@ void WaitingForMessage::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay
     char message[100];
     char payload[1024]; // Espacio suficiente para almacenar el payload
 
-    int deviceId = 0;
-    int messageNumber = 0;
+    static int deviceId = 0;
+    static int messageNumber = 0;
     static int delayCounter = 0;
     static int delayMax = 3; 
 
@@ -153,11 +153,10 @@ void WaitingForMessage::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay
             // Desglose exitoso
             snprintf(message, sizeof(message), "Device ID: %d\r\n", deviceId);
             uartUSB.write(message, strlen(message));
-            this->IdDeviceReceived = deviceId;
+        
 
             snprintf(message, sizeof(message), "Message Number: %d\r\n", messageNumber);
             uartUSB.write(message, strlen(message));
-            this->messageNumberReceived = messageNumber;
 
             snprintf(message, sizeof(message), "Payload: %s\r\n", payload);
             uartUSB.write(message, strlen(message));
@@ -172,8 +171,8 @@ void WaitingForMessage::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay
         stringInsertCount = 0;
         fullMessage.clear();       // Elimina todo el contenido de la cadena
         uartUSB.write("Changing To Sending ACK State\r\n", strlen("Changing To Sending ACK State\r\n"));
-        this->gateway->changeState (new SendingAck (this->gateway, this->IdDeviceReceived, 
-        this->messageNumberReceived));
+        this->gateway->changeState (new SendingAck (this->gateway, deviceId , 
+        messageNumber));
         return;
     }
     return;
