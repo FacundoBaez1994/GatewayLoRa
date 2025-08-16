@@ -6,8 +6,8 @@
 #include "SendingTCPMessage.h"
 
 //=====[Declaration of private defines]========================================
-#define BACKOFFTIME        300
-#define MAX_CHUNK_SIZE     256
+#define BACKOFFTIME        1500
+#define MAX_CHUNK_SIZE     255
 #define FLY_TIME           500
 //=====[Declaration of private data types]=====================================
 
@@ -61,7 +61,7 @@ void SendingAck::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay * dela
 }
 
 void SendingAck::sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
-    static char ACKmessage[256];
+    static char ACKmessage[2048];
     static bool firstChunkSent = false;
     static bool firstDelayPassed = false;
     static bool messageFormatted = false;
@@ -97,15 +97,16 @@ void SendingAck::sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay *
         snprintf(ACKmessage, sizeof(ACKmessage), "%d,%d,ACK", this->IdDevice, this->messageNumber); //
         uartUSB.write("Message prepare 2\r\n", strlen("Message prepare 2\r\n"));
 
-        //encrypt.setNextHandler(&authgen)->setNextHandler(&ckgen);
-        //encrypt.handleMessage(ACKmessage, sizeof (ACKmessage));
+        this->encrypt.setNextHandler(&authgen)->setNextHandler(&ckgen);
+        this->encrypt.handleMessage(ACKmessage, strlen (ACKmessage));
 
+        /*
         if (this->gateway->prepareMessage(ACKmessage, sizeof(ACKmessage)) == false) {
             uartUSB.write("Fail to prepare message to be send\r\n", strlen("Fail to prepare message to be send\r\n"));
             std::fill(std::begin(ACKmessage), std::end(ACKmessage), '\0');
             return;
         }
-        
+        */
 
         uartUSB.write("Message prepare 3\r\n", strlen("Message prepare 3\r\n"));
         size_t originalLength = strlen(ACKmessage);
@@ -124,8 +125,8 @@ void SendingAck::sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay *
 
         size_t totalLength = strlen(ACKmessage);
         size_t chunkSize = MAX_CHUNK_SIZE;
-        LoRaModule->idle();                          // set standby mode
-        LoRaModule->enableInvertIQ();             // normal mode
+        LoRaModule->idle();                     
+        LoRaModule->enableInvertIQ();           
         size_t currentChunkSize = (totalLength - stringIndex  < chunkSize) ? (totalLength - stringIndex ) : chunkSize;
         uartUSB.write("\r\n", strlen("\r\n"));
         uartUSB.write (ACKmessage + stringIndex , currentChunkSize);  // debug only

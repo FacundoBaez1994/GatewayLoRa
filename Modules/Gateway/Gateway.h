@@ -23,6 +23,8 @@
 #include "ChecksumGenerator.h"
 #include "Decrypter.h"
 #include "Encrypter.h"
+#include "DecrypterBase64.h"
+#include "EncrypterBase64.h"
 
 
 

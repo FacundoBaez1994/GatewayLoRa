@@ -54,13 +54,13 @@ Gateway::Gateway () {
     this->currentState = new WaitingForMessage (this);
     //this->currentState = new SendingAck (this, 1 ,1);
 
-    this->encrypter = new Encrypter ();
+    this->encrypter = new EncrypterBase64 ();
     this->authgen = new AuthenticationGenerator ();
     this->ckgen = new ChecksumGenerator ();
 
     this->checksumVerifier = new ChecksumVerifier ();
     this->authVer = new AuthenticationVerifier ();
-    this->decrypter = new Decrypter ();
+    this->decrypter = new DecrypterBase64 ();
 
    // Watchdog &watchdog = Watchdog::get_instance(); // singletom
    // watchdog.start(TIMEOUT_MS);

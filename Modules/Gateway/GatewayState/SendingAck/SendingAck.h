@@ -9,6 +9,9 @@
 #include "arm_book_lib.h"
 #include "GatewayState.h"
 #include "Non_Blocking_Delay.h"
+#include "AuthenticationGenerator.h"
+#include "EncrypterBase64.h"
+#include "ChecksumGenerator.h"
 
 //=====[Declaration of public data types]======================================
 class Gateway; //debido a declaracion adelantada
@@ -31,6 +34,10 @@ private:
     Gateway * gateway;
     int IdDevice;
     int messageNumber;
+
+    EncrypterBase64 encrypt;
+    AuthenticationGenerator authgen;
+    ChecksumGenerator ckgen;
 //=====[Declaration of privates atributes]=========================================
 
 //=====[Declaration of privates methods]=========================================
