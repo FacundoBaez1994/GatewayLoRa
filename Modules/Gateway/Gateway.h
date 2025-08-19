@@ -1,18 +1,17 @@
 //=====[#include guards - begin]===============================================
 
-#ifndef _GATEWAY_H_
-#define _GATEWAY_H_
+#ifndef _TRACKER_H_
+#define _TRACKER_H_
 
 #include "mbed.h"
-#include "GatewayState.h"
+#include "GNSSModule.h"
 #include "Non_Blocking_Delay.h"
 #include "arm_book_lib.h"
 #include "string.h"
+#include "CellularModule.h"
 #include "LoRa.h"
-#include "UipEthernet.h"
+#include "RFTransicieverState.h"
 #include "WaitingForMessage.h"
-#include "SendingAck.h"
-
 
 #include "MessageHandler.h"
 #include "MessageHandlerStatus.h"
@@ -27,7 +26,6 @@
 #include "EncrypterBase64.h"
 
 
-
 //=====[Declaration of public defines]=========================================
 
 
@@ -35,7 +33,7 @@
 
 //=====[Declaration of public classes]=========================
 /*
- * Class implementation for a GPS tracker
+ * Class implementation for a GPS gateway
  * High hierarchy class
  * it will be instantiated and used from the main function
  */
@@ -44,22 +42,32 @@ public:
     Gateway ();
     virtual ~Gateway ();
     void update();
-    void changeState  (GatewayState * newState);
-    bool prepareMessage (char * messageOutput, unsigned int messageSize);
-    bool processMessage (char * incomingMessage, unsigned int messageSize);
-
+    void changeState  (RFTransicieverState * newState);
+    bool prepareMessage (char * messageOutput, unsigned int sizeOfMessage);
+    bool processMessage (char * incomingMessage, unsigned int sizeOfMessage);
+    bool checkMessageIntegrity ( char *messageReceived);
 private:
 
-    // CellularModule* cellularTransceiver;
+    RFTransicieverState * RFState;
+    long long int deviceId;
+    int messageNumber;
+
+
+    char* formMessage (GNSSData * GNSSInfo);
+    char* formMessage(CellInformation* aCellInfo, std::vector<CellInformation*> 
+    &neighborsCellInformation, BatteryData  * batteryStatus); 
+    char* formMessage(CellInformation* aCellInfo, GNSSData* GNSSInfo, BatteryData  * batteryStatus);
+    CellularModule* cellularTransceiver;
+    TcpSocket * socketTargetted;
+    CellInformation * currentCellInformation; 
     LoRaClass * LoRaTransciever;
-    UipEthernet * ethernetModule;
-    DigitalOut * resetEth;
-    GatewayState * currentState;
 
-    NonBlockingDelay * timer;
-   // BatteryData  * batteryStatus;
+    GNSSModule* currentGNSSModule;
+    GNSSData * currentGNSSdata;
+    NonBlockingDelay * timeout;
+    BatteryData  * batteryStatus;
 
-   // Message Handlers
+    // Message Handlers
     MessageHandler * encrypter;
     MessageHandler * authgen;
     MessageHandler * ckgen;
@@ -71,4 +79,4 @@ private:
 
 //=====[#include guards - end]=================================================
 
-#endif // _GATEWAY_H_
+#endif // _TRACKER_H_

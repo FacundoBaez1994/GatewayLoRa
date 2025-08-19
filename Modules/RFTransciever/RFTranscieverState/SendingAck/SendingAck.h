@@ -1,14 +1,15 @@
 //=====[#include guards - begin]===============================================
 
-#ifndef _SENDING_TCP_MESSAGE_H_
-#define _SENDING_TCP_MESSAGE_H_
+#ifndef _SENDING_MESSAGE_H_
+#define _SENDING_MESSAGE_H_
 
 //==================[Libraries]===============================================
 
 #include "mbed.h"
 #include "arm_book_lib.h"
-#include "GatewayState.h"
 #include "Non_Blocking_Delay.h"
+#include "RFTransicieverState.h"
+//#include "WaitingAcknowledgement.h"
 
 //=====[Declaration of public data types]======================================
 class Gateway; //debido a declaracion adelantada
@@ -19,21 +20,19 @@ class Gateway; //debido a declaracion adelantada
  *  class - State desing pattern
  * 
  */
-class SendingTCPMessage : public GatewayState {
+class SendingAck : public RFTransicieverState {
 public:
 //=====[Declaration of public methods]=========================================
-    SendingTCPMessage (Gateway * gateway, int IdDevice, int messageNumber, char * payload);
-    virtual ~SendingTCPMessage ();
-    virtual void receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay * delay);
-    virtual void sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay * delay);
-    virtual void sendTCPMessage (UipEthernet * ethernetModule, NonBlockingDelay * delay);
+    SendingAck  (Gateway * gateway, long long int deviceId, int messageNumber);
+    virtual ~SendingAck  ();
+    virtual void sendAcknowledgement (LoRaClass * LoRaModule, char * messageToBeSend, NonBlockingDelay * backoffTime);
+    virtual bool waitForMessage (LoRaClass * LoRaModule, char * messageRecieved, NonBlockingDelay * timeOut);
 private:
-    void disconnect (UipEthernet * ethernetModule, TcpClient * socket);
-    Gateway * gateway;
-    int IdDevice;
+    Gateway * currentGateway;
+    long long int IdDevice;
     int messageNumber;
-    int connectionRetries;
-    char payload [251];
+    //int connectionRetries;
+    // char payload [50];
 //=====[Declaration of privates atributes]=========================================
 
 //=====[Declaration of privates methods]=========================================
@@ -44,4 +43,4 @@ private:
 
 //=====[#include guards - end]=================================================
 
-#endif //  _SENDING_TCP_MESSAGE_H_
+#endif //  _SENDING_MESSAGE_H_

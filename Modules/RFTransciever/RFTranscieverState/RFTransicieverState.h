@@ -1,7 +1,7 @@
 //=====[#include guards - begin]===============================================
 
-#ifndef _GATEWAY_STATE_H_
-#define _GATEWAY_STATE_H_
+#ifndef _RF_TRANSCIEVER_STATE_H_
+#define _RF_TRANSCIEVER_STATE_H_
 
 //==================[Libraries]===============================================
 
@@ -9,22 +9,22 @@
 #include "Non_Blocking_Delay.h"
 #include "arm_book_lib.h"
 #include "LoRa.h"
-#include "UipEthernet.h"
+#include "Non_Blocking_Delay.h"
 
 //=====[Declaration of public data types]======================================
-//struct TcpSocket;
+struct RFPacketMessage;
 
 //=====[Declaration of public classes]=========================================
 /*
  *  Interface - State desing pattern
  * 
  */
-class GatewayState {
+class RFTransicieverState {
 public:
 //=====[Declaration of public methods]=========================================
-    virtual void receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay * delay);
-    virtual void sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay * delay);
-    virtual void sendTCPMessage (UipEthernet * ethernetModule, NonBlockingDelay * delay);
+   // virtual void addRFFormatToMessage (long long int deviceId, int messageNumber, char * messageToBeSend);
+    virtual void sendAcknowledgement (LoRaClass * LoRaModule, char * messageToBeSend, NonBlockingDelay * backoffTime);
+    virtual bool waitForMessage (LoRaClass * LoRaModule, char * messageRecieved, NonBlockingDelay * timeOut);
 //=====[Declaration of privates atributes]=========================================
 
 //=====[Declaration of privates methods]=========================================
@@ -35,4 +35,4 @@ public:
 
 //=====[#include guards - end]=================================================
 
-#endif // _GATEWAY_STATE_H_
+#endif // _RF_TRANSCIEVER_STATE_H_
