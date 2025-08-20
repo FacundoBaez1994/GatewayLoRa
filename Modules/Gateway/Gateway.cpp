@@ -2,6 +2,8 @@
 
 #include "Gateway.h"
 #include "Debugger.h" // due to global usbUart
+#include "EthernetInterface.h"
+
 
 
 
@@ -15,6 +17,7 @@
 #define NETMASK "255.255.255.0"
 
 const uint8_t   MAC[6] = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05 };
+
 
 
 //=====[Declaration of private data types]=====================================
@@ -52,7 +55,7 @@ Gateway::Gateway () {
     this->timer = new NonBlockingDelay (LATENCY);
 
     //this->currentState = new WaitingForMessage (this);
-    char pay [250] = "this->payloadLaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaarrrrrrrrrrrrrrrrrgoooooooooo";
+    char pay [250] = "payloadLaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaarrrrrrrrrrrrrrrrrgoooooooooo";
     this->currentState =  new SendingTCPMessage(this, 1, 1, pay);
 
     Watchdog &watchdog = Watchdog::get_instance(); // singletom
@@ -106,6 +109,7 @@ Gateway::~Gateway() {
 *
 */
 void Gateway::update () {
+
     
     Watchdog &watchdog = Watchdog::get_instance(); // singletom
     watchdog.kick();
