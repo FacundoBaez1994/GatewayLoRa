@@ -5,7 +5,7 @@
 #include "WaitingForMessage.h"
 
 //=====[Declaration of private defines]========================================
-#define BACKOFFTIME        250
+#define BACKOFFTIME        100
 #define MAX_CHUNK_SIZE     255
 #define FLY_TIME           100
 //=====[Declaration of private data types]=====================================
@@ -129,8 +129,8 @@ void SendingAck::sendAcknowledgement (LoRaClass * LoRaModule, char * messageToBe
         stringIndex += chunkSize;
         if (stringIndex  > totalLength) {
             uartUSB.write("\r\n", strlen("\r\n"));
-            uartUSB.write ("Changing State to Waiting Acknowledgement:\r\n", 
-            strlen ("Changing State to Waiting Acknowledgement:\r\n"));  // debug only
+            uartUSB.write ("Changing State to WaitingForMessage:\r\n", 
+            strlen ("Changing State to WaitingForMessage:\r\n"));  // debug only
             uartUSB.write("\r\n", strlen("\r\n"));
             firstDelayPassed = false;
             messageFormatted = false;

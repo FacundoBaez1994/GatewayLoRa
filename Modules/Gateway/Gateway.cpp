@@ -27,6 +27,7 @@
 */
 Gateway::Gateway () {
 
+    uartUSB.write ("Gateway Init\r\n", strlen ("Gateway Init\r\n"));  // debug only
     this->LoRaTransciever = new LoRaClass ();
     if (!this->LoRaTransciever->begin (915E6)) {
         uartUSB.write ("LoRa Module Failed to Start!", strlen ("LoRa Module Failed to Start"));  // debug only
