@@ -31,13 +31,6 @@
 
 
 //=====[Implementations of public methods]===================================
-
-
-/** 
-* @brief
-* 
-* @param 
-*/
 SensingBatteryStatus::SensingBatteryStatus (Gateway * gateway) {
     this->gateway = gateway;
 }
@@ -48,20 +41,7 @@ SensingBatteryStatus::SensingBatteryStatus (Gateway * gateway) {
 * @param 
 */
 SensingBatteryStatus::~SensingBatteryStatus ( ) {
-    this->gateway = NULL;
-}
-
-
-void SensingBatteryStatus::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
-    return;
-}
-
-void SensingBatteryStatus::sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
-    return;
-}
-
-void SensingBatteryStatus::sendTCPMessage (UipEthernet * ethernetModule, NonBlockingDelay * delay) {
-    return;
+    this->gateway = nullptr;
 }
 
 void SensingBatteryStatus::updatePowerStatus (CellularModule * cellularTransceiver,
@@ -73,41 +53,5 @@ void SensingBatteryStatus::updatePowerStatus (CellularModule * cellularTransceiv
     }
     return;
  }
-
-void SensingBatteryStatus::connectToMobileNetwork (CellularModule * cellularTransceiver,
-    CellInformation * currentCellInformation) {
-    return;
-}
-
-void SensingBatteryStatus::obtainGNSSPosition (GNSSModule * currentGNSSModule, 
-GNSSData * currentGNSSdata) {
-    return;
-}
-
-void SensingBatteryStatus::obtainNeighborCellsInformation (CellularModule* cellularTransceiver, 
-    std::vector<CellInformation*> &neighborsCellInformation, int numberOfNeighbors ) { 
-    return; 
-}
-
-void SensingBatteryStatus::formatMessage (char * formattedMessage, CellInformation* aCellInfo,
-    GNSSData* GNSSInfo, std::vector<CellInformation*> &neighborsCellInformation,
-    BatteryData  * batteryStatus) {
-    return;
-}
-
-void SensingBatteryStatus::exchangeMessages (CellularModule * cellularTransceiver,
-    char * message, TcpSocket * socketTargetted, char * receivedMessage ){
-    return;
-}
-
-void SensingBatteryStatus::goToSleep (CellularModule * cellularTransceiver) {
-    return;
-}
-
-void SensingBatteryStatus::awake (CellularModule * cellularTransceiver, 
-NonBlockingDelay * latency ) {
-    return;
-}
-
 
 

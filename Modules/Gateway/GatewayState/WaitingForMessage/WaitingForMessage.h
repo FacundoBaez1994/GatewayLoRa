@@ -7,53 +7,34 @@
 
 #include "mbed.h"
 #include "arm_book_lib.h"
-#include "GatewayState.h"
+#include "Gateway.h"
 #include "Non_Blocking_Delay.h"
+#include "GatewayBaseState.h"
 #include "SendingAck.h"
-#include "MbedCRC.h"
 #include <algorithm> // Para std::find
 #include <string>
 #include <vector>
 #include <cstring> 
 
-
 //=====[Declaration of public data types]======================================
 class Gateway; //debido a declaracion adelantada
+//struct TcpSocket;
 
 //=====[Declaration of public classes]=========================================
 /*
  *  class - State desing pattern
  * 
  */
-class WaitingForMessage : public GatewayState {
+class WaitingForMessage : public GatewayBaseState {
 public:
 //=====[Declaration of public methods]=========================================
-    WaitingForMessage (Gateway * gateway);
-    virtual ~WaitingForMessage ();
-    virtual void receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay * delay);
-    virtual void sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay * delay);
-    virtual void sendTCPMessage (UipEthernet * ethernetModule, NonBlockingDelay * delay);
-
-
-    virtual void updatePowerStatus (CellularModule * cellularTransceiver, BatteryData * currentBatteryStatus);
-    virtual void obtainGNSSPosition (GNSSModule * currentGNSSModule, GNSSData * currentGNSSdata);
-    virtual void connectToMobileNetwork (CellularModule * cellularTransceiver,
-    CellInformation * currentCellInformation);
-    virtual void obtainNeighborCellsInformation (CellularModule* cellularTransceiver, 
-    std::vector<CellInformation*> &neighborsCellInformation, int numberOfNeighbors );
-    virtual void formatMessage (char * formattedMessage, CellInformation* aCellInfo,
-    GNSSData* GNSSInfo, std::vector<CellInformation*> &neighborsCellInformation,
-    BatteryData  * batteryStatus); 
-    virtual void exchangeMessages (CellularModule * cellularTransceiver,
-    char * message, TcpSocket * socketTargetted, char * receivedMessage );
-    virtual void goToSleep (CellularModule * cellularTransceiver);
-    virtual void awake (CellularModule * cellularTransceiver, NonBlockingDelay * latency);
+    WaitingForMessage  (Gateway * gateway);
+    virtual ~WaitingForMessage  ();
+    virtual void sendAcknowledgement (LoRaClass * LoRaModule, char * messageToBeSend, NonBlockingDelay * backoffTime);
+    virtual bool waitForMessage (LoRaClass * LoRaModule, char * messageRecieved, NonBlockingDelay * timeOut);
 private:
-    //bool checkResponse (char * response, char * retrivMessage);
-    Gateway * gateway;
-    char payload [50];
-    int IdDeviceReceived;
-    int messageNumberReceived;
+    Gateway * currentGateway;
+
 //=====[Declaration of privates atributes]=========================================
 
 //=====[Declaration of privates methods]=========================================
@@ -64,4 +45,4 @@ private:
 
 //=====[#include guards - end]=================================================
 
-#endif // _WAITING_FOR_MESSAGE_H_
+#endif //  _WAITING_ACKNOWLEDGEMENT_H_

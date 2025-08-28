@@ -1,17 +1,45 @@
 //=====[Libraries]=============================================================
 
 #include "ObtainingPositionInformation.h" 
-#include "GNSSModule.h" //debido a declaracion adelantada
+#include "GNSSModule.h" //debido a declaracion adelantadas
 #include "Debugger.h" // due to global usbUart
 #include "TurningOffGNSS.h"
 
 //=====[Declaration of private defines]========================================
 #define MAXRETRIES  25
 
+#define LOG_MESSAGE "Obtaining GNSS Position\r\n"
+#define LOG_MESSAGE_LEN (sizeof(LOG_MESSAGE) - 1)
+
+#define LOG_MESSAGE_NO_GNSS_WARNING "\r\n**GNSS UNAVAILABLE!**\r\n"
+#define LOG_MESSAGE_NO_GNSS_WARNING_LEN (sizeof(LOG_MESSAGE_NO_GNSS_WARNING ) - 1)
+
+#define LOG_MESSAGE_GNSS_NOT_ACTIVE_WARNING "GNSS NOT active\r\n"
+#define LOG_MESSAGE_GNSS_NOT_ACTIVE_WARNING_LEN (sizeof(LOG_MESSAGE_GNSS_NOT_ACTIVE_WARNING) - 1)
+
+#define LOG_MESSAGE_POSITION_ACQUIRED "\r\n**GNSS Acquired - Changing State!**\r\n"
+#define LOG_MESSAGE_POSITION_ACQUIRED_LEN (sizeof(LOG_MESSAGE_POSITION_ACQUIRED) - 1)
+
+#define AT_CMD_GNSS_POSITION_ACQUISITION "AT+QGPSLOC?"
+#define AT_CMD_GNSS_POSITION_ACQUISITION_LEN  (sizeof(AT_CMD_GNSS_POSITION_ACQUISITION) - 1)
+
+#define AT_CMD_GNSS_CONFIGURE_FORMAT "AT+QGPSLOC=2"
+#define AT_CMD_GNSS_CONFIGURE_FORMAT_LEN  (sizeof(AT_CMD_GNSS_CONFIGURE_FORMAT) - 1)
+
+#define AT_CMD_GNSS_EXPECTED_RESPONSE "OK"
+#define AT_CMD_GNSS_EXPECTED_RESPONSE_LEN  (sizeof(AT_CMD_GNSS_EXPECTED_RESPONSE) - 1)
+
+#define AT_CMD_GNSS_POSITION_ACQUISITION_EXPECTED_RESPONSE "+QGPSLOC:"
+#define AT_CMD_GNSS_POSITION_ACQUISITION_EXPECTED_RESPONSE_LEN  (sizeof(AT_CMD_GNSS_POSITION_ACQUISITION_EXPECTED_RESPONSE) - 1)
+
+#define AT_CMD_GNSS_ERROR_NO_ACTIVE_SESSION "+CME ERROR: 505"
+#define AT_CMD_GNSS_ERROR_NO_ACTIVE_SESSION_LEN  (sizeof(AT_CMD_GNSS_ERROR_NO_ACTIVE_SESSION) - 1)
+
+
+#define BUFFER_LEN 128
 //=====[Declaration of private data types]=====================================
 
 //=====[Declaration and initialization of public global objects]===============
-
 
 //=====[Declaration of external public global variables]=======================
 
@@ -19,26 +47,13 @@
 
 //=====[Declaration and initialization of private global variables]============
 
-
-
-
 //=====[Declarations (prototypes) of private functions]========================
 
-
 //=====[Implementations of private methods]===================================
-/** 
-* @brief attachs the callback function to the ticker
-*/
-
 
 //=====[Implementations of public methods]===================================
-/** 
-* @brief
-* 
-* @param 
-*/
 ObtainingPositionInformation::ObtainingPositionInformation () {
-    this->currentGNSSModule = NULL;
+    this->currentGNSSModule = nullptr;
     this->readyToSend = true;
 
     this->numberOfTries = 0;
@@ -46,12 +61,6 @@ ObtainingPositionInformation::ObtainingPositionInformation () {
     
 }
 
-
-/** 
-* @brief
-* 
-* @param 
-*/
 ObtainingPositionInformation::ObtainingPositionInformation  (GNSSModule * aGNSSModule) {
     this->currentGNSSModule = aGNSSModule;
     this->readyToSend = true;
@@ -60,33 +69,19 @@ ObtainingPositionInformation::ObtainingPositionInformation  (GNSSModule * aGNSSM
     this->maxTries = MAXRETRIES;
 }
 
-
-/** 
-* @brief 
-* 
-* 
-* @returns 
-*/
 ObtainingPositionInformation::~ObtainingPositionInformation  () {
-    this->currentGNSSModule = NULL;
+    this->currentGNSSModule = nullptr;
 }
 
-
-/** 
-* @brief 
-* 
-* 
-* @returns 
-*/
 GNSSState_t ObtainingPositionInformation::retrivGeopositioning (GNSSData * Geodata, ATCommandHandler * ATHandler,
      NonBlockingDelay * refreshTime)  {
  
-    char StringToSend [15] = "AT+QGPSLOC?";
-    char ChangeLatLongFormat [15] = "AT+QGPSLOC=2";
-    char StringToBeRead [256];
-    char ExpectedResponse [15] = "OK";
-    char sessionNoTActive [20] = "+CME ERROR: 505";
-    char StringToSendUSB [40] = "OBTAINING POSITION INFO";
+    char StringToSend [AT_CMD_GNSS_POSITION_ACQUISITION_LEN + 1] = AT_CMD_GNSS_POSITION_ACQUISITION ;
+    char ChangeLatLongFormat [AT_CMD_GNSS_CONFIGURE_FORMAT_LEN + 1] = AT_CMD_GNSS_CONFIGURE_FORMAT;
+    char StringToBeRead [BUFFER_LEN];
+    char ExpectedResponse [AT_CMD_GNSS_EXPECTED_RESPONSE_LEN + 1] = AT_CMD_GNSS_EXPECTED_RESPONSE;
+    char sessionNoTActive [AT_CMD_GNSS_ERROR_NO_ACTIVE_SESSION_LEN + 1] = AT_CMD_GNSS_ERROR_NO_ACTIVE_SESSION;
+    char StringToSendUSB [LOG_MESSAGE_LEN + 1] =  LOG_MESSAGE;
 
     if (this->readyToSend == true) {
         ATHandler->sendATCommand(ChangeLatLongFormat);
@@ -109,11 +104,10 @@ GNSSState_t ObtainingPositionInformation::retrivGeopositioning (GNSSData * Geoda
          ////   ////   ////   ////   ////   ///
         if (this->retrivPositionInfo (StringToBeRead) == true ) {
             ////   ////   ////   ////   ////   ////
-            char StringToSendUSB [40] = "GNSS Acquired - Changing State!";
-            uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
+            uartUSB.write (LOG_MESSAGE_POSITION_ACQUIRED , strlen (LOG_MESSAGE_POSITION_ACQUIRED));  // debug only
             uartUSB.write ( "\r\n",  3 );  // debug only
             ////   ////   ////   ////   ////   ////  
-            strncpy(Geodata->utc, this->utc, sizeof(Geodata->utc));
+            
             Geodata->latitude = this->latitude;
             Geodata->longitude = this->longitude;
             Geodata->hdop = this->hdop;
@@ -122,17 +116,18 @@ GNSSState_t ObtainingPositionInformation::retrivGeopositioning (GNSSData * Geoda
             Geodata->cog = this->cog;
             Geodata->spkm = this->spkm;
             Geodata->spkn = this->spkn;
-            strncpy( Geodata->date, this->date, sizeof(Geodata->date));
+            strcpy(Geodata->timestamp, this->date);
+            strcat(Geodata->timestamp, this->utc);
+
+            set_time(timestampToEpoch (Geodata->timestamp));  // save the epoch into RTC
+
             Geodata->nsat = this->nsat; 
             this->currentGNSSModule->changeGeopositioningState (new TurningOffGNSS (this->currentGNSSModule));
             return GNSS_STATE_CONNECTION_OBTAIN;
         }
         if (strcmp (StringToBeRead, sessionNoTActive) == 0 ) {
-            ////   ////   ////   ////   ////   ////
-            char StringToSendUSB [40] = "GNSS NOT active";
-            uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
-            uartUSB.write ( "\r\n",  3 );  // debug only
-            ////   ////   ////   ////   ////   ////            
+            uartUSB.write (LOG_MESSAGE_GNSS_NOT_ACTIVE_WARNING , strlen (LOG_MESSAGE_GNSS_NOT_ACTIVE_WARNING ));  // debug only
+            uartUSB.write ( "\r\n",  3 );  // debug only         
             this->currentGNSSModule->changeGeopositioningState (new TurningOnGNSS (this->currentGNSSModule));
              return GNSS_STATE_TRYING_TO_CONNECT;
         }
@@ -142,15 +137,9 @@ GNSSState_t ObtainingPositionInformation::retrivGeopositioning (GNSSData * Geoda
         this->readyToSend = true;    
         this->numberOfTries ++;
     
-        char StringToSendUSB [40] = "+1 counter retry";
-        uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
-        uartUSB.write ( "\r\n",  3 );  // debug only
         if (this->numberOfTries >= this->maxTries) {
-             ////   ////   ////   ////   ////   ////
-            char StringToSendUSB [40] = "GNSS UNAVAILABLE, TURNING OFF GNSS";
-            uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
+            uartUSB.write (LOG_MESSAGE_NO_GNSS_WARNING , strlen (LOG_MESSAGE_NO_GNSS_WARNING ));  // debug only
             uartUSB.write ( "\r\n",  3 );  // debug only
-            ////   ////   ////   ////   ////   ////    
             this->numberOfTries = 0;
             this->currentGNSSModule->changeGeopositioningState (new TurningOffGNSS (this->currentGNSSModule));
             return GNSS_STATE_CONNECTION_UNAVAILABLE;
@@ -168,30 +157,27 @@ void ObtainingPositionInformation::enableGNSS ()  {
 
 
 bool ObtainingPositionInformation::retrivPositionInfo(char *response) {
-    char StringToCompare[10] = "+QGPSLOC:";
-    
-    // Verificar si la respuesta comienza con "+QGPSLOC: "
+    char StringToCompare[AT_CMD_GNSS_POSITION_ACQUISITION_EXPECTED_RESPONSE_LEN + 1] = AT_CMD_GNSS_POSITION_ACQUISITION_EXPECTED_RESPONSE;
+
     if (strncmp(response, StringToCompare, strlen(StringToCompare)) == 0) {
-        // Variables para almacenar los campos parseados
-        char utc[10];          // <UTC> en formato HHMMSS.SS
-        float latitude;        // <latitude> en formato decimal
-        float longitude;       // <longitude> en formato decimal
+        char utc[UTC_LEN];          // <UTC>
+        float latitude;        // <latitude> 
+        float longitude;       // <longitude> 
         float hdop;            // <hdop>
         float altitude;        // <altitude>
         int fix;               // <fix>
         float cog;             // <cog>
         float spkm;            // <spkm>
         float spkn;            // <spkn>
-        char date[7];          // <date> en formato DDMMYY
+        char date[DATE_LEN];          // <date> en formato DDMMYY
         int nsat;              // <nsat>
 
-        // Parsear la respuesta
         int n = sscanf(response, "+QGPSLOC: %9[^,],%f,%f,%f,%f,%d,%f,%f,%f,%6[^,],%d",
                        utc, &latitude, &longitude, &hdop, &altitude, &fix, &cog, &spkm, &spkn, date, &nsat);
         
-        // Verificar que se hayan parseado correctamente los 11 valores
         if (n == 11) {
-            // Asignar los valores a los atributos del objeto
+
+            utc[6] = '\0';
             strncpy(this->utc, utc, sizeof(this->utc));
             this->latitude = latitude;
             this->longitude = longitude;
@@ -274,7 +260,5 @@ bool ObtainingPositionInformation::retrivPositionInfo(char *response) {
     
     return false;
 }
-
-
 
 //=====[Implementations of private functions]==================================

@@ -17,16 +17,23 @@ class MessageHandler; //debido a declaracion adelantada
 //struct CellInformation;
 
 //=====[Declaration of public classes]=========================================
-/*
- *  Abstract class 
- * 
+
+/**
+ * @class AuthenticationGenerator
+ * @brief Concrete handler that generates an HMAC-SHA256 and appends it to the message.
+ * @details This class is part of the Chain of Responsibility. It computes an HMAC-SHA256
+ * over the message content and appends the resulting 32-byte digest at the end.
+ * The resulting message can be validated later by an AuthenticationVerifier.
  */
 class AuthenticationGenerator : public BaseMessageHandler {
 public:
 //=====[Declaration of public methods]=========================================
+    /**
+     * @brief Constructor for AuthenticationGenerator.
+     */
     AuthenticationGenerator();
     virtual ~AuthenticationGenerator ();
-    virtual MessageHandlerStatus_t handleMessage (char * message) override;
+    virtual MessageHandlerStatus_t handleMessage (char * message, unsigned int sizeOfMessage) override;
     //virtual MessageHandler setNextHandler (MessageHandler * nextHandler);
 private:
 //=====[Declaration of privates atributes]=========================================

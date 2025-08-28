@@ -5,7 +5,18 @@
 #include "Debugger.h" // due to global usbUart
 
 //=====[Declaration of private defines]========================================
-#define MAXATTEMPTS 30
+#define MAXATTEMPTS 20
+
+#define AT_CMD_ACTIVATE_PDP   "AT+CGACT=1,1"
+#define AT_CMD_ACTIVATE_PDP_LEN  (sizeof(AT_CMD_ACTIVATE_PDP) - 1)
+
+#define AT_CMD_ACTIVATE_PDP_EXPECTED_RESPONSE   "OK"
+#define AT_CMD_ACTIVATE_PDP_EXPECTED_RESPONSE_LEN  (sizeof( AT_CMD_ACTIVATE_PDP_EXPECTED_RESPONSE) - 1)
+
+#define LOG_MESSAGE "Activating PDP Context\r\n"
+#define LOG_MESSAGE_LEN (sizeof(LOG_MESSAGE) - 1)
+
+#define BUFFER_LEN 128
 //=====[Declaration of private data types]=====================================
 
 //=====[Declaration and initialization of public global objects]===============
@@ -24,30 +35,16 @@
 
 
 //=====[Implementations of private methods]===================================
-/** 
-* @brief attachs the callback function to the ticker
-*/
 
 
 //=====[Implementations of public methods]===================================
-/** 
-* @brief
-* 
-* @param 
-*/
 ActivatePDP::ActivatePDP () {
-    this->mobileNetworkModule = NULL;
+    this->mobileNetworkModule = nullptr;
     this->readyToSend = true;
     this->Attempts = 0; 
     this->maxAttempts = MAXATTEMPTS; 
 }
 
-
-/** 
-* @brief
-* 
-* @param 
-*/
 ActivatePDP::ActivatePDP (CellularModule * mobileModule) {
     this->mobileNetworkModule = mobileModule;
     this->readyToSend = true;
@@ -56,71 +53,38 @@ ActivatePDP::ActivatePDP (CellularModule * mobileModule) {
 }
 
 
-/** 
-* @brief 
-* 
-* 
-* @returns 
-*/
 ActivatePDP::~ActivatePDP () {
-    this->mobileNetworkModule = NULL;
+    this->mobileNetworkModule = nullptr;
 }
 
-
-/** 
-* @brief 
-* 
-* 
-* @returns 
-*/
 void ActivatePDP::enableTransceiver () {
     return;
 }
 
-/** 
-* @brief 
-* 
-* 
-* @returns 
-*/
 CellularTransceiverStatus_t ActivatePDP::exchangeMessages (ATCommandHandler * ATHandler,
     NonBlockingDelay * refreshTime, char * message, TcpSocket * socketTargetted,
      char * receivedMessage, bool * newDataAvailable) {
-    char StringToBeRead [20];
-    char ExpectedResponse [15] = "OK";
-    char StringToSendUSB [15] =  "ACTIVATE PDP";
-    char StringToSend [50] = "AT+CGACT=1,1";
-
+    char StringToBeRead [BUFFER_LEN];
+    char ExpectedResponse [AT_CMD_ACTIVATE_PDP_EXPECTED_RESPONSE_LEN + 1] = AT_CMD_ACTIVATE_PDP_EXPECTED_RESPONSE;
+    char StringToSendUSB [LOG_MESSAGE_LEN + 1] =  LOG_MESSAGE;
+    char StringToSend [AT_CMD_ACTIVATE_PDP_LEN + 1] =  AT_CMD_ACTIVATE_PDP;
 
     if (this->readyToSend == true) {
         ATHandler->sendATCommand(StringToSend);
         this->readyToSend  = false;
-        ////   ////   ////   ////   ////   ////
         uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
         uartUSB.write ( "\r\n",  3 );  // debug only
         uartUSB.write (StringToSend  , strlen (StringToSend  ));  // debug only
         uartUSB.write ( "\r\n",  3 );  // debug only
-        ////   ////   ////   ////   ////   ////   
     }
 
-
     if ( ATHandler->readATResponse ( StringToBeRead) == true) {
-         ////   ////   ////   ////   ////   ////
         uartUSB.write (StringToBeRead , strlen (StringToBeRead));  // debug only
         uartUSB.write ( "\r\n",  3 );  // debug only
-         ////   ////   ////   ////   ////   ////
-
         if (strcmp (StringToBeRead, ExpectedResponse) == 0) {
-            ////   ////   ////   ////   ////   ////
-            char StringToSendUSB [40] = "Cambiando de estado 1";
-            uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
-            uartUSB.write ( "\r\n",  3 );  // debug only
-            ////   ////   ////   ////   ////   ////     
             this->mobileNetworkModule->changeTransceiverState (new CreateSocket (this->mobileNetworkModule));
             return CELLULAR_TRANSCEIVER_STATUS_TRYNING_TO_SEND;
         }
-
-
     }
 
     if (refreshTime->read()) {

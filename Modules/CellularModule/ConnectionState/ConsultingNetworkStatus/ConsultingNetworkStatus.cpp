@@ -1,13 +1,26 @@
 //=====[Libraries]=============================================================
 
 #include "ConsultingNetworkStatus.h"
-#include "CellularModule.h" //debido a declaracion adelantada
+#include "CellularModule.h"
 #include "Debugger.h" // due to global usbUart 
 
 //=====[Declaration of private defines]========================================
 #define MODEM_REGISTERED_LOCALY 1
 #define MODEM_REGISTERED_ROAMING 5
 #define MAXATTEMPTS 20
+
+#define AT_CMD_CONSULT_NETWORK_STATUS_1     "AT+CREG=2"
+#define AT_CMD_CONSULT_NETWORK_STATUS_1_LEN  (sizeof(AT_CMD_CONSULT_NETWORK_STATUS_1 ) - 1)
+
+#define AT_CMD_CONSULT_NETWORK_STATUS_EXPECTED_RESPONSE     "OK"
+#define AT_CMD_CONSULT_NETWORK_STATUS_EXPECTED_RESPONSE_LEN  (sizeof(AT_CMD_CONSULT_NETWORK_STATUS_EXPECTED_RESPONSE ) - 1)
+
+#define AT_CMD_CONSULT_NETWORK_STATUS_2     "AT+CREG?"
+#define AT_CMD_CONSULT_NETWORK_STATUS_2_LEN  (sizeof(AT_CMD_CONSULT_NETWORK_STATUS_2 ) - 1)
+
+#define BUFFER_LEN 128
+#define LOG_MESSAGE "Consulting Network Status\r\n"
+#define LOG_MESSAGE_LEN (sizeof(LOG_MESSAGE) - 1)
 //=====[Declaration of private data types]=====================================
 
 //=====[Declaration and initialization of public global objects]===============
@@ -24,19 +37,8 @@
 
 //=====[Declarations (prototypes) of private functions]========================
 
-
-//=====[Implementations of private methods]===================================
-/** 
-* @brief attachs the callback function to the ticker
-*/
-
-
 //=====[Implementations of public methods]===================================
-/** 
-* @brief
-* 
-* @param 
-*/
+
 ConsultingNetworkStatus::ConsultingNetworkStatus (CellularModule * mobileModule) {
     this->mobileNetworkModule = mobileModule;
     this->ATFirstResponseRead  = false;
@@ -46,42 +48,24 @@ ConsultingNetworkStatus::ConsultingNetworkStatus (CellularModule * mobileModule)
     this->maxConnectionAttempts = MAXATTEMPTS;
 }
 
-
-/** 
-* @brief 
-* 
-* 
-* @returns 
-*/
 ConsultingNetworkStatus::~ConsultingNetworkStatus () {
-    this->mobileNetworkModule = NULL;
+    this->mobileNetworkModule = nullptr;
 }
 
-/** 
-* @brief 
-* 
-* 
-* @returns 
-*/
 void ConsultingNetworkStatus::enableConnection () {
     return;
 }
 
-/** 
-* @brief 
-* 
-* 
-* @returns 
-*/
+
 CellularConnectionStatus_t ConsultingNetworkStatus::connect (ATCommandHandler * ATHandler,
  NonBlockingDelay * refreshTime,
  CellInformation * currentCellInformation) {
 
-    static char StringToBeRead [256];
-    char ExpectedResponse [15] = "OK";
-    char StringToSend [15] = "AT+CREG=2";
-    char StringToSend2 [15] = "AT+CREG?";
-    char StringToSendUSB [40] = "CONSULTING NETWORK STATUS";
+    static char StringToBeRead [BUFFER_LEN];
+    char ExpectedResponse [AT_CMD_CONSULT_NETWORK_STATUS_EXPECTED_RESPONSE_LEN + 1] = AT_CMD_CONSULT_NETWORK_STATUS_EXPECTED_RESPONSE;
+    char StringToSend [AT_CMD_CONSULT_NETWORK_STATUS_1_LEN + 1] = AT_CMD_CONSULT_NETWORK_STATUS_1;
+    char StringToSend2 [AT_CMD_CONSULT_NETWORK_STATUS_2_LEN + 1] = AT_CMD_CONSULT_NETWORK_STATUS_2;
+    char StringToSendUSB [LOG_MESSAGE_LEN + 1] = LOG_MESSAGE;
 
     if (this->readyToSend == true) {
         ATHandler->sendATCommand(StringToSend);
@@ -119,11 +103,7 @@ CellularConnectionStatus_t ConsultingNetworkStatus::connect (ATCommandHandler * 
                 ////   ////   ////   ////   ////   ////
                 uartUSB.write (StringToBeRead , strlen (StringToBeRead ));  // debug only
                 uartUSB.write ( "\r\n",  3 );  // debug only
-                ////   ////   ////   ////   ////   ////     
-                char StringToSendUSB [40] = "Cambiando de estado 4";
-                uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
-                uartUSB.write ( "\r\n",  3 );  // debug only
-                ////   ////   ////   ////   ////   ////   
+
                 currentCellInformation->cellId = this->cellId;
                 currentCellInformation->lac = this->lac;
                 currentCellInformation->accessTechnology = this->accessTechnology;
@@ -161,29 +141,24 @@ bool ConsultingNetworkStatus::retrivNeighborCellsInformation (ATCommandHandler *
         return false;
 }
 
-
-
 //=====[Implementations of private functions]==================================
+
+//=====[Implementations of private methods]===================================
 bool ConsultingNetworkStatus::retrivIdCellData(char *response) {
     char StringToCompare[8] = "+CREG: ";
 
-    // Verificar si la respuesta comienza con "+CREG: "
     if (strncmp(response, StringToCompare, strlen(StringToCompare)) == 0) {
-        // Variables para almacenar los campos parseados
         int stat, act;
         char tac[10];
         char ci[20];
-        
-        // Parsear la respuesta
+
         int n = sscanf(response, "+CREG: %*d,%d,\"%9[^\"]\",\"%19[^\"]\",%d", &stat, tac, ci, &act);
         
-        // Verificar que se hayan parseado correctamente los 4 valores
         if (n == 4) {
             this->registrationStatus = stat;
 
-            // Convertir LAC y Cell ID de hexadecimal a entero
-            this->lac = strtol(tac, nullptr, 16);  // LAC como entero
-            this->cellId = strtol(ci, nullptr, 16);  // Cell ID como entero
+            this->lac = strtol(tac, nullptr, 16); 
+            this->cellId = strtol(ci, nullptr, 16); 
             this->accessTechnology = act;
 
             // Debugging

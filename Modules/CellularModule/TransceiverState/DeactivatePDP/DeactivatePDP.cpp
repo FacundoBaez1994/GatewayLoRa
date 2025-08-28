@@ -1,15 +1,23 @@
 //=====[Libraries]=============================================================
 
 #include "DeactivatePDP.h"
-#include "CellularModule.h" //debido a declaracion adelantada
+#include "CellularModule.h" 
 #include "Debugger.h" // due to global usbUart
 
 //=====[Declaration of private defines]========================================
+#define AT_CMD_DEACTIVATE_PDP "AT+QIDEACT="
+#define AT_CMD_DEACTIVATE_PDP_LEN  (sizeof(AT_CMD_DEACTIVATE_PDP) - 1)
 
+#define AT_CMD_DEACTIVATE_PDP_EXPECTED_RESPONSE "OK"
+#define AT_CMD_DEACTIVATE_PDP_EXPECTED_RESPONSE_LEN  (sizeof(AT_CMD_DEACTIVATE_PDP_EXPECTED_RESPONSE) - 1)
+
+#define LOG_MESSAGE "Deactivate PDP \r\n"
+#define LOG_MESSAGE_LEN (sizeof(LOG_MESSAGE) - 1)
+
+#define BUFFER_LEN 128
 //=====[Declaration of private data types]=====================================
 
 //=====[Declaration and initialization of public global objects]===============
-
 
 //=====[Declaration of external public global variables]=======================
 
@@ -17,67 +25,33 @@
 
 //=====[Declaration and initialization of private global variables]============
 
-
-
-
 //=====[Declarations (prototypes) of private functions]========================
 
-
 //=====[Implementations of private methods]===================================
-/** 
-* @brief attachs the callback function to the ticker
-*/
-
 
 //=====[Implementations of public methods]===================================
 
-/** 
-* @brief
-* 
-* @param 
-*/
 DeactivatePDP::DeactivatePDP (CellularModule * mobileModule, bool transmissionWasASuccess ) {
     this->mobileNetworkModule = mobileModule;
     this->readyToSend = true;
     this->transmissionWasASuccess = transmissionWasASuccess;
 }
 
-
-/** 
-* @brief 
-* 
-* 
-* @returns 
-*/
 DeactivatePDP::~DeactivatePDP () {
-    this->mobileNetworkModule = NULL;
+    this->mobileNetworkModule = nullptr;
 }
-
-
-/** 
-* @brief 
-* 
-* 
-* @returns 
-*/
 void DeactivatePDP::enableTransceiver () {
     return;
 }
 
-/** 
-* @brief 
-* 
-* 
-* @returns 
-*/
 CellularTransceiverStatus_t DeactivatePDP::exchangeMessages (ATCommandHandler * ATHandler,
     NonBlockingDelay * refreshTime, char * message, TcpSocket * socketTargetted,
      char * receivedMessage, bool * newDataAvailable) {
-    char StringToBeRead [20];
-    char ExpectedResponse [15] = "OK";
-    char StringToSendUSB [15] =  "DEACTIVATE PDP";
-    char StringToBeSend [50];
-    char ATcommand[] = "AT+QIDEACT="; 
+    char StringToBeRead [BUFFER_LEN];
+    char ExpectedResponse [AT_CMD_DEACTIVATE_PDP_EXPECTED_RESPONSE_LEN + 1] = AT_CMD_DEACTIVATE_PDP_EXPECTED_RESPONSE;
+    char StringToSendUSB [LOG_MESSAGE_LEN + 1] =   LOG_MESSAGE;
+    char StringToBeSend [AT_CMD_DEACTIVATE_PDP_LEN + 3];
+    char ATcommand[AT_CMD_DEACTIVATE_PDP_LEN + 1] = AT_CMD_DEACTIVATE_PDP; 
     int connectID = 0; 
     int contextID = 1; 
 
@@ -101,10 +75,6 @@ CellularTransceiverStatus_t DeactivatePDP::exchangeMessages (ATCommandHandler * 
          ////   ////   ////   ////   ////   ////
 
         if (strcmp (StringToBeRead, ExpectedResponse) == 0) {
-            ////   ////   ////   ////   ////   ////
-            char StringToSendUSB [40] = "Cambiando de estado 5";
-            uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
-            uartUSB.write ( "\r\n",  3 );  // debug only
             ////   ////   ////   ////   ////   ////     
             this->mobileNetworkModule->changeTransceiverState (new 
             TransceiverUnavailable (this->mobileNetworkModule));
@@ -123,8 +93,6 @@ CellularTransceiverStatus_t DeactivatePDP::exchangeMessages (ATCommandHandler * 
     return CELLULAR_TRANSCEIVER_STATUS_TRYNING_TO_SEND;
 }
 
-//    CELLULAR_TRANSCEIVER_STATUS_FAIL_TO_ACTIVATE_PDP,
-    //CELLULAR_TRANSCEIVER_STATUS_SEND_OK,
 
 
 //=====[Implementations of private functions]==================================

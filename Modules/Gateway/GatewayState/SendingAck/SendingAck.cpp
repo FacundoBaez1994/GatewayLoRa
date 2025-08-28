@@ -1,14 +1,13 @@
 //=====[Libraries]=============================================================
-
 #include "SendingAck.h"
 #include "Gateway.h" //debido a declaracion adelantada
 #include "Debugger.h" // due to global usbUart
-#include "SendingTCPMessage.h"
+#include "WaitingForMessage.h"
 
 //=====[Declaration of private defines]========================================
-#define BACKOFFTIME        500
-#define MAX_CHUNK_SIZE     5
-#define FLY_TIME           800
+#define BACKOFFTIME        100
+#define MAX_CHUNK_SIZE     255
+#define FLY_TIME           100
 //=====[Declaration of private data types]=====================================
 
 //=====[Declaration and initialization of public global objects]===============
@@ -38,17 +37,10 @@
 * 
 * @param 
 */
-SendingAck::SendingAck (Gateway * gateway, int IdDevice, int messageNumber, char * payload) {
-    this->gateway = gateway;
-    this->IdDevice = IdDevice;
+SendingAck::SendingAck (Gateway * gateway, long long int deviceId, int messageNumber) {
+    this->currentGateway = gateway;
+    this->IdDevice = deviceId;
     this->messageNumber = messageNumber;
-    
-    if (payload != nullptr) {
-        strncpy(this->payload, payload, sizeof(this->payload) - 1); // Copiar hasta 49 caracteres
-        this->payload[sizeof(this->payload) - 1] = '\0';            // Asegurar terminación nula
-    } else {
-        this->payload[0] = '\0'; // Si payload es nullptr, dejar vacío
-    }
 }
 
 
@@ -57,33 +49,29 @@ SendingAck::SendingAck (Gateway * gateway, int IdDevice, int messageNumber, char
 * 
 * @param 
 */
-SendingAck::~SendingAck () {
-     this->gateway = NULL;
+SendingAck::~SendingAck() {
+     this->currentGateway = NULL;
 }
 
-
-
-void SendingAck::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
-    return;
-}
-
-void SendingAck::sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
-    static char ACKmessage[226] = {0};
+void SendingAck::sendAcknowledgement (LoRaClass * LoRaModule, char * messageToBeSend, NonBlockingDelay * backoffTime) {
+    //char buffer [1024] = "helloooooooooooooooooooooooooooowwwwwwwwwwhelloooooooooooooooooooowwwwwwwwwwwwwhelloooooooooooooooooooooooooooowwwwwwwwwwhelloooooooooooooooooooowwwwwwwwwwwwwhelloooooooooooooooooooooooooooowwwwwwwwwwhelloooooooooooooooooooowwwwwwwwwwwwwF-16";
+    static char buffer [2048];
     static bool firstChunkSent = false;
     static bool firstDelayPassed = false;
     static bool messageFormatted = false;
     static bool firstEntryOnThisMethod = true;
     static size_t stringIndex = 0;
 
+    
     if (firstEntryOnThisMethod == true) {
-        delay->write(BACKOFFTIME);
-        delay->restart();
+        backoffTime->write(BACKOFFTIME);
+        backoffTime->restart();
         firstEntryOnThisMethod = false;
     }
 
 
     if (firstDelayPassed == false) {
-        if (delay->read()) {
+        if (backoffTime->read()) {
             firstDelayPassed = true;
             uartUSB.write("Backoff passed\r\n", strlen("Backoff passed\r\n"));
         } else {
@@ -92,99 +80,70 @@ void SendingAck::sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay *
     }
 
     if (messageFormatted == false) {
-        snprintf(ACKmessage, sizeof(ACKmessage), "%d,%d,ACK", this->IdDevice, this->messageNumber); //
-        if (this->gateway->prepareMessage(ACKmessage) == false) {
-            uartUSB.write("Fail to prepare message to be send\r\n", strlen("Fail to prepare message to be send\r\n"));
-            std::fill(std::begin(ACKmessage), std::end(ACKmessage), '\0');
+        uartUSB.write ("Sending plaintext message:\r\n", strlen ("Sending plaintext message:\r\n"));  // debug only
+        uartUSB.write ( messageToBeSend, strlen ( messageToBeSend));  // debug only
+        uartUSB.write ( "\r\n",  3 );  // debug only
+         snprintf(buffer, sizeof(buffer), "%lld,%d,ACK", this->IdDevice, this->messageNumber); //
+
+        if (this->currentGateway->prepareLoRaMessage ( buffer, strlen (buffer)) == false) {
             return;
         }
-        size_t originalLength = strlen(ACKmessage);
+        uartUSB.write ("coded message:\r\n", strlen ("coded message:\r\n"));  // debug only
+        uartUSB.write ( buffer, strlen ( buffer));  // debug only
+        uartUSB.write("\r\n", strlen("\r\n"));
+
+        size_t originalLength = strlen(buffer);
+
         // Copiar la cadena original y agregar '|'
-        ACKmessage[originalLength ] = '|';  // Agregar '|'
-        ACKmessage[originalLength + 1] = '|';      // Asegurar terminación nula
-        ACKmessage[originalLength + 2] = '\0';      // Asegurar terminación nula
-        messageFormatted = true;
-        uartUSB.write("Sending Acknowledgment Message\r\n", strlen("Sending Acknowledgment Message\r\n")); // Debug 
+        
+        buffer[originalLength ] = '|';  // Agregar '|'
+        buffer[originalLength + 1] = '|';      // Asegurar terminación nula
+        buffer[originalLength + 2] = '\0';      // Asegurar terminación nula
+
+        uartUSB.write("\r\n", strlen("\r\n"));
+        uartUSB.write ( buffer, strlen ( buffer));  // debug only
+        uartUSB.write("\r\n", strlen("\r\n"));
+        messageFormatted = true; 
     }
 
-    if (delay->read() || firstChunkSent == false) {
-        firstChunkSent = true;
-        delay->write(FLY_TIME);
-        delay->restart();
 
-        size_t totalLength = strlen(ACKmessage);
+    if (backoffTime->read() || firstChunkSent == false) {
+        firstChunkSent = true;
+        backoffTime->write(FLY_TIME);
+        backoffTime->restart();
+
+        size_t totalLength = strlen(buffer);
         size_t chunkSize = MAX_CHUNK_SIZE;  // Fragmentos de 50 bytes
-        LoRaModule->idle();                          // set standby mode
-        LoRaModule->enableInvertIQ();             // normal mode
-        size_t currentChunkSize = (totalLength - stringIndex  < chunkSize) ? (totalLength - stringIndex ) : chunkSize;
+        LoRaModule->idle();                     
+        LoRaModule->enableInvertIQ();  
+        size_t currentChunkSize = (totalLength - stringIndex < chunkSize) ? (totalLength - stringIndex) : chunkSize;
         uartUSB.write("\r\n", strlen("\r\n"));
-        uartUSB.write (ACKmessage + stringIndex , currentChunkSize);  // debug only
+        uartUSB.write ( buffer, strlen (buffer));  // debug only
         uartUSB.write("\r\n", strlen("\r\n"));
         LoRaModule->beginPacket();
-        LoRaModule->write((uint8_t*)(ACKmessage +  stringIndex ), currentChunkSize);
+        LoRaModule->write((uint8_t*)(buffer + stringIndex), currentChunkSize);
+        //LoRaModule->write(reinterpret_cast<const uint8_t*>(buffer), strlen(buffer));
+
+        //LoRaModule->write((uint8_t*)(buffer), strlen (buffer));
         LoRaModule->endPacket();
         stringIndex += chunkSize;
         if (stringIndex  > totalLength) {
-            uartUSB.write("Changing To WaitingForMessage State\r\n", strlen("Changing To WaitingForMessage State\r\n"));
-            this->gateway->changeState (new SendingTCPMessage (this->gateway, this->IdDevice, this->messageNumber, this->payload));
-            std::fill(std::begin(ACKmessage), std::end(ACKmessage), '\0');
+            uartUSB.write("\r\n", strlen("\r\n"));
+            uartUSB.write ("Changing State to WaitingForMessage:\r\n", 
+            strlen ("Changing State to WaitingForMessage:\r\n"));  // debug only
+            uartUSB.write("\r\n", strlen("\r\n"));
             firstDelayPassed = false;
             messageFormatted = false;
+            firstEntryOnThisMethod = true;
+            messageFormatted = false; 
             stringIndex = 0;
+            this->currentGateway->changeState(new WaitingForMessage (this->currentGateway));
             return;
         }
     }
-    return;
 }
 
-void SendingAck::sendTCPMessage (UipEthernet * ethernetModule, NonBlockingDelay * delay) {
-    return;
-}
-
-
-
-void SendingAck::updatePowerStatus (CellularModule * cellularTransceiver,
- BatteryData * currentBatteryStatus) {
-     return;
+ bool SendingAck::waitForMessage (LoRaClass * LoRaModule, char * messageRecieved, NonBlockingDelay * timeOut){
+      return false;
  }
-
-void SendingAck::obtainGNSSPosition (GNSSModule * currentGNSSModule, GNSSData * currentGNSSdata) {
-    return;
-}
-
- void SendingAck::connectToMobileNetwork (CellularModule * cellularTransceiver,
-    CellInformation * currentCellInformation) {
-    return; 
-}
-
-
-void SendingAck::obtainNeighborCellsInformation (CellularModule* cellularTransceiver, 
-    std::vector<CellInformation*> &neighborsCellInformation, int numberOfNeighbors ) {
-    return;
-}
-
-
-void SendingAck::formatMessage (char * formattedMessage, CellInformation* aCellInfo,
-    GNSSData* GNSSInfo, std::vector<CellInformation*> &neighborsCellInformation,
-    BatteryData  * batteryStatus) {
-    return;
-}
-
-void SendingAck::exchangeMessages (CellularModule * cellularTransceiver,
-    char * message, TcpSocket * socketTargetted, char * receivedMessage ){
-
-    return;
-}
-
-void SendingAck::goToSleep (CellularModule * cellularTransceiver ) {
-    return;
-}
-
-void SendingAck::awake (CellularModule * cellularTransceiver, NonBlockingDelay * latency ) {
-    return;
- }
-
-
-
-
 //=====[Implementations of private functions]==================================

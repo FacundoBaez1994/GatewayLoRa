@@ -24,59 +24,29 @@
 
 
 //=====[Implementations of private methods]===================================
-/** 
-* @brief attachs the callback function to the ticker
-*/
-
 
 //=====[Implementations of public methods]===================================
-/** 
-* @brief
-* 
-* @param 
-*/
+
 ATCommandHandler::ATCommandHandler ( BufferedSerial * UART) {
     this->bufferIndex = 0;
     this->serialComunicationUART = UART;
 }
 
-
 ATCommandHandler::~ATCommandHandler () {
     delete  this->serialComunicationUART;
 }
 
-
-/** 
-* @brief 
-* 
-* 
-* @returns 
-*/
 void ATCommandHandler::sendATCommand (char * ATCommandToBeSend) {
     this->serialComunicationUART->write (ATCommandToBeSend, strlen (ATCommandToBeSend));  
     this->serialComunicationUART->write ( "\r\n",  3 ); 
 }
 
-
-
-/** 
-* @brief 
-* 
-* 
-* @returns 
-*/
 void ATCommandHandler::sendATCommand (const char * ATCommandToBeSend, size_t length) {
     this->serialComunicationUART->write(ATCommandToBeSend, length);  
     this->serialComunicationUART->write("\r\n", 3); 
 }
 
 
-/** 
-* @brief 
-* 
-* 
-* @returns 
-*/
 bool ATCommandHandler::readATResponse (char * StringToBeRead) {
     char receivedCharLocal;
     if (this->serialComunicationUART->readable()) { // READ
@@ -97,13 +67,6 @@ bool ATCommandHandler::readATResponse (char * StringToBeRead) {
     return false;
 }
 
-
-/** 
-* @brief 
-* 
-* 
-* @returns 
-*/
 bool ATCommandHandler::readChar (char * charRead) {
     char receivedCharLocal;
     char StringToBeSendUSB [2] = "";
@@ -118,6 +81,7 @@ bool ATCommandHandler::readChar (char * charRead) {
     }
     return false;
 }
+
 
 BufferedSerial* ATCommandHandler::getUART (void) {
     return this->serialComunicationUART;

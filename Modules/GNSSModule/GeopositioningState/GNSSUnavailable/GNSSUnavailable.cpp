@@ -1,7 +1,7 @@
 //=====[Libraries]=============================================================
 
 #include "GNSSUnavailable.h" 
-#include "GNSSModule.h" //debido a declaracion adelantada
+#include "GNSSModule.h"
 #include "Debugger.h" // due to global usbUart
 
 //=====[Declaration of private defines]========================================
@@ -20,53 +20,24 @@
 //=====[Declarations (prototypes) of private functions]========================
 
 //=====[Implementations of private methods]===================================
-/** 
-* @brief attachs the callback function to the ticker
-*/
-
 
 //=====[Implementations of public methods]===================================
-/** 
-* @brief
-* 
-* @param 
-*/
 GNSSUnavailable::GNSSUnavailable () {
-    this->currentGNSSModule = NULL;
+    this->currentGNSSModule = nullptr;
     this->readyToSend = true;
 }
 
-
-/** 
-* @brief
-* 
-* @param 
-*/
-GNSSUnavailable::GNSSUnavailable  (GNSSModule * aGNSSModule) {
+GNSSUnavailable::GNSSUnavailable  (GNSSModule* aGNSSModule) {
     this->currentGNSSModule = aGNSSModule;
     this->readyToSend = true;
 }
 
-
-/** 
-* @brief 
-* 
-* 
-* @returns 
-*/
 GNSSUnavailable::~GNSSUnavailable  () {
-    this->currentGNSSModule = NULL;
+    this->currentGNSSModule = nullptr;
 }
 
-
-/** 
-* @brief 
-* 
-* 
-* @returns 
-*/
-GNSSState_t GNSSUnavailable::retrivGeopositioning (GNSSData * Geodata, ATCommandHandler * ATHandler,
-     NonBlockingDelay * refreshTime)  {
+GNSSState_t GNSSUnavailable::retrivGeopositioning (GNSSData* Geodata, ATCommandHandler* ATHandler,
+     NonBlockingDelay* refreshTime)  {
     return GNSS_STATE_DISCONNECTED;
 }
 

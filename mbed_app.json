@@ -5,7 +5,7 @@
             "target.extra_labels_add": ["NFC"],
             "target.c_lib": "std",
             "target.cxx_lib": "std",
-            "target.printf_lib": "minimal-printf",
+            "target.printf_lib": "std",
             "platform.stdio-baud-rate": 115200,
             "platform.stdio-buffered-serial": true,
             "platform.default-serial-baud-rate": 115200,

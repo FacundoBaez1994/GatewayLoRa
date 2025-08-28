@@ -2,7 +2,6 @@
 #include "PowerManager.h"
 #include "Debugger.h"
 
-
 //=====[Declaration of private defines]========================================
 #define POWERCHANGEDURATION  700
 //#define REFRESHTIME  1000
@@ -16,12 +15,9 @@
 #define CELLULAR_MODULE_DTR_PIN_OUTPUT PB_6
 
 
-
-
 //=====[Declaration of private data types]=====================================
 
 //=====[Declaration and initialization of public global objects]===============
-
 
 //=====[Declaration of external public global variables]=======================s
 
@@ -33,13 +29,7 @@
 
 //=====[Implementations of private methods]===================================
 
-
 //=====[Implementations of public methods]===================================
-/** 
-* 
-* 
-* 
-*/
 PowerManager::PowerManager (ATCommandHandler * AThandler) {
     this->powerChangeDurationTimer = new NonBlockingDelay (POWERCHANGEDURATION  );
     this->ATHandler = AThandler;
@@ -57,129 +47,89 @@ PowerManager::PowerManager (ATCommandHandler * AThandler) {
     *this->powerDownOutput = ON; 
 }
 
-
-/** 
-* 
-* 
-* 
-*/
 PowerManager::~PowerManager () {
     delete this->powerChangeDurationTimer;
-    this->powerChangeDurationTimer = NULL;
-    this->ATHandler = NULL;
+    this->powerChangeDurationTimer = nullptr;
+
+    delete this->currentPowerState;
+    this->currentPowerState = nullptr;
+
+    delete this->powerStatusInput;
+    this->powerStatusInput = nullptr;
+
+    delete this->powerControlButtonInput;
+    this->powerControlButtonInput = nullptr;
+
+    delete this->powerKeyOutput;
+    this->powerKeyOutput = nullptr;
+
+    delete this->powerDownOutput;
+    this->powerDownOutput = nullptr;
+
+    delete this->powerKeySleepOutput;
+    this->powerKeySleepOutput = nullptr;
+
+    this->ATHandler = nullptr;
 }
 
-/** 
-* @brief 
-* 
-* 
-* @returns 
-*/
 powerStatus_t PowerManager::startStopUpdate ( ) {
     return this->currentPowerState->startStopUpdate(this->ATHandler, this->powerChangeDurationTimer);
 }
 
-/** 
-* @brief 
-* 
-* 
-* @returns 
-*/
+bool PowerManager::turnOff ( ) {
+    return this->currentPowerState->turnOff (this->ATHandler, this->powerChangeDurationTimer);
+}
+
+
+bool PowerManager::turnOn ( ) {
+    return this->currentPowerState->turnOn (this->ATHandler, this->powerChangeDurationTimer);
+}
+
 bool PowerManager::goToSleep ( ) {
     return this->currentPowerState->goToSleep(this->ATHandler, this->powerChangeDurationTimer);
 }
 
-/** 
-* @brief 
-* 
-* 
-* @returns 
-*/
 void PowerManager::awake ( ) {
     this->currentPowerState->awake(this->ATHandler, this->powerChangeDurationTimer);
 }
 
-/** 
-* @brief 
-* 
-* 
-* @returns 
-*/
 bool PowerManager::reboot ( ) {
     return this->currentPowerState->reboot(this->ATHandler, this->powerChangeDurationTimer);
 }
 
-
-
-/** 
-* @brief 
-* 
-* 
-* @returns 
-*/
 bool PowerManager::measureBattery (BatteryData * currentBatteryData) {
     return this->currentPowerState->measureBattery(this->ATHandler, this->powerChangeDurationTimer
     , currentBatteryData);
 }
 
-/** 
-* @brief 
-* 
-* @returns 
-*/
 void PowerManager::changePowerState (PowerState * newPowerState){
     delete this->currentPowerState;
     this->currentPowerState =  newPowerState;
 } 
 
-/** 
-* @brief 
-* 
-* @returns 
-*/
 bool PowerManager::readInputControlButton ( ) {
     return this->powerControlButtonInput->read();
 }
 
-/** 
-* @brief 
-* 
-* @returns 
-*/
 bool PowerManager::readPowerStatus ( ) {
     return this->powerStatusInput->read();
 }
 
-/** 
-* @brief 
-* 
-* @returns 
-*/
 void PowerManager::changeKeyDigitalSignal (bool newStatus) {
     *this->powerKeyOutput = newStatus; 
 }
 
-/** 
-* @brief 
-* 
-* @returns 
-*/
+void PowerManager::changePowerDownSignal (bool newStatus) {
+    *this->powerDownOutput  = newStatus; 
+}
+
 void PowerManager::changeDTRSignal (bool newStatus) {
     *this->powerKeySleepOutput = newStatus; 
 }
 
-
-/** 
-* @brief 
-* 
-* @returns 
-*/
  BufferedSerial* PowerManager::getUART () {
      return this->ATHandler->getUART();
 }
-
-
-
 
 //=====[Implementations of private functions]==================================
 

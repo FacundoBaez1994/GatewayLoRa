@@ -8,10 +8,26 @@
 #define LOWER_LIMIT_SIGNAL_LEVEL -100
 #define MAX_ATTEMPTS_TIMEOUT_NO_RESPONSE 40
 #define MAX_ATTEMPTS_TO_GET_SIGNAL 20
+
+#define AT_CMD_CHECK_SIGNAL_STRENGTH      "AT+CSQ"
+#define AT_CMD_CHECK_SIGNAL_STRENGTH_LEN  (sizeof(AT_CMD_CHECK_SIGNAL_STRENGTH ) - 1)
+
+#define AT_CMD_CHECK_SIGNAL_STRENGTH_EXPECTED_RESPONSE     "OK"
+#define AT_CMD_CHECK_SIGNAL_STRENGTH_EXPECTED_RESPONSE_LEN  (sizeof(AT_CMD_CHECK_SIGNAL_STRENGTH_EXPECTED_RESPONSE) - 1)
+
+#define AT_CMD_CHECK_SIGNAL_STRENGTH_RESPONSE_HEADER     "+CSQ:"
+#define AT_CMD_CHECK_SIGNAL_STRENGTH_RESPONSE_HEADER_LEN  (sizeof(AT_CMD_CHECK_SIGNAL_STRENGTH_RESPONSE_HEADER) - 1)
+
+
+#define BUFFER_LEN 128
+#define LOG_MESSAGE_INITIAL "Checking Signal Strength\r\n"
+#define LOG_MESSAGE_INITIAL_LEN  (sizeof(LOG_MESSAGE_INITIAL) - 1)
+
+#define LOG_MESSAGE_WARNING "Poor signal\r\n"
+#define LOG_MESSAGE_WARNING_LEN  (sizeof(LOG_MESSAGE_WARNING) - 1)
 //=====[Declaration of private data types]=====================================
 
 //=====[Declaration and initialization of public global objects]===============
-
 
 //=====[Declaration of external public global variables]=======================
 
@@ -19,24 +35,12 @@
 
 //=====[Declaration and initialization of private global variables]============
 
-
-
-
 //=====[Declarations (prototypes) of private functions]========================
 
-
 //=====[Implementations of private methods]===================================
-/** 
-* @brief attachs the callback function to the ticker
-*/
-
 
 //=====[Implementations of public methods]===================================
-/** 
-* @brief
-* 
-* @param 
-*/
+
 CheckingSignalStrength::CheckingSignalStrength (CellularModule * mobileModule) {
     this->mobileNetworkModule = mobileModule;
     this->ATFirstResponseRead  = false;
@@ -48,43 +52,23 @@ CheckingSignalStrength::CheckingSignalStrength (CellularModule * mobileModule) {
     this->maxConnectionAttemptsSignal =  MAX_ATTEMPTS_TO_GET_SIGNAL;
 }
 
-
-/** 
-* @brief 
-* 
-* 
-* @returns 
-*/
 CheckingSignalStrength::~CheckingSignalStrength () {
-    this->mobileNetworkModule = NULL;
+    this->mobileNetworkModule = nullptr;
 }
 
-
-/** 
-* @brief 
-* 
-* 
-* @returns 
-*/
 void CheckingSignalStrength::enableConnection () {
     return;
 }
 
-
-/** 
-* @brief 
-* 
-* 
-* @returns 
-*/
 CellularConnectionStatus_t  CheckingSignalStrength::connect (ATCommandHandler * ATHandler, 
 NonBlockingDelay * refreshTime,
 CellInformation * currentCellInformation) {
 
-    static char StringToBeRead [256];
-    char ExpectedResponse [15] = "OK";
-    char StringToSend [15] = "AT+CSQ";
-    char StringToSendUSB [40] = "CHECKING NETWORK STATE";
+    static char StringToBeRead [BUFFER_LEN];
+    char ExpectedResponse [AT_CMD_CHECK_SIGNAL_STRENGTH_EXPECTED_RESPONSE_LEN + 1] = AT_CMD_CHECK_SIGNAL_STRENGTH_EXPECTED_RESPONSE;
+    char StringToSend [AT_CMD_CHECK_SIGNAL_STRENGTH_LEN + 1] = AT_CMD_CHECK_SIGNAL_STRENGTH;
+    char StringToSendUSB [LOG_MESSAGE_INITIAL_LEN + 1] = LOG_MESSAGE_INITIAL;
+    char StringToSendUSB2 [LOG_MESSAGE_WARNING_LEN + 1] = LOG_MESSAGE_WARNING;
 
     if (this->readyToSend == true) {
         ATHandler->sendATCommand(StringToSend);
@@ -119,25 +103,19 @@ CellInformation * currentCellInformation) {
                 ////   ////   ////   ////   ////   ////
                 uartUSB.write (StringToBeRead , strlen (StringToBeRead ));  // debug only
                 uartUSB.write ( "\r\n",  3 );  // debug only
-                ////   ////   ////   ////   ////   ////     
-                char StringToSendUSB [40] = "Cambiando de estado 2";
-                uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
-                uartUSB.write ( "\r\n",  3 );  // debug only
                 ////   ////   ////   ////   ////   ////        
                 if (this->signalLevel > LOWER_LIMIT_SIGNAL_LEVEL) {
-
-                currentCellInformation->signalLevel = this->signalLevel;
-                this->mobileNetworkModule->changeConnectionState(new ConsultingIMEI(this->mobileNetworkModule));
-                return CELLULAR_CONNECTION_STATUS_TRYING_TO_CONNECT;
-            } else {
-                char StringToSendUSB [15] = "Poor signal";
-                uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
-                uartUSB.write ( "\r\n",  3 );  // debug only
-                connectionAttemptsSignal++;
-                if (this->connectionAttemptsSignal >= this->maxConnectionAttemptsSignal) {
-                    return CELLULAR_CONNECTION_STATUS_MODULE_DISCONNECTED;
+                    currentCellInformation->signalLevel = this->signalLevel;
+                    this->mobileNetworkModule->changeConnectionState(new ConsultingIMEI(this->mobileNetworkModule));
+                    return CELLULAR_CONNECTION_STATUS_TRYING_TO_CONNECT;
+                } else {
+                    uartUSB.write (StringToSendUSB2 , strlen (StringToSendUSB2 ));  // debug only
+                    uartUSB.write ( "\r\n",  3 );  // debug only
+                    connectionAttemptsSignal++;
+                    if (this->connectionAttemptsSignal >= this->maxConnectionAttemptsSignal) {
+                        return CELLULAR_CONNECTION_STATUS_MODULE_DISCONNECTED;
+                    }
                 }
-            }
             }
         }
     }
@@ -162,24 +140,19 @@ bool CheckingSignalStrength::retrivNeighborCellsInformation (ATCommandHandler * 
 
 //=====[Implementations of private functions]==================================
 bool CheckingSignalStrength::checkExpectedResponse(char* response) {
-    char StringToCompare[15] = "+CSQ:";
+    char StringToCompare[AT_CMD_CHECK_SIGNAL_STRENGTH_RESPONSE_HEADER_LEN + 1] = AT_CMD_CHECK_SIGNAL_STRENGTH_RESPONSE_HEADER;
     
-    // Verificar si la respuesta comienza con "+CSQ:"
     if (strncmp(response, StringToCompare, strlen(StringToCompare)) == 0) {
-        // La respuesta comienza con "+CSQ:"
-        // Extraer la parte numérica después de "+CSQ:"
         char* numericPart = response + strlen(StringToCompare);
         
-        // Separar los valores de RSSI y BER usando sscanf
         int rssi, ber;
         if (sscanf(numericPart, "%d,%d", &rssi, &ber) == 2) {
-            // Convertir RSSI a dBm y almacenar
             if (rssi >= 0 && rssi <= 31) {
                 this->signalLevel = -113 + 2 * rssi;
             } else if (rssi >= 100 && rssi <= 199) {
                 this->signalLevel = -116 + (rssi - 100);
             } else {
-                this->signalLevel = -999; // Valor desconocido
+                this->signalLevel = -999; // Unknown Value
             }
             
             // ber needs an active session to be meassured
@@ -190,12 +163,10 @@ bool CheckingSignalStrength::checkExpectedResponse(char* response) {
             uartUSB.write (msgStringSignalQuality,  strlen (msgStringSignalQuality) );  // debug only
             uartUSB.write ( "\r\n",  3 );  // debug only
 
-
             return true;
         }
     } 
-    
-    // La respuesta no es válida
+
     return false;
 }
 

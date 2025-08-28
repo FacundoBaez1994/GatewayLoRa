@@ -1,56 +1,90 @@
 //=====[#include guards - begin]===============================================
-
 #ifndef _EXCHANGING_MESSAGES_H_
 #define _EXCHANGING_MESSAGES_H_
 
 //==================[Libraries]===============================================
-
 #include "mbed.h"
 #include "arm_book_lib.h"
-#include "GatewayState.h"
+#include "GatewayBaseState.h"
 #include "Gateway.h"
+#include "JWTManager.h"
 
 //=====[Declaration of public data types]======================================
-class Gateway; //debido a declaracion adelantada
+class Gateway; ///< Forward declaration due to circular dependency
 
 //=====[Declaration of public classes]=========================================
-/*
- *  class - State desing pattern
- * 
+/**
+ * @brief State class implementing message exchange with the server.
+ * @details Implements the state machine behavior for sending messages via
+ * cellular transceiver and receiving/parsing server responses. Manages
+ * message retransmission, parsing JSON payload fields, and transitioning
+ * to subsequent states based on success or failure.
  */
-class ExchangingMessages : public GatewayState {
+class ExchangingMessages : public GatewayBaseState {
 public:
 //=====[Declaration of public methods]=========================================
-    ExchangingMessages (Gateway * gateway, gatewayStatus_t gatewayStatus);
+    /**
+     * @brief Constructor
+     * @param gateway Pointer to the Gateway object managing states and data
+     * @param gatewayStatus Current gateway status to manage state transitions
+     */
+    ExchangingMessages (Gateway* gateway, gatewayStatus_t gatewayStatus);
+
+    /**
+     * @brief Destructor
+     */
     virtual ~ExchangingMessages ();
 
-    
-    virtual void receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay * delay);
-    virtual void sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay * delay);
-    virtual void sendTCPMessage (UipEthernet * ethernetModule, NonBlockingDelay * delay);
-    
-    virtual void updatePowerStatus (CellularModule * cellularTransceiver, BatteryData * currentBatteryStatus);
-    virtual void obtainGNSSPosition (GNSSModule * currentGNSSModule, GNSSData * currentGNSSdata);
-    virtual void connectToMobileNetwork (CellularModule * cellularTransceiver,
-    CellInformation * currentCellInformation);
-    virtual void obtainNeighborCellsInformation (CellularModule* cellularTransceiver, 
-    std::vector<CellInformation*> &neighborsCellInformation, int numberOfNeighbors );
-    virtual void formatMessage (char * formattedMessage, CellInformation* aCellInfo,
-    GNSSData* GNSSInfo, std::vector<CellInformation*> &neighborsCellInformation,
-    BatteryData  * batteryStatus); 
-    virtual void exchangeMessages (CellularModule * cellularTransceiver,
-    char * message, TcpSocket * socketTargetted, char * receivedMessage );
-    // agregar LoRa // exchageMessages (Lora * LoRaModule);
-    virtual void goToSleep (CellularModule * cellularTransceiver);
-    virtual void awake (CellularModule * cellularTransceiver, NonBlockingDelay * latency);
+    /**
+     * @brief Updates power status of the cellular transceiver
+     * @param cellularTransceiver Pointer to the CellularModule instance
+     * @param currentBatteryStatus Pointer to battery status (currently unused)
+     */
+    virtual void updatePowerStatus (CellularModule* cellularTransceiver, BatteryData* currentBatteryStatus);
+
+    /**
+     * @brief Exchanges messages with the server via cellular transceiver
+     * @param cellularTransceiver Pointer to the CellularModule instance
+     * @param message Pointer to the message buffer to send
+     * @param socketTargetted Pointer to the TCP socket to send through
+     * @param receivedMessage Pointer to buffer for storing received server response
+     * @details Manages message sending, response reception, JSON parsing of
+     * fields such as success status, latency, operation mode, and silent timer.
+     * Transitions to appropriate next states depending on communication success.
+    */
+    virtual void exchangeMessages (CellularModule* cellularTransceiver,
+    char* message, TcpSocket* socketTargetted, char* receivedMessage );
 private:
-    Gateway * gateway;
-    gatewayStatus_t currentStatus;
-  
-
 //=====[Declaration of privates atributes]=========================================
-
+    Gateway* gateway; ///< Pointer to the gateway instance for state transitions
+    gatewayStatus_t currentStatus;  ///< Current operational status
 //=====[Declaration of privates methods]=========================================
+    /**
+     * @brief Extracts the value of a JSON field from a string
+     * @param json Pointer to JSON formatted string
+     * @param key Key name to find in the JSON string (including quotes)
+     * @param output Output buffer to copy extracted field value
+     * @param maxLen Maximum length of output buffer
+     * @return true if key and value were found and extracted, false otherwise
+     */
+    bool extractField(const char* json, const char* key, char* output, size_t maxLen);
+
+    /**
+     * @brief Parses a latency level string to a LatencyLevel_t enum
+     * @param latencyStr String representing latency level (e.g. "ELL", "VLL")
+     * @param newLatencyLevel Pointer to output LatencyLevel_t variable
+     * @return true if string matches known latency levels, false otherwise
+     */
+    bool parseLatencyLevel(const char* latencyStr, LatencyLevel_t*  newLatencyLevel);
+
+    /**
+     * @brief Parses an operation mode string to an OperationMode_t enum
+     * @param operationModeStr String representing operation mode ("NOPM", "POPM", "SOPM")
+     * @param newOperationMode Pointer to output OperationMode_t variable
+     * @return true if string matches known operation modes, false otherwise
+     */
+    bool parseOperationMode(const char* operationModeStr, OperationMode_t* newOperationMode);
+
 };
 
 

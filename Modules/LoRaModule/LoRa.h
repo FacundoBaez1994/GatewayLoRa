@@ -14,12 +14,7 @@ public:
     int begin(long frequency);
     void end();
 
-
     ssize_t read(uint8_t* buffer, size_t length);
-
-    void enableInvertIQ();
-    void disableInvertIQ();
-
     int beginPacket(int implicitHeader = false);
     int endPacket();
 
@@ -32,6 +27,9 @@ public:
     void receive(int size = 0);
     void idle();
     void sleep();
+
+    void enableInvertIQ();
+    void disableInvertIQ();
 
     void setTxPower(int level, int outputPin = PA_OUTPUT_PA_BOOST_PIN);
     void setFrequency(long frequency);

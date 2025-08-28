@@ -7,46 +7,51 @@
 
 #include "mbed.h"
 #include "arm_book_lib.h"
-#include "GatewayState.h"
+#include "GatewayBaseState.h"
 #include "Gateway.h"
 
 //=====[Declaration of public data types]======================================
 class Gateway; //debido a declaracion adelantada
 
 //=====[Declaration of public classes]=========================================
-/*
- *  class - State desing pattern
+/**
+ * @class SensingBatteryStatus
+ * @brief State in the Gateway's state machine responsible for reading the battery status.
  * 
+ * This class is part of the State design pattern implementation for the Gateway system.
+ * It focuses on measuring the battery status via the cellular module and deciding the 
+ * next operational state based on the result.
  */
-class SensingBatteryStatus : public GatewayState {
+class SensingBatteryStatus : public GatewayBaseState{
 public:
 //=====[Declaration of public methods]=========================================
+    /**
+     * @brief Constructs the SensingBatteryStatus state.
+     * 
+     * @param gateway Pointer to the Gateway context that owns this state.
+     */
     SensingBatteryStatus (Gateway * gateway);
+
+    /**
+     * @brief Destroys the SensingBatteryStatus state.
+     * 
+     * Sets the gateway pointer to nullptr.
+     */
     virtual ~SensingBatteryStatus ();
 
-    virtual void receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay * delay);
-    virtual void sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay * delay);
-    virtual void sendTCPMessage (UipEthernet * ethernetModule, NonBlockingDelay * delay);
-
+    /**
+     * @brief Updates the current power status of the system.
+     * This method queries the cellular transceiver to measure the battery 
+     * status and, if successful, transitions to the next state in the gateway.
+     * @param cellularTransceiver Pointer to the CellularModule used for measurement.
+     * @param currentBatteryStatus Pointer to a BatteryData structure to store the measured status.
+     */
     virtual void updatePowerStatus (CellularModule * cellularTransceiver, BatteryData * currentBatteryStatus);
-    virtual void obtainGNSSPosition (GNSSModule * currentGNSSModule, GNSSData * currentGNSSdata);
-    virtual void connectToMobileNetwork (CellularModule * cellularTransceiver,
-    CellInformation * currentCellInformation);
-    virtual void obtainNeighborCellsInformation (CellularModule* cellularTransceiver, 
-    std::vector<CellInformation*> &neighborsCellInformation, int numberOfNeighbors );
-    virtual void formatMessage (char * formattedMessage, CellInformation* aCellInfo,
-    GNSSData* GNSSInfo, std::vector<CellInformation*> &neighborsCellInformation,
-    BatteryData  * batteryStatus); 
-    virtual void exchangeMessages (CellularModule * cellularTransceiver,
-    char * message, TcpSocket * socketTargetted, char * receivedMessage );
-    // agregar LoRa // exchageMessages (Lora * LoRaModule);
-    virtual void goToSleep (CellularModule * cellularTransceiver);
-    virtual void awake (CellularModule * cellularTransceiver, NonBlockingDelay * latency);
-
 private:
-    //bool checkResponse (char * response, char * retrivMessage);
-    Gateway * gateway;
 //=====[Declaration of privates atributes]=========================================
+    //bool checkResponse (char * response, char * retrivMessage);
+    Gateway * gateway; /**< Pointer to the Gateway context using this state. */
+
 
 //=====[Declaration of privates methods]=========================================
 };

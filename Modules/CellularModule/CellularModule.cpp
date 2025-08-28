@@ -2,9 +2,8 @@
 #include "CellularModule.h"
 #include "Debugger.h"
 
-
 //=====[Declaration of private defines]========================================
-#define REFRESHTIME  1000
+#define REFRESH_TIME  1000
 #define CELLULAR_MODULE_TX_UART PA_9 // tx nucleo
 #define CELLULAR_MODULE_RX_UART PA_10 // rx nucleo
 
@@ -27,19 +26,13 @@
 //=====[Declarations (prototypes) of private functions]========================
 
 //=====[Implementations of private methods]===================================
-/** 
-* @brief r
-*/
+
 
 
 //=====[Implementations of public methods]===================================
-/** 
-* 
-* 
-* 
-*/
+
 CellularModule::CellularModule () {
-    this->refreshTime = new NonBlockingDelay (REFRESHTIME);
+    this->refreshTime = new NonBlockingDelay (REFRESH_TIME);
     this->ATHandler = new ATCommandHandler (new BufferedSerial  (CELLULAR_MODULE_TX_UART, 
      CELLULAR_MODULE_RX_UART, CELLULAR_MODULE_BAUD_RATE));
     this->currentConnectionState = new ConnectionUnavailableState (this);
@@ -47,80 +40,61 @@ CellularModule::CellularModule () {
     this->modulePowerManager = new PowerManager (this->ATHandler);
 
     this->simCardSwitchOutput =  new DigitalOut (CELLULAR_MODULE_SIMCARD_SWITCH_OUTPUT);
-    this->simCardSwitchOutput->write(ON);
     this->currentPowerStatus = POWER_OFF;
 }
 
-
-/** 
-* 
-* 
-* 
-*/
 CellularModule::~CellularModule () {
+    delete this->refreshTime;
+    this->refreshTime = nullptr;
+    delete this->ATHandler;
+    this->ATHandler = nullptr;
+    delete this->currentConnectionState;
+    this->currentConnectionState = nullptr;
+    delete this->currentTransceiverState;
+    this->currentTransceiverState = nullptr;
+    delete this->modulePowerManager;
+    this->modulePowerManager = nullptr;
+    delete this->simCardSwitchOutput;
+    this->simCardSwitchOutput = nullptr;
 }
 
-
-/** 
-* 
-* 
-* 
-*/
 void CellularModule::startStopUpdate () {
     powerStatus_t newPowerStatus;
     newPowerStatus = this->modulePowerManager->startStopUpdate();
     if (this->currentPowerStatus != newPowerStatus) {
        this->currentPowerStatus = newPowerStatus;
        if (this->currentPowerStatus != POWER_ON) {
-            this->changeConnectionState (new ConnectionUnavailableState (this));
-            this->changeTransceiverState  (new TransceiverUnavailable (this));
+            //this->changeConnectionState (new ConnectionUnavailableState (this));
+            //this->changeTransceiverState  (new TransceiverUnavailable (this));
        }
     }
 }
 
-/** 
-* 
-* 
-* 
-*/
+bool CellularModule::turnOn () { 
+    return this->modulePowerManager->turnOn();
+}
+
+bool CellularModule::turnOff () { 
+    return this->modulePowerManager->turnOff();
+}
+
 void CellularModule::awake () { 
     this->modulePowerManager->awake();
 }
 
-/** 
-* 
-* 
-* 
-*/
 bool CellularModule::goToSleep () {
     return this->modulePowerManager->goToSleep();
 }
 
-/** 
-* 
-* 
-*
-*/
 bool CellularModule::reboot () {
     return this->modulePowerManager->reboot ();
 }
 
-/** 
-* 
-* 
-* 
-*/
 CellularConnectionStatus_t CellularModule::connectToMobileNetwork 
 (CellInformation * currentCellInformation) {
     return this->currentConnectionState->connect(this->ATHandler, this->refreshTime, currentCellInformation);
 }
 
-
-/** 
-* @brief 
-* 
-* @returns 
-*/
 CellularTransceiverStatus_t CellularModule::exchangeMessages (char * message, TcpSocket * socketTargetted,
      char * receivedMessage, bool * newDataAvailable) {
     CellularTransceiverStatus_t currentStatus = this->currentTransceiverState->exchangeMessages (this->ATHandler,
@@ -133,69 +107,32 @@ CellularTransceiverStatus_t CellularModule::exchangeMessages (char * message, Tc
     return currentStatus;
 }
 
-
-/** 
-* @brief 
-* 
-* 
-* @returns 
-*/
 bool CellularModule::measureBattery (BatteryData * currentBatteryData) {
     return this->modulePowerManager->measureBattery(currentBatteryData);
 }
 
-/** 
-* @brief 
-* 
-* @returns 
-*/
 void CellularModule::changeConnectionState  (ConnectionState * newConnectionState) {
     delete this->currentConnectionState;
     this->currentConnectionState = newConnectionState;
 }
-/** 
-* @brief 
-* 
-* @returns 
-*/
+
 void CellularModule::changeTransceiverState  (TransceiverState * newTransceiverState) {
     delete this->currentTransceiverState;
     this->currentTransceiverState = newTransceiverState;
 }
 
-/** 
-* @brief 
-* 
-* @returns 
-*/
 void CellularModule:: enableTransceiver () {
     this->currentTransceiverState->enableTransceiver();  
 }
 
-/** 
-* @brief 
-* 
-* @returns 
-*/
 void CellularModule:: enableConnection () {
     this->currentConnectionState->enableConnection();
 }
 
-
-
-/** 
-* @brief 
-* 
-* @returns 
-*/
  BufferedSerial* CellularModule::getUART () {
      return this->ATHandler->getUART();
 }
 
-/** 
-* @brief
-* @note 
-*/
 void CellularModule::switchSIMCARD () {
     *this->simCardSwitchOutput = ! *this->simCardSwitchOutput;
 }
@@ -203,9 +140,13 @@ void CellularModule::switchSIMCARD () {
 
 bool CellularModule::retrivNeighborCellsInformation ( std::vector<CellInformation*> &neighborsCellInformation,
  int numberOfNeighbors){
-        return this->currentConnectionState->retrivNeighborCellsInformation 
+     bool result = this->currentConnectionState->retrivNeighborCellsInformation 
         (this->ATHandler, this->refreshTime, neighborsCellInformation, numberOfNeighbors);
+    if (result == true) {
+        refreshTime->write(REFRESH_TIME);
     }
+    return result;
+}
 
  PowerManager* CellularModule::getPowerManager (){
     return this->modulePowerManager;
@@ -217,4 +158,3 @@ ATCommandHandler* CellularModule::getATHandler (){
 
 
 //=====[Implementations of private functions]==================================
-

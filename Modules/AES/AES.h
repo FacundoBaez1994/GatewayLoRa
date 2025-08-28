@@ -1,4 +1,5 @@
 /* AES Cipher Library
+ * Adapted Mbed version of Neil Thiessen code:
  * Copyright (c) 2016 Neil Thiessen
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,78 +15,29 @@
  * limitations under the License.
  */
 
+//=====[#include guards - begin]===============================================
 #ifndef AES_H
 #define AES_H
 
+//==================[Libraries]===============================================
 #include "mbed.h"
 
-/** AES class.
- *  Used for encrypting/decrypting data using the AES block cipher.
- *
- * Example:
- * @code
- * #include "mbed.h"
- * #include "AES.h"
- *
- * char message[] = {
- *     "Hello World!"
- * };
- *
- * const char key[32] = {
- *     0x60, 0x3D, 0xEB, 0x10, 0x15, 0xCA, 0x71, 0xBE,
- *     0x2B, 0x73, 0xAE, 0xF0, 0x85, 0x7D, 0x77, 0x81,
- *     0x1F, 0x35, 0x2C, 0x07, 0x3B, 0x61, 0x08, 0xD7,
- *     0x2D, 0x98, 0x10, 0xA3, 0x09, 0x14, 0xDF, 0xF4
- * };
- *
- * const char iv[16] = {
- *     0x74, 0x11, 0xF0, 0x45, 0xD6, 0xA4, 0x3F, 0x69,
- *     0x18, 0xC6, 0x75, 0x42, 0xDF, 0x4C, 0xA7, 0x84
- * };
- *
- * void printData(const void* data, size_t length)
- * {
- *     const char* dataBytes = (const char*)data;
- *     for (size_t i = 0; i < length; i++) {
- *         if ((i % 8) == 0)
- *             printf("\n\t");
- *         printf("0x%02X, ", dataBytes[i]);
- *     }
- *     printf("\n");
- * }
- *
- * int main()
- * {
- *     AES aes;
- *
- *     //Print the original message
- *     printf("Original message: \"%s\"", message);
- *     printData(message, sizeof(message));
- *
- *     //Encrypt the message in-place
- *     aes.setup(key, AES::KEY_256, AES::MODE_CBC, iv);
- *     aes.encrypt(message, sizeof(message));
- *     aes.clear();
- *
- *     //Print the encrypted message
- *     printf("Encrypted message:");
- *     printData(message, sizeof(message));
- *
- *     //Decrypt the message in-place
- *     aes.setup(key, AES::KEY_256, AES::MODE_CBC, iv);
- *     aes.decrypt(message, sizeof(message));
- *     aes.clear();
- *
- *     //Print the decrypted message
- *     printf("Decrypted message: \"%s\"", message);
- *     printData(message, sizeof(message));
- * }
- * @endcode
+//=====[Declaration of public data types]======================================
+
+//=====[Declaration of public classes]=========================================
+
+/**
+ * @class AES
+ * @brief AES block cipher implementation supporting ECB and CBC modes.
+ * This class provides AES encryption and decryption functionality with support
+ * for 128, 192, and 256-bit keys. It supports ECB and CBC cipher modes.
  */
-class AES
-{
+class AES {
 public:
-    /** Represents the different AES key sizes
+//=====[Declaration of public methods]=========================================
+    /**
+     * @enum KeySize
+     * @brief Enum for supported AES key lengths.
      */
     enum KeySize {
         KEY_128 = 4,    /**< 128-bit AES key */
@@ -93,14 +45,17 @@ public:
         KEY_256 = 8     /**< 256-bit AES key */
     };
 
-    /** Represents the different cipher modes
+    /**
+     * @enum CipherMode
+     * @brief Enum for supported cipher modes.
      */
     enum CipherMode {
         MODE_ECB,   /**< Electronic codebook */
         MODE_CBC    /**< Cipher block chaining */
     };
 
-    /** Create a blank AES object
+    /** 
+     * @brief Default constructor. Initializes internal state to zero.
      */
     AES();
 
@@ -111,9 +66,10 @@ public:
      * @param mode The cipher mode as a CipherMode enum (MODE_ECB by default).
      * @param iv Pointer to the 16B initialization vector (NULL by default).
      */
-    AES(const char* key, KeySize keySize, CipherMode mode = MODE_ECB, const char* iv = NULL);
+    AES(const char* key, KeySize keySize, CipherMode mode = MODE_ECB, const char* iv = nullptr);
 
-    /** Destructor
+    /**
+     * @brief Destructor. Clears sensitive data.
      */
     ~AES();
 
@@ -124,7 +80,7 @@ public:
      * @param mode The cipher mode as a CipherMode enum (MODE_ECB by default).
      * @param iv Pointer to the 16B initialization vector (NULL by default).
      */
-    void setup(const char* key, KeySize keySize, CipherMode mode = MODE_ECB, const char* iv = NULL);
+    void setup(const char* key, KeySize keySize, CipherMode mode = MODE_ECB, const char* iv = nullptr);
 
     /** Encrypt the specified data in-place, using CTS or zero-padding if necessary
      *
@@ -156,38 +112,124 @@ public:
      */
     void decrypt(const char* src, void* dest, size_t length);
 
-    /** Erase any sensitive information in this AES object
+    /**
+     * @brief Clears all sensitive internal data (key, state, carry vector).
      */
     void clear();
 
 private:
-    //Member variables
+//=====[Private constants]=================================================
     static const char m_Sbox[256];
     static const char m_InvSbox[256];
     static const unsigned int m_Rcon[10];
-    AES::CipherMode m_CipherMode;
-    int m_Rounds;
-    unsigned int m_Key[60];
-    char m_State[16];
-    char m_CarryVector[16];
 
-    //Internal methods
+//=====[Declaration of privates atributes]=========================================
+    CipherMode m_CipherMode;        /**< Current cipher mode (ECB or CBC) */
+    int m_Rounds;                   /**< Number of AES rounds based on key size */
+    unsigned int m_Key[60];         /**< Expanded key schedule */
+    char m_State[16];               /**< 128-bit internal state buffer */
+    char m_CarryVector[16];         /**< CBC mode carry vector (IV) */
+
+//=====[Declaration of privates methods]=========================================
+    /**
+     * @brief Internal AES encryption routine on current state.
+     */
     void aesEncrypt();
+
+    /**
+     * @brief Internal AES decryption routine on current state.
+     */
     void aesDecrypt();
+
+    /**
+     * @brief Expands the input key into a key schedule.
+     * @param key Pointer to the input key.
+     * @param nk Number of 32-bit words in the key (4, 6, or 8).
+     */
     void expandKey(const char* key, int nk);
+
+    /**
+     * @brief Rotates a 32-bit word left by 1 byte. 
+     * @param w Word to rotate.
+     * @return Rotated word.
+     */
     unsigned int rotWord(unsigned int w);
+
+  /**
+     * @brief Rotates a 32-bit word right by 1 byte.
+     * 
+     * @param w Word to rotate.
+     * @return Rotated word.
+     */
     unsigned int invRotWord(unsigned int w);
+
+    /**
+     * @brief Applies S-box substitution to each byte in a word.
+     * 
+     * @param w Input word.
+     * @return Substituted word.
+     */
     unsigned int subWord(unsigned int w);
+
+    /**
+     * @brief Applies S-box substitution to entire state.
+     */
     void subBytes();
+
+    /**
+     * @brief Applies inverse S-box substitution to entire state.
+     */
     void invSubBytes();
+
+    /**
+     * @brief Performs row-wise shifting on the state.
+     */
     void shiftRows();
+
+    /**
+     * @brief Performs inverse row-wise shifting on the state.
+     */
     void invShiftRows();
+
+    /**
+     * @brief Galois field multiplication.
+     * 
+     * @param a First operand.
+     * @param b Second operand.
+     * @return Result of multiplication.
+     */
     char gmul(char a, char b);
+
+    /**
+     * @brief Performs MixColumns transformation on a column.
+     * 
+     * @param r Pointer to the 4-byte column.
+     */
     void mul(char* r);
+
+    /**
+     * @brief Performs inverse MixColumns transformation on a column.
+     * 
+     * @param r Pointer to the 4-byte column.
+     */
     void invMul(char* r);
+
+    /**
+     * @brief Applies MixColumns to the entire state.
+     */
     void mixColumns();
+
+    /**
+     * @brief Applies inverse MixColumns to the entire state.
+     */
     void invMixColumns();
+
+    /**
+     * @brief Applies the round key to the state.
+     * 
+     * @param round Round number (0 to m_Rounds).
+     */
     void addRoundKey(int round);
 };
 
-#endif
+#endif //  _AES_H_

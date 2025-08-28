@@ -6,10 +6,19 @@
 
 //=====[Declaration of private defines]========================================
 #define MAXATTEMPTS 20
+
+#define AT_CMD_CONSULT_IMEI     "AT+CGSN"
+#define AT_CMD_CONSULT_IMEI_LEN  (sizeof(AT_CMD_CONSULT_IMEI) - 1)
+
+#define AT_CMD_CONSULT_IMEI_EXPECTED_RESPONSE     "OK"
+#define AT_CMD_CONSULT_IMEI_EXPECTED_RESPONSE_LEN  (sizeof(AT_CMD_CONSULT_IMEI_EXPECTED_RESPONSE ) - 1)
+
+#define BUFFER_LEN 128
+#define LOG_MESSAGE "Consulting IMEI\r\n"
+#define LOG_MESSAGE_LEN (sizeof(LOG_MESSAGE) - 1)
 //=====[Declaration of private data types]=====================================
 
 //=====[Declaration and initialization of public global objects]===============
-
 
 //=====[Declaration of external public global variables]=======================
 
@@ -17,24 +26,13 @@
 
 //=====[Declaration and initialization of private global variables]============
 
-
-
-
 //=====[Declarations (prototypes) of private functions]========================
 
-
 //=====[Implementations of private methods]===================================
-/** 
-* @brief attachs the callback function to the ticker
-*/
 
 
 //=====[Implementations of public methods]===================================
-/** 
-* @brief
-* 
-* @param 
-*/
+
 ConsultingIMEI::ConsultingIMEI (CellularModule * mobileModule) {
     this->mobileNetworkModule = mobileModule;
     this->ATFirstResponseRead  = false;
@@ -44,40 +42,21 @@ ConsultingIMEI::ConsultingIMEI (CellularModule * mobileModule) {
     this->maxConnectionAttempts = MAXATTEMPTS; 
 }
 
-
-/** 
-* @brief 
-* 
-* 
-* @returns 
-*/
 ConsultingIMEI::~ConsultingIMEI () {
-    this->mobileNetworkModule = NULL;
+    this->mobileNetworkModule = nullptr;
 }
 
-/** 
-* @brief 
-* 
-* 
-* @returns 
-*/
 void ConsultingIMEI::enableConnection () {
     return;
 }
 
-/** 
-* @brief 
-* 
-* 
-* @returns 
-*/
 CellularConnectionStatus_t ConsultingIMEI::connect (ATCommandHandler * ATHandler, NonBlockingDelay * refreshTime,
 CellInformation * currentCellInformation) {
 
-    static char StringToBeRead [256];
-    char ExpectedResponse [15] = "OK";
-     char StringToSend [15] = "AT+CGSN";
-    char StringToSendUSB [40] = "CONSULTING IMEI STATE";
+    static char StringToBeRead [BUFFER_LEN];
+    char ExpectedResponse [AT_CMD_CONSULT_IMEI_EXPECTED_RESPONSE_LEN + 1] = AT_CMD_CONSULT_IMEI_EXPECTED_RESPONSE;
+     char StringToSend [AT_CMD_CONSULT_IMEI_LEN + 1] = AT_CMD_CONSULT_IMEI ;
+    char StringToSendUSB [LOG_MESSAGE_LEN + 1] = LOG_MESSAGE;
 
     if (this->readyToSend == true) {
         ATHandler->sendATCommand(StringToSend);
@@ -117,10 +96,6 @@ CellInformation * currentCellInformation) {
                 ////   ////   ////   ////   ////   ////
                 uartUSB.write (StringToBeRead , strlen (StringToBeRead ));  // debug only
                 uartUSB.write ( "\r\n",  3 );  // debug only
-                ////   ////   ////   ////   ////   ////     
-                char StringToSendUSB [40] = "Cambiando de estado 3";
-                uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
-                uartUSB.write ( "\r\n",  3 );  // debug only
                 ////   ////   ////   ////   ////   //// 
                 currentCellInformation->IMEI = this->IMEI;      
                 this->mobileNetworkModule->changeConnectionState (new ConsultingSIMCardStatus (this->mobileNetworkModule) );
@@ -141,13 +116,6 @@ CellInformation * currentCellInformation) {
 
 }
 
-
-/** 
-* @brief 
-* 
-* 
-* @returns 
-*/
 bool ConsultingIMEI::retrivNeighborCellsInformation (ATCommandHandler * handler,
     NonBlockingDelay * refreshTime, std::vector<CellInformation*> &neighborsCellInformation, 
     int numberOfNeighbors) {
@@ -155,26 +123,22 @@ bool ConsultingIMEI::retrivNeighborCellsInformation (ATCommandHandler * handler,
 }
 
 
-//=====[Implementations of private functions]==================================
+//=====[Implementations of private methods]==================================
 bool ConsultingIMEI::RetrivIMEI(char *response, long long int &value) {
-    // Verificar si los primeros tres caracteres son dígitos
     for (int i = 0; i < 3; ++i) {
         if (!isdigit(response[i])) {
-            return false; // Los primeros tres caracteres no son dígitos
+            return false; 
         }
     }
 
-    // Extraer el número de IMEI de la respuesta
-    char imeiPart[16] = {0}; // Crear un buffer para almacenar el IMEI
-    strncpy(imeiPart, response, 15); // Copiar los primeros 15 caracteres
+    char imeiPart[16] = {0}; 
+    strncpy(imeiPart, response, 15); 
 
-    // Verificar si la longitud del IMEI es la esperada (15 dígitos)
     if (strlen(imeiPart) != 15) {
-        return false; // Longitud de IMEI no es válida
+        return false; 
     }
 
-    // Convertir la parte del IMEI a un número entero largo
     value = std::atoll(imeiPart);
     
-    return true; // Recuperación exitosa del IMEI
+    return true; 
 }

@@ -15,33 +15,80 @@
 
 
 //=====[Declaration of public data types]======================================
-class CellularModule; //debido a declaracion adelantada
-struct TcpSocket;
+class CellularModule;   //!< Forward declaration of the owning module.
+struct TcpSocket;       //!< Forward declaration of TCP socket structure.
 
 //=====[Declaration of public classes]=========================================
-/*
- *  class - State desing pattern
- * 
+/**
+ * @class Sending
+ * @brief Represents the state responsible for sending data to a TCP Socket on a remote server.
+ * This class implements the Sending state in the TransceiverState state machine.
  */
 class Sending : public TransceiverState {
 public:
 //=====[Declaration of public methods]=========================================
+    /**
+     * @brief Default constructor.
+     * Initializes internal flags and counters.
+     * Makes the object enable to use
+     */
     Sending();
+
+    /**
+     * @brief Constructor with CellularModule reference.
+     * Makes the object enable to use
+     * @param mobileModule Pointer to the owner cellular module.
+     */
     Sending (CellularModule * mobileModule);
+
+    /**
+     * @brief Destructor.
+     * Clears the pointer to the cellular module.
+     * it won´t destroy de CellularModule object
+     */
     virtual ~Sending ();
+
+    /**
+     * @brief Allows enabling the transceiver from an external state.
+     */
     virtual void enableTransceiver ();
+
+    /**
+     * @brief Transition logic for data transmission. 
+     * Handles chunked sending and state transitions based on success/failure.
+     * @param ATHandler Pointer to AT command interface.
+     * @param refreshTime Pointer to a timer used for retries and pacing.
+     * @param message Pointer to the message to be sent.
+     * @param socketTargetted Pointer to the destination TCP socket.
+     * @param receivedMessage Pointer to buffer for a potential response (unused here).
+     * @param newDataAvailable Pointer to flag indicating if new data was received (unused here).
+     * @return CellularTransceiverStatus_t Status of the transmission.
+     */
     virtual CellularTransceiverStatus_t exchangeMessages (ATCommandHandler * ATHandler,
     NonBlockingDelay * refreshTime, char * message, TcpSocket * socketTargetted,
      char * receivedMessage, bool * newDataAvailable);
+
 private:
+    /**
+     * @brief Sends a chunk of the given message through the network
+     * to a TCP Socket.
+     * Handles retries, timeouts, and confirmation of successful transmission.
+     * @param ATHandler Pointer to AT command interface.
+     * @param refreshTime Pointer to a timer used for retries and pacing.
+     * @param message Pointer to the data chunk to send.
+     * @param socketTargetted Pointer to the destination TCP socket.
+     * @return true if the chunk was sent and acknowledged correctly.
+     * @return false if the send failed or timed out.
+     */
     bool sendChunck(ATCommandHandler *ATHandler,
     NonBlockingDelay *refreshTime, char *message, TcpSocket * socketTargetted);
-    CellularModule * mobileNetworkModule;
-    bool readyToSend;
-    bool transmissionEnable;
-    bool watingForConfirmation;
-    int Attempts; 
-    int maxAttempts; 
+
+    CellularModule * mobileNetworkModule;   //!< Pointer to the owner module
+    bool readyToSend;                       //!< Indicates whether a chunk can be sent
+    bool transmissionEnable;                //!< Waits for prompt to transmit
+    bool watingForConfirmation;             //!< Waiting for confirmation after sending
+    int Attempts;                           //!< Retry counter
+    int maxAttempts;                        //!< Maximum retry attempts
 //=====[Declaration of privates atributes]=========================================
 
 //=====[Declaration of privates methods]=========================================

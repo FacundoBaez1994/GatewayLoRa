@@ -9,79 +9,48 @@
 
 //=====[Declaration and initialization of public global objects]===============
 
-
 //=====[Declaration of external public global variables]=======================
 
 //=====[Declaration and initialization of public global variables]=============
 
 //=====[Declaration and initialization of private global variables]============
 
-
-
-
 //=====[Declarations (prototypes) of private functions]========================
 
-
 //=====[Implementations of private methods]===================================
-/** 
-* @brief attachs the callback function to the ticker
-*/
-
 
 //=====[Implementations of public methods]===================================
-/** 
-* @brief
-* 
-* @param 
-*/
 Decrypter::Decrypter () {
     this->aes = new AES ();
     this->nextHandler = nullptr;
 }
 
-
-/** 
-* @brief 
-* 
-* 
-* @returns 
-*/
 Decrypter::~Decrypter () {
     delete this->aes;
     this->aes = nullptr;
     this->nextHandler = nullptr;
 }
 
-MessageHandlerStatus_t  Decrypter::handleMessage (char * message) {
+MessageHandlerStatus_t  Decrypter::handleMessage (char * message, unsigned int sizeOfMessage) {
 
-    uartUSB.write ("encrypted message:\r\n", strlen ("encrypted message:\r\n"));  // debug only
-    uartUSB.write ( message, strlen ( message));  // debug only
+    uartUSB.write ("\r\nencrypted message:\r\n", strlen ("encrypted message:\r\n"));  // debug only
+    uartUSB.write (message, strlen ( message));  // debug only
     uartUSB.write ( "\r\n",  3 );  // debug only
     
-    aes->setup(this->key, AES::KEY_256, AES::MODE_CBC, this->iv);
-    aes->decrypt(message , strlen(message));
-    aes->clear();
+    this->aes->setup(this->key, AES::KEY_256, AES::MODE_CBC, this->iv);
+    this->aes->decrypt(message , sizeOfMessage);
+    this->aes->clear();
+
 
     uartUSB.write ( "\r\n",  3 );  // debug only
-    uartUSB.write ("decrypted message:\r\n", strlen ("decrypted message:\r\n"));  // debug only
+    uartUSB.write ("\r\ndecrypted message:\r\n", strlen ("decrypted message:\r\n"));  // debug only
     uartUSB.write ( message, strlen (  message));  // debug only
     uartUSB.write ( "\r\n",  3 );  // debug only
-
-    // Eliminar caracteres '@' al final de message
-    size_t len = strlen(message);
-    while (len > 0 && message[len - 1] == '@') {
-        message[len - 1] = '\0';  // Reemplazar '@' por terminador nulo
-        len--;
-    }
-
-    uartUSB.write("message without padding:\r\n", strlen("message without padding:\r\n"));  // debug only
-    uartUSB.write(message, strlen(message));  // debug only
-    uartUSB.write("\r\n", 3);  // debug only
 
     if (this->nextHandler == nullptr) {
         return  MESSAGE_HANDLER_STATUS_PROCESSED;
     } else {
-        return this->nextHandler->handleMessage ( message);
+        return this->nextHandler->handleMessage ( message, sizeOfMessage);
     }
     
 }

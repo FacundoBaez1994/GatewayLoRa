@@ -40,7 +40,7 @@ void Base64URL::base64urlEncode(const void *input, size_t inputLen, char *output
     if (inputLen == (n * 3 + 1))
     {
         // The final quantum of encoding input is exactly 8 bits
-        if (input != NULL && output != NULL)
+        if (input != nullptr && output != nullptr)
         {
             // Read input data
             a = (p[n * 3] & 0xFC) >> 2;
@@ -53,7 +53,7 @@ void Base64URL::base64urlEncode(const void *input, size_t inputLen, char *output
         }
 
         // Length of the encoded string (excluding the terminating NULL)
-        if (outputLen != NULL)
+        if (outputLen != nullptr)
         {
             *outputLen = n * 4 + 2;
         }
@@ -61,7 +61,7 @@ void Base64URL::base64urlEncode(const void *input, size_t inputLen, char *output
     else if (inputLen == (n * 3 + 2))
     {
         // The final quantum of encoding input is exactly 16 bits
-        if (input != NULL && output != NULL)
+        if (input != nullptr && output != nullptr)
         {
             // Read input data
             a = (p[n * 3] & 0xFC) >> 2;
@@ -77,7 +77,7 @@ void Base64URL::base64urlEncode(const void *input, size_t inputLen, char *output
         }
 
         // Length of the encoded string (excluding the terminating NULL)
-        if (outputLen != NULL)
+        if (outputLen != nullptr)
         {
             *outputLen = n * 4 + 3;
         }
@@ -85,7 +85,7 @@ void Base64URL::base64urlEncode(const void *input, size_t inputLen, char *output
     else
     {
         // The final quantum of encoding input is an integral multiple of 24 bits
-        if (output != NULL)
+        if (output != nullptr)
         {
             // The final unit of encoded output will be an integral multiple of 4
             // characters
@@ -93,7 +93,7 @@ void Base64URL::base64urlEncode(const void *input, size_t inputLen, char *output
         }
 
         // Length of the encoded string (excluding the terminating NULL)
-        if (outputLen != NULL)
+        if (outputLen != nullptr)
         {
             *outputLen = n * 4;
         }
@@ -101,7 +101,7 @@ void Base64URL::base64urlEncode(const void *input, size_t inputLen, char *output
 
     // If the output parameter is NULL, then the function calculates the
     // length of the resulting Base64url string without copying any data
-    if (input != NULL && output != NULL)
+    if (input != nullptr && output != nullptr)
     {
         // The input data is processed block by block
         while (n-- > 0)
@@ -132,9 +132,9 @@ bool Base64URL::base64urlDecode(const char *input, size_t inputLen, void *output
     uint8_t *p;
 
     // Check parameters
-    if (input == NULL && inputLen != 0)
+    if (input == nullptr && inputLen != 0)
         return false;
-    if (outputLen == NULL)
+    if (outputLen == nullptr)
         return false;
 
     // Check the length of the input string
@@ -164,7 +164,7 @@ bool Base64URL::base64urlDecode(const char *input, size_t inputLen, void *output
             if ((i % 4) == 3)
             {
                 // Map each 4-character block to 3 bytes
-                if (p != NULL)
+                if (p != nullptr)
                 {
                     p[n] = (value >> 16) & 0xFF;
                     p[n + 1] = (value >> 8) & 0xFF;
@@ -189,7 +189,7 @@ bool Base64URL::base64urlDecode(const char *input, size_t inputLen, void *output
     if ((inputLen % 4) == 2)
     {
         // The last block contains only 1 byte
-        if (p != NULL)
+        if (p != nullptr)
         {
             // Decode the last byte
             p[n] = (value >> 4) & 0xFF;
@@ -201,7 +201,7 @@ bool Base64URL::base64urlDecode(const char *input, size_t inputLen, void *output
     else if ((inputLen % 4) == 3)
     {
         // The last block contains only 2 bytes
-        if (p != NULL)
+        if (p != nullptr)
         {
             // Decode the last two bytes
             p[n] = (value >> 10) & 0xFF;

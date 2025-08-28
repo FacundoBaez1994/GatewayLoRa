@@ -26,18 +26,11 @@
 //=====[Declarations (prototypes) of private functions]========================
 
 //=====[Implementations of private methods]===================================
-/** 
-* @brief r
-*/
+
 
 
 //=====[Implementations of public methods]===================================
-/** 
-* 
-* 
-* 
-*/
-GNSSModule::GNSSModule (PowerManager * aPowerManager, ATCommandHandler * ATHandler) {
+GNSSModule::GNSSModule (PowerManager* aPowerManager, ATCommandHandler * ATHandler) {
     this->refreshTime = new NonBlockingDelay (REFRESHTIME);
     this->ATHandler =  ATHandler;
     this->modulePowerManager = aPowerManager;
@@ -46,24 +39,15 @@ GNSSModule::GNSSModule (PowerManager * aPowerManager, ATCommandHandler * ATHandl
     this->currentPowerStatus = POWER_OFF;
 }
 
-
-/** 
-* 
-* 
-* 
-*/
 GNSSModule::~GNSSModule () {
     delete this->refreshTime;
-    this->refreshTime = NULL;
+    this->refreshTime = nullptr;
     delete  this->ATHandler;
-    this->ATHandler = NULL;
-    this->modulePowerManager = NULL;
+    this->ATHandler = nullptr;
+    this->modulePowerManager = nullptr;
 }    
-/** 
-* 
-* 
-* SOFT HARDWARE START STOP
-*/
+
+
 void GNSSModule::startStopUpdate () {
     powerStatus_t newPowerStatus;
     newPowerStatus = this->modulePowerManager->startStopUpdate();
@@ -75,58 +59,25 @@ void GNSSModule::startStopUpdate () {
     }
 }
 
-/** 
-* 
-* 
-* SOFT HARDWARE START STOP
-*/
 void GNSSModule::reboot () {
     this->modulePowerManager->reboot();
 }
 
-/** 
-* 
-* 
-* 
-*/
-
-/** 
-* @brief 
-* 
-* @returns 
-*/
-GNSSState_t GNSSModule::retrivGeopositioning (GNSSData * Geodata) {
+GNSSState_t GNSSModule::retrivGeopositioning (GNSSData* Geodata) {
     return this->currentGeopositioningState->retrivGeopositioning (Geodata, this->ATHandler,
     this->refreshTime);
 }
 
-
-/** 
-* @brief 
-* 
-* @returns 
-*/
 void GNSSModule::changeGeopositioningState  (GeopositioningState* newGeopositioningState) {
     delete this->currentGeopositioningState;
     this->currentGeopositioningState = newGeopositioningState;
 }
 
-
-/** 
-* @brief 
-* 
-* @returns 
-*/
-
 void GNSSModule::enableGNSS () {
     this->currentGeopositioningState->enableGNSS();
 }
 
-/** 
-* @brief 
-* 
-* @returns 
-*/
+
  BufferedSerial* GNSSModule::getUART () {
      return this->ATHandler->getUART();
 }

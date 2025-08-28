@@ -1,50 +1,61 @@
 //=====[#include guards - begin]===============================================
-
 #ifndef _GETTING_GNSS_POSITION_H_
 #define _GETTING_GNSS_POSITION_H_
 
 //==================[Libraries]===============================================
-
 #include "mbed.h"
 #include "arm_book_lib.h"
-#include "GatewayState.h"
+#include "GatewayBaseState.h"
 #include "Gateway.h"
 
 //=====[Declaration of public data types]======================================
-class Gateway; //debido a declaracion adelantada
+class Gateway; ///< Forward declaration to avoid circular dependencies
 
 //=====[Declaration of public classes]=========================================
-/*
- *  class - State desing pattern
- * 
+/**
+ * @class GettingGNSSPosition
+ * @brief Represents the gateway state where the device attempts to obtain GNSS coordinates.
+ * @details This class is part of the State design pattern implementation for the Gateway.
+ * In this state, the gateway interacts with the GNSS module to retrieve position
+ * data, and then transitions to the next state depending on the GNSS availability
+ * and current operation mode.
  */
-class GettingGNSSPosition : public GatewayState {
+class GettingGNSSPosition : public GatewayBaseState {
 public:
 //=====[Declaration of public methods]=========================================
+    /**
+     * @brief Constructs a new GettingGNSSPosition state.
+     * @param gateway Pointer to the Gateway context owning this state.
+     */
     GettingGNSSPosition (Gateway * gateway);
+
+    /**
+     * @brief Destroys the GettingGNSSPosition state. 
+     * Sets the gateway pointer to nullptr to avoid dangling references.
+     */
     virtual ~GettingGNSSPosition ();
 
-    virtual void receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay * delay);
-    virtual void sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay * delay);
-    virtual void sendTCPMessage (UipEthernet * ethernetModule, NonBlockingDelay * delay);
-
+    /**
+     * @brief Updates the power status of the cellular transceiver.
+     * @details This method can be called periodically to manage cellular power updates
+     * while GNSS position acquisition is in progress.
+     * @param cellularTransceiver Pointer to the cellular module interface.
+     * @param currentBatteryStatus Pointer to the current battery status data.
+     */
     virtual void updatePowerStatus (CellularModule * cellularTransceiver, BatteryData * currentBatteryStatus);
+
+
+    /**
+     * @brief Attempts to obtain GNSS position.
+     * If GNSS data is successfully obtained, the gateway transitions to the next
+     * state for network connection or message formatting. If GNSS is unavailable,
+     * it transitions to a fallback state based on the operation mode.
+     * @param currentGNSSModule Pointer to the GNSS module interface.
+     * @param currentGNSSdata Pointer to the structure where GNSS data will be stored.
+     */
     virtual void obtainGNSSPosition (GNSSModule * currentGNSSModule, GNSSData * currentGNSSdata);
-    virtual void connectToMobileNetwork (CellularModule * cellularTransceiver,
-    CellInformation * currentCellInformation);
-    virtual void obtainNeighborCellsInformation (CellularModule* cellularTransceiver, 
-    std::vector<CellInformation*> &neighborsCellInformation, int numberOfNeighbors );
-    virtual void formatMessage (char * formattedMessage, CellInformation* aCellInfo,
-    GNSSData* GNSSInfo, std::vector<CellInformation*> &neighborsCellInformation,
-    BatteryData  * batteryStatus); 
-    virtual void exchangeMessages (CellularModule * cellularTransceiver,
-    char * message, TcpSocket * socketTargetted, char * receivedMessage );
-    virtual void goToSleep (CellularModule * cellularTransceiver);
-    virtual void awake (CellularModule * cellularTransceiver, NonBlockingDelay * latency);
-    
 private:
-    //bool checkResponse (char * response, char * retrivMessage);
-    Gateway * gateway;
+    Gateway * gateway;  ///< Pointer to the Gateway context
 //=====[Declaration of privates atributes]=========================================
 
 //=====[Declaration of privates methods]=========================================

@@ -1,15 +1,31 @@
 //=====[Libraries]=============================================================
 
 #include "ConnectedState.h"
-#include "CellularModule.h" //debido a declaracion adelantada
+#include "CellularModule.h"
 #include "Debugger.h" // due to global usbUart
 
 //=====[Declaration of private defines]========================================
+#define MAX_CELLS_ON_VECTOR 14
+#define MAX_ROWS_TO_READ 30
+#define MAX_LENGTH_CELL_INFO_STRING 128
+
+#define MAX_TIME_WATING_RESPONSE_MS 10000
+#define MAX_TIMEOUT_RETRIES 6
+
+#define AT_CMD_CELL_INFO_GATHERING      "AT+QOPS"
+#define AT_CMD_CELL_INFO_GATHERING_LEN  (sizeof(AT_CMD_CELL_INFO_GATHERING) - 1)
+
+#define AT_CMD_CELL_INFO_GATHERING_EXPECTED_RESPONSE     "OK"
+#define AT_CMD_CELL_INFO_GATHERING_EXPECTED_RESPONSE_LEN  (sizeof(AT_CMD_CELL_INFO_GATHERING_EXPECTED_RESPONSE) - 1)
+
+#define BUFFER_LOG_LEN 60
+#define LOG_MESSAGE "Retriving Neighboor Cells Data\r\n"
+#define LOG_MESSAGE_LEN 40
+
 
 //=====[Declaration of private data types]=====================================
 
 //=====[Declaration and initialization of public global objects]===============
-
 
 //=====[Declaration of external public global variables]=======================
 
@@ -18,57 +34,27 @@
 //=====[Declaration and initialization of private global variables]============
 
 
-
-
 //=====[Declarations (prototypes) of private functions]========================
 
-
 //=====[Implementations of private methods]===================================
-/** 
-* @brief attachs the callback function to the ticker
-*/
-
 
 //=====[Implementations of public methods]===================================
-/** 
-* @brief
-* 
-* @param 
-*/
+
 ConnectedState::ConnectedState () {
-    this->mobileNetworkModule = NULL;
+    this->mobileNetworkModule = nullptr;
     this->enableTransceiver = false;
 }
 
-
-/** 
-* @brief
-* 
-* @param 
-*/
 ConnectedState::ConnectedState (CellularModule * mobileModule) {
     this->mobileNetworkModule = mobileModule;
     this->enableTransceiver = false;
 }
 
 
-/** 
-* @brief 
-* 
-* 
-* @returns 
-*/
 ConnectedState::~ConnectedState () {
-    this->mobileNetworkModule = NULL;
+    this->mobileNetworkModule = nullptr;
 }
 
-
-/** 
-* @brief 
-* 
-* 
-* @returns 
-*/
 void ConnectedState::enableConnection () {
     return;
 }
@@ -78,12 +64,6 @@ CellularConnectionStatus_t ConnectedState::connect (ATCommandHandler * handler,
         return CELLULAR_CONNECTION_STATUS_CONNECTED_TO_NETWORK;
     }
 
-/** 
-* @brief 
-* 
-* 
-* @returns 
-*/
 bool ConnectedState::retrivNeighborCellsInformation(ATCommandHandler * handler,
     NonBlockingDelay * refreshTime, std::vector<CellInformation*> &neighborsCellInformation, 
     int numberOfNeighbors) {
@@ -92,27 +72,28 @@ bool ConnectedState::retrivNeighborCellsInformation(ATCommandHandler * handler,
     static bool readyToSend = true;
     static bool vectorCleared = false;
     
-    char StringToBeRead[200];
-    char ExpectedResponse[15] = "OK";
-    char buffer [60];
+    char StringToBeRead[MAX_LENGTH_CELL_INFO_STRING];
+    char ExpectedResponse[AT_CMD_CELL_INFO_GATHERING_EXPECTED_RESPONSE_LEN + 1] = AT_CMD_CELL_INFO_GATHERING_EXPECTED_RESPONSE;
+    char log [BUFFER_LOG_LEN];
     
-    char StringToSend[15] = "AT+QOPS";
-    char StringToSendUSB[40] = "Retriving Neighboor Cells Data";
+    char StringToSend[AT_CMD_CELL_INFO_GATHERING_LEN + 1] = AT_CMD_CELL_INFO_GATHERING;
+    char StringToSendUSB[LOG_MESSAGE_LEN] = LOG_MESSAGE;
 
     static int mnc;
     static int mcc;
     static int counterTimeOut = 0;
-    int maxTimeOut = 80;
+    int maxTimeOut = MAX_TIMEOUT_RETRIES;
 
     int tech;
     int idCell;
     int lac;
     float prx;
 
-    static char readString [30][200];
+    static char readString [MAX_ROWS_TO_READ][MAX_LENGTH_CELL_INFO_STRING];
     static int index = 0; 
 
     if (!vectorCleared) {
+        refreshTime->write(MAX_TIME_WATING_RESPONSE_MS);
         for (auto cell : neighborsCellInformation) {
             delete cell;
         }
@@ -133,11 +114,20 @@ bool ConnectedState::retrivNeighborCellsInformation(ATCommandHandler * handler,
         if (strcmp (StringToBeRead, ExpectedResponse)  == 0) {
             cellDataRetrived = true;
             for (int i = 0; i < index; i++) {
+                if (neighborsCellInformation.size() >= MAX_CELLS_ON_VECTOR) {
+                uartUSB.write("\r\nvector cells limit reached\r\n", strlen("\r\nvector cells limitreached\r\n"));
+                index = 0;
+                cellDataRetrived = false;
+                vectorCleared = false;
+                counterTimeOut = 0;
+                readyToSend = true;
+                return true;
+                }
                 uartUSB.write(readString[i], strlen(readString[i]));  // debug only
                 uartUSB.write("\r\n", 3);  // debug only
                if (this->retrivOperatorsCodes(readString[i], &mcc, &mnc) == false) {
                     if (this->retrivCellData(readString[i], &tech, &idCell, &lac, &prx)) {
-                        if (neighborsCellInformation.size () < 14 ) {
+                        if (neighborsCellInformation.size () < MAX_CELLS_ON_VECTOR  ) {
                             cellDataRetrived = true;
                             CellInformation* cellInfoTemp = new CellInformation;
                             cellInfoTemp->tech = tech;
@@ -151,8 +141,8 @@ bool ConnectedState::retrivNeighborCellsInformation(ATCommandHandler * handler,
                         
                             neighborsCellInformation.push_back(cellInfoTemp);
                             uartUSB.write("Cell added to vector\r\n", strlen("Cell added to vector\r\n"));
-                            snprintf(buffer, sizeof(buffer), "Vector size: %d\r\n", neighborsCellInformation.size());
-                            uartUSB.write(buffer, strlen(buffer));
+                            snprintf(log, sizeof(log), "Vector size: %d\r\n", neighborsCellInformation.size());
+                            uartUSB.write(log, strlen(log));
                         }
                     }
                 }
@@ -161,10 +151,11 @@ bool ConnectedState::retrivNeighborCellsInformation(ATCommandHandler * handler,
             cellDataRetrived = false;
             vectorCleared = false;
             counterTimeOut = 0;
+            readyToSend = true;
             return true;
         }
 
-        if (index < 29) {
+        if (index < MAX_ROWS_TO_READ) {
             strncpy(readString[index], StringToBeRead, sizeof(readString[index]) - 1);
             readString[index][sizeof(readString[index]) - 1] = '\0';  // Asegúrate de la terminación nula
             index++;
@@ -189,34 +180,30 @@ bool ConnectedState::retrivNeighborCellsInformation(ATCommandHandler * handler,
 }
 
 
-//=====[Implementations of private functions]==================================
+//=====[Implementations of private methods]==================================
 bool ConnectedState::retrivOperatorsCodes(const char *response, int *mcc, int *mnc) {
     char StringToCompare[7] = "+QOPS:";
 
     if (strncmp(response, StringToCompare, strlen(StringToCompare)) == 0) {
-        // Variables para almacenar los códigos MCC y MNC
         char operatorCode[10] = {0};
         
-        // Parsear la respuesta para obtener el código del operador
         int n = sscanf(response, "+QOPS: \"%*[^\"]\",\"%*[^\"]\",\"%[^\"]\"", operatorCode);
 
         if (n == 1) {
-            // Extraer los primeros 3 dígitos para MCC
             char mccStr[4] = {0};
             strncpy(mccStr, operatorCode, 3);
             *mcc = atoi(mccStr);
 
-            // Extraer los siguientes dígitos para MNC
             char mncStr[4] = {0};
             strncpy(mncStr, operatorCode + 3, strlen(operatorCode) - 3);
             *mnc = atoi(mncStr);
 
             
         
-            char buffer[50];  // Buffer temporal para la salida
+            char buffer[50]; 
             snprintf(buffer, sizeof(buffer), "MCC: %d, MNC: %d\n", *mcc, *mnc);
-            uartUSB.write(buffer, strlen(buffer));  // Enviar por UART
-            uartUSB.write("\r\n", 3);  // debug only
+            uartUSB.write(buffer, strlen(buffer)); 
+            uartUSB.write("\r\n", 3);
 
             return true;
         }
@@ -228,38 +215,33 @@ bool ConnectedState::retrivCellData(const char *response, int *tech, int *idCell
     char accessTechnologyretrived[7];
     int index = 2;
 
-    // Verificar que la respuesta comience con un número (ignorar si no es)
     if (isdigit(response[0]) == 0) {
         return false;
     }
 
-    // Extraer la tecnología de acceso (RAT)
     sscanf(response, "%d,\"%6[^\"]\",", &index, accessTechnologyretrived);
 
-    // Comparar la tecnología y extraer los valores correspondientes según el RAT
     if (strcmp(accessTechnologyretrived, "2G") == 0) {
-        // Para 2G: index, RAT, freq, lac, ci, bsic, rxlev, c1, cba, is_gprs_support
+
         sscanf(response, "%*d,\"%*[^\"]\",%*d,%x,%x,%*d,%f", lac, idCell, prx);
+        *prx = *prx - 110;
         *tech = 2;
-        // Convertir los valores de lac y idCell de int a cadena de caracteres
     } else if (strcmp(accessTechnologyretrived, "3G") == 0) {
-        // Para 3G: index, RAT, freq, psc, lac, ci, rscp, ecno, cba
+
         sscanf(response, "%*d,\"%*[^\"]\",%*d,%*d,%x,%x,%f", lac, idCell, prx);
         *tech = 3;
 
     } else if (strcmp(accessTechnologyretrived, "4G") == 0) {
-        // Para 4G: index, RAT, freq, pci, tac, ci, rsrp, rsrq, cba
         sscanf(response, "%*d,\"%*[^\"]\",%*d,%*d,%x,%x,%f", lac, idCell, prx);
         *tech = 4;
     } else {
         return false;
     }
 
-    // Copiar la tecnología de acceso recuperada al parámetro tec
-    char buffer[50];  // Buffer temporal para la salida
+    char buffer[50]; 
     snprintf(buffer, sizeof(buffer), "tech: %dG, idCell: %X, lac: %X, Prx: %f \n", *tech, *idCell, *lac, *prx );
-    uartUSB.write(buffer, strlen(buffer));  // Enviar por UART
-    uartUSB.write("\r\n", 3);  // debug only
+    uartUSB.write(buffer, strlen(buffer)); 
+    uartUSB.write("\r\n", 3); 
 
     return true;
 }
