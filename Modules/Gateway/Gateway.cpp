@@ -67,11 +67,12 @@ Gateway::Gateway () {
     this->currentCellInformation->band = new char [20];
 
     this->currentGNSSdata = new GNSSData;
+    this->receptedGNSSdata = new GNSSData;
     this->batteryStatus = new BatteryData;
 
-    this->imuData = new IMUData_t;
-    this->imuData->timestamp = new char [20];
-    this->imuData->timeBetweenSamples = TIME_BETWEEN_IMU_SAMPLES;
+    this->receptedImuData = new IMUData_t;
+    this->receptedImuData->timestamp = new char [20];
+    this->receptedImuData->timeBetweenSamples = TIME_BETWEEN_IMU_SAMPLES;
 
     this->currentState =  new SensingBatteryStatus (this);
 
@@ -91,10 +92,10 @@ Gateway::Gateway () {
 }
 
 Gateway::~Gateway() {
-    delete this->imuData->timestamp;
-    this->imuData->timestamp = nullptr;
-    delete this->imuData;
-    this->imuData = nullptr;
+    delete this->receptedImuData->timestamp;
+    this->receptedImuData->timestamp = nullptr;
+    delete this->receptedImuData;
+    this->receptedImuData = nullptr;
 
     delete[] this->currentCellInformation->timestamp;
     this->currentCellInformation->timestamp = nullptr;
@@ -103,6 +104,11 @@ Gateway::~Gateway() {
     delete this->currentCellInformation;
     this->currentCellInformation = nullptr;
     delete this->currentGNSSdata;
+    this->currentGNSSdata = nullptr;
+
+    delete  this->receptedGNSSdata;
+    this->receptedGNSSdata = nullptr;
+
     delete[] this->socketTargetted->IpDirection; // Libera la memoria asignada a IpDirection
     this->socketTargetted->IpDirection = nullptr;
     delete this->socketTargetted; // Libera la memoria asignada al socketTargetted
@@ -153,7 +159,7 @@ void Gateway::update () {
     this->currentState->obtainNeighborCellsInformation (this->cellularTransceiver, 
     this->neighborsCellInformation, numberOfNeighbors );
     this->currentState->formatMessage (formattedMessage, this->currentCellInformation,
-    this->currentGNSSdata, this->neighborsCellInformation, this->imuData, this->IMUDataSamples, this->batteryStatus); 
+    this->currentGNSSdata, this->neighborsCellInformation, this->receptedImuData, this->IMUDataSamples, this->batteryStatus); 
     this->currentState->exchangeMessages (this->cellularTransceiver,
     formattedMessage, this->socketTargetted, receivedMessage );
     this->currentState->exchangeMessages (this->LoRaTransciever, formattedMessage, receivedMessage);
@@ -345,9 +351,107 @@ tick_t newKeepAliveLatency = EXTREMELY_LOW_LATENCY_MS;
 }
 
 
+bool Gateway::parseReceptedLoRaMessage(char * messageToParse) {
+    char prefix[16];
+    char trackerEvent[64];
+    char timestamp[64];
+    char logMessage[256];
+
+    // Detectar prefix antes de sscanf
+    if (sscanf(messageToParse, "%15[^,]", prefix) != 1) {
+        uartUSB.write("Error: no prefix found\r\n", strlen("Error: no prefix found\r\n"));
+        return false;
+    }
+
+    if (strcmp(prefix, "LORAGNSS") == 0) {
+        double latitude, longitude, hdop, altitude, cog, spkm;
+        int batteryStatus, chargeLevel, imuStatus;
+        double ax, ay, az, yaw, roll, pitch;
+
+        if (sscanf(messageToParse,
+                   "LORAGNSS,%lld,%63[^,],%lf,%lf,%lf,%lf,%lf,%lf,%63[^,],%d,%d,%d,%lf,%lf,%lf,%lf,%lf,%lf",
+                   &this->IMEIRecepted,
+                   trackerEvent,
+                   &latitude, &longitude, &hdop, &altitude, &cog, &spkm,
+                   timestamp,
+                   &batteryStatus, &chargeLevel, &imuStatus,
+                   &ax, &ay, &az, &yaw, &roll, &pitch) == 18) {
+
+            snprintf(logMessage, sizeof(logMessage),
+                     "GNSS Msg: IMEI=%lld, Event=%s, Lat=%.6f, Lon=%.6f, HDOP=%.2f, Alt=%.2f, COG=%.2f, V=%.2f, Time=%s, Bat=%d, Charge=%d, IMU=%d, Acc=[%.2f,%.2f,%.2f], Ang=[%.2f,%.2f,%.2f]\r\n",
+                     this->IMEIRecepted, trackerEvent, latitude, longitude, hdop,
+                     altitude, cog, spkm, timestamp, batteryStatus, chargeLevel, imuStatus,
+                     ax, ay, az, yaw, roll, pitch);
+            uartUSB.write(logMessage, strlen(logMessage));
+            return true;
+        }
+    }
+    else if (strcmp(prefix, "LORALORA") == 0) {
+        int batteryStatus, chargeLevel, imuStatus;
+        double ax, ay, az, yaw, roll, pitch;
+
+        if (sscanf(messageToParse,
+                   "LORALORA,%lld,%63[^,],%d,%d,%d,%lf,%lf,%lf,%lf,%lf,%lf",
+                   &this->IMEIRecepted,
+                   trackerEvent,
+                   &batteryStatus, &chargeLevel, &imuStatus,
+                   &ax, &ay, &az, &yaw, &roll, &pitch) == 11) {
+
+            snprintf(logMessage, sizeof(logMessage),
+                     "LORA Msg: IMEI=%lld, Event=%s, Bat=%d, Charge=%d, IMU=%d, Acc=[%.2f,%.2f,%.2f], Ang=[%.2f,%.2f,%.2f]\r\n",
+                     this->IMEIRecepted, trackerEvent, batteryStatus, chargeLevel, imuStatus,
+                     ax, ay, az, yaw, roll, pitch);
+            uartUSB.write(logMessage, strlen(logMessage));
+            return true;
+        }
+    }
+    else {
+        uartUSB.write("Error: unknown prefix\r\n", strlen("Error: unknown prefix\r\n"));
+        return false;
+    }
+
+    uartUSB.write("Error parsing message.\r\n", strlen("Error parsing message.\r\n"));
+    return false;
+}
 
 
+/*
+bool Gateway::parseReceptedLoRaMessage (char * messageToParse) {
+    char prefix [15];
+    char payload [1024];
+    char logMessage [100];
+            // message interpretation
+    if (sscanf(messageToParse, "%15[^,],%lld,%d,%1023[^\n]", prefix, &this->IMEIRecepted, &this->loraMessageNumber, payload) == 4) {
+        // Desglose exitoso
+        snprintf(logMessage, sizeof(logMessage), "Prefix: %s\r\n", prefix);
+        uartUSB.write(logMessage, strlen(logMessage));
 
+        snprintf(logMessage, sizeof(logMessage), "Device ID: %lld\r\n", this->IMEIRecepted);
+        uartUSB.write(logMessage, strlen(logMessage));
+
+        snprintf(logMessage, sizeof(logMessage), "Message Number: %d\r\n", this->loraMessageNumber);
+        uartUSB.write(logMessage, strlen(logMessage));
+
+        snprintf(logMessage, sizeof(logMessage), "Payload: %s\r\n", payload);
+        uartUSB.write(logMessage, strlen(logMessage));
+    if (strcmp (prefix, "LORALORA" ) == 0) {
+        uartUSB.write("LORALORA prefix\r\n", strlen("LORALORA prefix\r\n"));
+
+        
+        return true;
+    }
+    if (strcmp (prefix, "LORAGNSS" ) == 0) {
+        uartUSB.write("LORAGNSS prefix\r\n", strlen("LORAGNSS prefix\r\n"));
+        return true;
+    }
+    return false;
+    } else {
+        uartUSB.write("Error parsing message.\r\n", strlen("Error parsing message.\r\n"));
+        //messageReceived = false;
+        return false;
+    }
+}
+*/
 
 bool Gateway::encryptMessage (char * message, unsigned int messageSize) {
     this->encrypterBase64->setNextHandler(nullptr);
@@ -385,7 +489,9 @@ bool Gateway::processLoRaMessage (char * message, unsigned int messageSize) {
     }
 }
 
-
+long long int Gateway::getReceptedIMEI () {
+    return this->IMEIRecepted;
+}
 
 int Gateway::getLoraMessageNumber () {
     return this->loraMessageNumber;

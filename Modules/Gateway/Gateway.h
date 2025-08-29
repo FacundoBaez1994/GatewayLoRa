@@ -160,6 +160,12 @@ public:
     OperationMode_t getOperationMode ();
 
     /**
+     * @brief 
+     * @return
+     */
+    long long int getReceptedIMEI ();
+
+    /**
      * @brief Sets the current operation mode.
      * @param newOperationMode New operation mode.
      */
@@ -229,6 +235,8 @@ public:
      * @return bolean true if the ACK message is the expected.
      */
     bool checkMessageIntegrity ( char *messageReceived);
+
+    bool parseReceptedLoRaMessage (char * messageToParse);
     
 private:
     GatewayState* currentState;            /**< Current operational state */
@@ -242,12 +250,18 @@ private:
     MovementEvent_t currentMovementEvent = MOVING;                  /**< Current detected movement event */
 
     // IMU 
-    IMUData_t* imuData;                         /**< Latest IMU data */
+
     std::vector<IMUData_t*> IMUDataSamples;      /**< Sampled IMU data */
 
-     // IMU 
-    int loraMessageNumber = 1;      /**< interger counting the number of messages sent by LoRa */
+     // LORA
     LoRaClass * LoRaTransciever;    /**< LoRa Module transceiver */
+
+    // LORA Recepted Data
+    long long int IMEIRecepted;
+    int loraMessageNumber = 1;    /**< interger counting the number of messages sent by LoRa */
+    GNSSData* receptedGNSSdata;  /**< Latest Retrived GNSS data from tracker */
+    IMUData_t* receptedImuData;  /**< Latest  Retrived IMU data from tracker */
+
     
     // MN Module 
     CellularModule* cellularTransceiver;        /**< Cellular transceiver */

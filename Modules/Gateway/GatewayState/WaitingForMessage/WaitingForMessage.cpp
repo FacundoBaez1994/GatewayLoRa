@@ -171,7 +171,12 @@ bool WaitingForMessage::waitForMessage (LoRaClass * LoRaModule, char * messageRe
         accumulatedBuffer.clear(); // Elimina todos los elementos del vector
         stringInsertCount = 0;
         fullMessage.clear();       // Elimina todo el contenido de la cadena
-      
+
+        if (this->currentGateway->parseReceptedLoRaMessage (messageRecieved) == false) {
+            messageReceived = false;
+            return false;
+        }
+      /*
         char prefix [15];
                 // message interpretation
         if (sscanf(processedMessageReceived, "%15[^,],%lld,%d,%1023[^\n]", prefix, &deviceId, &messageNumber, payload) == 4) {
@@ -193,13 +198,15 @@ bool WaitingForMessage::waitForMessage (LoRaClass * LoRaModule, char * messageRe
             messageReceived = false;
             return false;
         }
+        */
+
         messageReceived  = false;
         accumulatedBuffer.clear(); // Elimina todos los elementos del vector
         stringInsertCount = 0;
         fullMessage.clear();       // Elimina todo el contenido de la cadena
         uartUSB.write("Changing To Sending ACK State\r\n", strlen("Changing To Sending ACK State\r\n"));
-        this->currentGateway->changeState (new SendingAck (this->currentGateway, deviceId, 
-        messageNumber));
+        this->currentGateway->changeState (new SendingAck (this->currentGateway, this->currentGateway->getReceptedIMEI(), 
+        this->currentGateway->getLoraMessageNumber()));
         return true;
     }
 
