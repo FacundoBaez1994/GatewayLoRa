@@ -84,7 +84,7 @@ void SendingTCPMessage::sendTCPMessage (UipEthernet * ethernetModule, NonBlockin
     char*           remaining;
     uint8_t*        recvBuf;
     int             result;
-    char logMessage [251];
+    char logMessage [1024];
 
 
     Watchdog &watchdog = Watchdog::get_instance(); // singleton
@@ -131,8 +131,8 @@ void SendingTCPMessage::sendTCPMessage (UipEthernet * ethernetModule, NonBlockin
     uartUSB.write(logMessage, strlen(logMessage));
 
     watchdog.kick();
-    //result = socket.connect("intent-lion-loudly.ngrok-free.app", 80); // HTTP plano
-    result = socket.connect("webhook.site", 80); // HTTP plano  //  LocalHost 5133
+    result = socket.connect("intent-lion-loudly.ngrok-free.app", 80); // HTTP plano
+    //result = socket.connect("webhook.site", 80); // HTTP plano  //  LocalHost 5133
     if (result != 0) {
         snprintf(logMessage, sizeof(logMessage), "Error! socket.connect() returned: %d\n", result);
         uartUSB.write(logMessage, strlen(logMessage));
@@ -157,8 +157,8 @@ void SendingTCPMessage::sendTCPMessage (UipEthernet * ethernetModule, NonBlockin
       //  "POST /api/canal/envio HTTP/1.1\r\n"
       //  "Host: intent-lion-loudly.ngrok-free.app\r\n"      // LocalHost
 
-        "POST /cfc8a441-3027-4066-965a-0764cd7629d7 HTTP/1.1\r\n"
-        "Host: webhook.site\r\n"       
+        "POST /apendice/canal-secundario/envio HTTP/1.1\r\n"
+        "Host: intent-lion-loudly.ngrok-free.app\r\n"       
         "Content-Type: text/plain\r\n"
         "Content-Length: %d\r\n"
         "Connection: close\r\n"
@@ -213,6 +213,8 @@ void SendingTCPMessage::sendTCPMessage (UipEthernet * ethernetModule, NonBlockin
 
     // ==== Cerrar conexión ====
     this->disconnect(ethernetModule, &socket);
+
+    wait_us (10000);
 }
 
 
