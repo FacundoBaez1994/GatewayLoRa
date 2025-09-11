@@ -9,24 +9,18 @@
 
 //=====[Declaration and initialization of public global objects]===============
 
-
 //=====[Declaration of external public global variables]=======================
 
 //=====[Declaration and initialization of public global variables]=============
 
 //=====[Declaration and initialization of private global variables]============
 
-
-
-
 //=====[Declarations (prototypes) of private functions]========================
-
 
 //=====[Implementations of private methods]===================================
 /** 
 * @brief attachs the callback function to the ticker
 */
-
 
 //=====[Implementations of public methods]===================================
 /** 

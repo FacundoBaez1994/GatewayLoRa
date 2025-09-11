@@ -3,8 +3,6 @@
 #include "Gateway.h" 
 #include "Debugger.h" // due to global usbUart
 #include "ExchangingMessages.h"
-#include "GoingToSleep.h"
-#include "ExchangingLoRaMessages.h"
 
 //=====[Declaration of private defines]========================================
 
@@ -19,6 +17,36 @@
 //=====[Declaration and initialization of private global variables]============
 
 //=====[Declarations (prototypes) of private functions]========================
+bool hash_and_base64(const char *input, char *output, size_t output_size) {
+    if (!input || !output) return false;
+
+    unsigned char hash[32]; // SHA-256 -> 32 bytes
+    size_t olen = 0;
+
+    // 1. Calcular SHA-256
+    mbedtls_sha256_context ctx;
+    mbedtls_sha256_init(&ctx);
+    mbedtls_sha256_starts_ret(&ctx, 0); // 0 = SHA-256, 1 = SHA-224
+    mbedtls_sha256_update_ret(&ctx, (const unsigned char*)input, strlen(input));
+    mbedtls_sha256_finish_ret(&ctx, hash);
+    mbedtls_sha256_free(&ctx);
+
+    // 2. Codificar en Base64
+    if (mbedtls_base64_encode((unsigned char*)output, output_size, &olen,
+                              hash, sizeof(hash)) != 0) {
+        return false;
+    }
+
+    // Asegurar terminación de string
+    if (olen < output_size) {
+        output[olen] = '\0';
+    } else {
+        return false;
+    }
+
+    return true;
+}
+
 
 //=====[Implementations of private methods]===================================
 
@@ -27,12 +55,18 @@ FormattingMessage::FormattingMessage (Gateway * gateway, gatewayStatus_t gateway
     this->gateway = gateway;
     this->currentStatus = gatewayStatus;
     this->jwt = new JWTManager ();
+    this->sizeOfMessageBuffer = 2248;
+    this->messageBuffer = new char [this->sizeOfMessageBuffer];
 }
 
 FormattingMessage::~FormattingMessage () {
     this->gateway = nullptr;
     delete this->jwt;
     this->jwt = nullptr;
+
+    delete [] this->messageBuffer;
+    this->messageBuffer = nullptr;
+
 }
 
 void FormattingMessage::updatePowerStatus (CellularModule * cellularTransceiver,
@@ -104,91 +138,6 @@ void FormattingMessage::formatMessage (char * formattedMessage, const CellInform
             this->gateway->changeState (new ExchangingMessages (this->gateway, this->currentStatus));
             break;
 
-        ///////////// Lora Messages //////////////////////////////
-        case GATEWAY_STATUS_GNSS_OBTAIN_CONNECTION_TO_MOBILE_NETWORK_UNAVAILABLE_TRYING_LORA:
-            snprintf(StringToSendUSB, sizeof(StringToSendUSB),  "Formatting LORA,GNSS message:\r\n");
-            uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
-            uartUSB.write ( "\r\n",  3 );  // debug only}
-            this->formatLoRaMessage(formattedMessage, aCellInfo, GNSSInfo, imuData, batteryStatus, gatewayEvent);
-            uartUSB.write (formattedMessage , strlen (formattedMessage));  // debug only
-            uartUSB.write ( "\r\n",  3 );  // debug only}
-            snprintf(StringToSendUSB, sizeof(StringToSendUSB),"Switching State to ExchangingMessages"); 
-            uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
-            uartUSB.write ( "\r\n",  3 );  // debug only}
-            this->gateway->changeState (new ExchangingLoRaMessages (this->gateway, this->currentStatus));
-            break;
-
-        case GATEWAY_STATUS_GNSS_UNAVAILABLE_CONNECTION_TO_MOBILE_NETWORK_UNAVAILABLE_TRYING_LORA:
-
-            snprintf(StringToSendUSB, sizeof(StringToSendUSB),  "Formatting LORA,LORA message:\r\n");
-            uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
-            uartUSB.write ( "\r\n",  3 );  // debug only}
-            this->formatLoRaMessage(formattedMessage, aCellInfo, imuData, batteryStatus, gatewayEvent);
-            uartUSB.write (formattedMessage , strlen (formattedMessage));  // debug only
-            uartUSB.write ( "\r\n",  3 );  // debug only}
-            snprintf(StringToSendUSB, sizeof(StringToSendUSB),"Switching State to ExchangingMessages"); 
-            uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
-            uartUSB.write ( "\r\n",  3 );  // debug only}
-            this->gateway->changeState (new ExchangingLoRaMessages (this->gateway, this->currentStatus));
-            break;
-
-
-        /////// Saving cases //////////////////////////////
-        case GATEWAY_STATUS_GNSS_OBTAIN_CONNECTED_TO_MOBILE_NETWORK_SAVING_MESSAGE:
-            snprintf(StringToSendUSB, sizeof(StringToSendUSB),  "Formatting MN,GNSS message to be saved\r\n");
-            uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
-            uartUSB.write ( "\r\n",  3 );  // debug only}
-            this->formatMemoryMessage(formattedMessage, aCellInfo, GNSSInfo, imuData, batteryStatus, gatewayEvent);
-            uartUSB.write (formattedMessage , strlen (formattedMessage));  // debug only
-            uartUSB.write ( "\r\n",  3 );  // debug only}
-            snprintf(StringToSendUSB, sizeof(StringToSendUSB),"Switching State to SavingMessage"); 
-            uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
-            uartUSB.write ( "\r\n",  3 );  // debug only}
-            this->gateway->changeState (new GoingToSleep (this->gateway));
-            break;
-
-        case GATEWAY_STATUS_GNSS_UNAVAILABLE_CONNECTED_TO_MOBILE_NETWORK_SAVING_MESSAGE:
-            snprintf(StringToSendUSB, sizeof(StringToSendUSB),  "Formatting MN,MN message to be saved:\r\n");
-            uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
-            uartUSB.write ( "\r\n",  3 );  // debug only}
-
-            this->formatMNMNMemoryMessage(formattedMessage, aCellInfo, 
-            neighborsCellInformation, imuData, batteryStatus, gatewayEvent);
-            
-            uartUSB.write (formattedMessage , strlen (formattedMessage));  // debug only
-            uartUSB.write ( "\r\n",  3 );  // debug only}
-            snprintf(StringToSendUSB, sizeof(StringToSendUSB),"Switching State to SavingMessage"); 
-            uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
-            uartUSB.write ( "\r\n",  3 );  // debug only}
-            this->gateway->changeState (new GoingToSleep (this->gateway));
-            break;
-
-        case GATEWAY_STATUS_GNSS_OBTAIN_CONNECTION_TO_MOBILE_NETWORK_UNAVAILABLE_LORA_UNAVAILABLE_SAVING_MESSAGE:
-            snprintf(StringToSendUSB, sizeof(StringToSendUSB),  "Formatting GNSS message to be saved\r\n");
-            uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
-            uartUSB.write ( "\r\n",  3 );  // debug only}
-            this->formatGNSSMemoryMessage(formattedMessage, GNSSInfo, imuData, batteryStatus, gatewayEvent);
-            uartUSB.write (formattedMessage , strlen (formattedMessage));  // debug only
-            uartUSB.write ( "\r\n",  3 );  // debug only}
-            snprintf(StringToSendUSB, sizeof(StringToSendUSB),"Switching State to SavingMessage"); 
-            uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
-            uartUSB.write ( "\r\n",  3 );  // debug only}
-            this->gateway->changeState (new GoingToSleep (this->gateway));
-            break;
-
-        case GATEWAY_STATUS_GNSS_UNAVAILABLE_CONNECTION_TO_MOBILE_NETWORK_UNAVAILABLE_LORA_UNAVAILABLE_GATHERED_INERTIAL_INFO_SAVING_MESSAGE:
-            snprintf(StringToSendUSB, sizeof(StringToSendUSB),  "Formatting IMU message to be saved\r\n");
-            uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
-            uartUSB.write ( "\r\n",  3 );  // debug only}
-            this->formatMemoryMessage(formattedMessage, imuData, IMUDataSamples, batteryStatus, gatewayEvent);
-            uartUSB.write (formattedMessage , strlen (formattedMessage));  // debug only
-            uartUSB.write ( "\r\n",  3 );  // debug only}
-            snprintf(StringToSendUSB, sizeof(StringToSendUSB),"Switching State to SavingMessage"); 
-            uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
-            uartUSB.write ( "\r\n",  3 );  // debug only}
-            this->gateway->changeState (new GoingToSleep (this->gateway));
-            break;
-
         default:
             return;
     }
@@ -201,17 +150,125 @@ void FormattingMessage::formatMessage (char * formattedMessage, const CellInform
 
 
 //=====[Implementations of private methods]==================================
+void FormattingMessage::addMetaData(char *messageToAddMetaData) {
+    int sizeOfBuffer = this->sizeOfMessageBuffer;
+    int sizeOfTimeStamp = 20;
+    int sizeOfHash = 100;
+    char * workBuffer;   // buffer auxiliar único y reutilizable
+    workBuffer = new char [sizeOfBuffer];
+    char * hashCanonicData;
+    hashCanonicData = new char [sizeOfHash];
+    char * hashCurrentJson;
+    hashCurrentJson = new char [sizeOfHash];
+    char * urlPathChannel;
+    urlPathChannel = new char [sizeOfHash];
+    char * deviceIdentifier;
+    deviceIdentifier = new char [sizeOfHash];
+    char * hashPrevJson;
+    hashPrevJson = new char [sizeOfHash];
+    char * timestampJson = new char [sizeOfTimeStamp];
+    char * timestampJsonExpiration = new char [sizeOfTimeStamp];
+
+
+
+    int currentSequenceNumber = this->gateway->getSequenceNumber();
+    this->gateway->getUrlPathChannel(urlPathChannel);
+    this->gateway->getDeviceIdentifier(deviceIdentifier);
+    this->gateway->getPrevHashChain(hashPrevJson);
+
+    // Calcular hash del payload base
+    hash_and_base64(messageToAddMetaData, hashCanonicData, sizeOfHash);
+
+    // Timestamp actual y de expiración
+    time_t seconds = time(NULL);
+
+    epochToTimestamp(seconds, timestampJson, sizeOfTimeStamp);
+
+    time_t secondsToExpire = seconds + 24 * 60 * 60; // +24h
+    epochToTimestamp(secondsToExpire, timestampJsonExpiration, sizeOfTimeStamp);
+
+    // Armar JSON intermedio en workBuffer
+    int written = snprintf(workBuffer, sizeOfBuffer,
+        "{\"iss\":\"%s\","
+        "\"aud\":\"%s\","
+        "\"ias\":\"%s\","
+        "\"exp\":\"%s\","
+        "\"d\":\"%s\","
+        "\"seq\":%d,"
+        "\"prev\":\"%s\","
+        "%s}",
+        deviceIdentifier,        // iss
+        urlPathChannel,          // aud
+        timestampJson,           // ias
+        timestampJsonExpiration, // exp
+        hashCanonicData,         // d
+        currentSequenceNumber,   // seq
+        hashPrevJson,            // prev
+        messageToAddMetaData                  // payload original
+    );
+
+    if (written < 0 || (size_t)written >= sizeOfBuffer) {
+        workBuffer[sizeOfBuffer - 1] = '\0'; // protección
+    }
+
+    // Calcular hash del JSON completo
+    hash_and_base64(workBuffer, hashCurrentJson, sizeOfHash);
+
+    // Quitar llaves externas { }
+    size_t len = strlen(workBuffer);
+    if (len > 2 && workBuffer[0] == '{' && workBuffer[len - 1] == '}') {
+        workBuffer[len - 1] = '\0';                 // saco '}'
+        memmove(workBuffer, workBuffer + 1, len-1); // corro eliminando '{'
+    }
+
+    // JSON final se escribe directo en message
+    written = snprintf(messageToAddMetaData, sizeOfBuffer,
+        "{\"curr\":\"%s\",%s}",
+        hashCurrentJson,
+        workBuffer
+    );
+
+    if (written < 0 || (size_t)written >= sizeOfBuffer) {
+        messageToAddMetaData[sizeOfBuffer - 1] = '\0'; // protección
+    }
+
+    this->gateway->setCurrentHashChain(hashCurrentJson);
+    
+    delete [] workBuffer;
+    workBuffer = nullptr;
+
+    delete [] hashCanonicData;
+    hashCanonicData = nullptr;
+
+    delete [] urlPathChannel;
+    urlPathChannel = nullptr;
+
+    delete [] hashCurrentJson;
+    hashCurrentJson = nullptr;
+
+    delete [] deviceIdentifier;
+    deviceIdentifier = nullptr;
+
+    delete [] hashPrevJson;
+    hashPrevJson = nullptr;
+    
+    delete [] timestampJson;
+    timestampJson = nullptr;
+
+    delete [] timestampJsonExpiration;
+    timestampJsonExpiration = nullptr;
+}
+
 //////////////////////// MN messages /// 
 void FormattingMessage::formatMessage(char * formattedMessage, const CellInformation* aCellInfo, 
     const std::vector<CellInformation*> &neighborsCellInformation, const IMUData_t * imuData,
      const BatteryData  * batteryStatus, char * gatewayEvent) {
 
-    static char message[2048];
     static char tempBuffer[250]; 
     size_t currentLen = 0;
 
-    currentLen = snprintf(message, sizeof(message),
-        "{\"Type\":\"MNMN\","
+    currentLen = snprintf(this->messageBuffer, this->sizeOfMessageBuffer,
+        "\"Type\":\"MNMN\","
         "\"IMEI\":%lld,"
         "\"EVNT\":\"%s\","
         "\"MCC\":%d,"
@@ -257,7 +314,7 @@ void FormattingMessage::formatMessage(char * formattedMessage, const CellInforma
     );
 
     if (!neighborsCellInformation.empty()) {
-        currentLen += snprintf(message + currentLen, sizeof(message) - currentLen, ",\"Neighbors\":[");
+        currentLen += snprintf(this->messageBuffer + currentLen, this->sizeOfMessageBuffer - currentLen, ",\"Neighbors\":[");
         
         for (size_t i = 0; i < neighborsCellInformation.size(); ++i) {
             CellInformation* neighbor = neighborsCellInformation[i];
@@ -270,23 +327,25 @@ void FormattingMessage::formatMessage(char * formattedMessage, const CellInforma
                 neighbor->cellId,
                 neighbor->signalLevel
             );
-            strncat(message, tempBuffer, sizeof(message) - strlen(message) - 1);
+            strncat(this->messageBuffer, tempBuffer, this->sizeOfMessageBuffer - strlen(this->messageBuffer) - 1);
 
             // Si no es el último, agregamos coma
             if (i < neighborsCellInformation.size() - 1) {
-                strncat(message, ",", sizeof(message) - strlen(message) - 1);
+                strncat(this->messageBuffer, ",", this->sizeOfMessageBuffer - strlen(this->messageBuffer) - 1);
             }
 
             //delete neighborsCellInformation[i];
             //neighborsCellInformation[i] = nullptr;
         }
         //neighborsCellInformation.clear();
-        strncat(message, "]", sizeof(message) - strlen(message) - 1);
+        strncat(this->messageBuffer, "]", this->sizeOfMessageBuffer - strlen(this->messageBuffer) - 1);
     }
 
-    message[sizeof(message) - 1] = '\0';
+   this->messageBuffer[this->sizeOfMessageBuffer - 1] = '\0';
 
-    this->jwt->encodeJWT (message, formattedMessage);
+    this->addMetaData(this->messageBuffer);
+
+    this->jwt->encodeJWT (this->messageBuffer, formattedMessage);
 
      strcat(formattedMessage, "\n");
 }
@@ -295,11 +354,9 @@ void FormattingMessage::formatMessage(char * formattedMessage, const CellInforma
  const GNSSData* GNSSInfo,  const IMUData_t * imuData,
   const BatteryData  * batteryStatus, char * gatewayEvent) {
 
-    static char message[2048];
     size_t currentLen = 0;
 
-    currentLen = snprintf(message, sizeof(message),
-        "{" 
+    currentLen = snprintf(this->messageBuffer, this->sizeOfMessageBuffer, 
         "\"Type\":\"MNGNSS\","
         "\"IMEI\":%lld,"
         "\"EVNT\":\"%s\","
@@ -327,8 +384,7 @@ void FormattingMessage::formatMessage(char * formattedMessage, const CellInforma
         "\"AZ\":%.2f,"
         "\"YAW\":%.2f,"
         "\"ROLL\":%.2f,"
-        "\"PTCH\":%.2f"
-        "}",
+        "\"PTCH\":%.2f",
         aCellInfo->IMEI,               // 1
         gatewayEvent,                  // 2
         GNSSInfo->latitude,            // 3
@@ -357,10 +413,11 @@ void FormattingMessage::formatMessage(char * formattedMessage, const CellInforma
         imuData->angles.roll,        // 27
         imuData->angles.pitch        // 28
     );
-    message[sizeof(message) - 1] = '\0';
+    this->messageBuffer[this->sizeOfMessageBuffer - 1] = '\0';
 
+    this->addMetaData(this->messageBuffer);
     //strcpy(formattedMessage, message);
-    this->jwt->encodeJWT (message, formattedMessage);
+    this->jwt->encodeJWT (this->messageBuffer, formattedMessage);
 
     strcat(formattedMessage, "\n");
 
@@ -373,11 +430,9 @@ void FormattingMessage::formatMessage(char * formattedMessage, long long int IME
  const GNSSData* GNSSInfo,  const IMUData_t * imuData, 
  const BatteryData  * batteryStatus , char * gatewayEvent) {
 
-    static char message[2048];
     size_t currentLen = 0;
 
-    currentLen = snprintf(message, sizeof(message),
-        "{" 
+    currentLen = snprintf(this->messageBuffer, this->sizeOfMessageBuffer,
         "\"Type\":\"GNSS\","
         "\"IMEI\":%lld,"
         "\"EVNT\":\"%s\","
@@ -396,8 +451,7 @@ void FormattingMessage::formatMessage(char * formattedMessage, long long int IME
         "\"AZ\":%.2f,"
         "\"YAW\":%.2f,"
         "\"ROLL\":%.2f,"
-        "\"PTCH\":%.2f"
-        "}",
+        "\"PTCH\":%.2f",
         IMEI,                // 0
         GNSSInfo->latitude,            // 1
         GNSSInfo->longitude,           // 2
@@ -416,10 +470,12 @@ void FormattingMessage::formatMessage(char * formattedMessage, long long int IME
         imuData->angles.roll,                // 15
         imuData->angles.pitch                // 16
     );
-    message[sizeof(message) - 1] = '\0';
+    this->messageBuffer[this->sizeOfMessageBuffer - 1] = '\0';
 
     //strcpy(formattedMessage, message);
-    this->jwt->encodeJWT (message, formattedMessage);
+    this->addMetaData(this->messageBuffer);
+
+    this->jwt->encodeJWT (this->messageBuffer, formattedMessage);
 
     strcat(formattedMessage, "\n");
 
@@ -431,12 +487,11 @@ void FormattingMessage::formatMessage(char * formattedMessage, long long int IME
     const IMUData_t * inertialData,  const std::vector<IMUData_t*> &IMUDataSamples, 
     const BatteryData  * batteryStatus, char * gatewayEvent) {
 
-    static char message[2048];
     static char tempBuffer[250];
     size_t currentLen = 0;
 
-    currentLen = snprintf(message, sizeof(message),
-        "{\"Type\":\"IMU\","
+    currentLen = snprintf(this->messageBuffer, this->sizeOfMessageBuffer,
+        "\"Type\":\"IMU\","
         "\"IMEI\":%lld,"
         "\"EVNT\":\"%s\","        
         "\"TIME\":\"%s\","
@@ -466,7 +521,7 @@ void FormattingMessage::formatMessage(char * formattedMessage, long long int IME
     );
 
     if (!IMUDataSamples.empty()) {
-        currentLen += snprintf(message + currentLen, sizeof(message) - currentLen, ",\"Samples\":[");
+        currentLen += snprintf(this->messageBuffer + currentLen, this->sizeOfMessageBuffer - currentLen, ",\"Samples\":[");
         
         for (size_t i = 0; i < IMUDataSamples.size(); ++i) {
             IMUData_t* sample = IMUDataSamples[i];
@@ -479,25 +534,25 @@ void FormattingMessage::formatMessage(char * formattedMessage, long long int IME
                 sample->angles.roll,           // 10 %.2f
                 sample->angles.pitch           // 11 %.2f
             );
-            strncat(message, tempBuffer, sizeof(message) - strlen(message) - 1);
+            strncat(this->messageBuffer, tempBuffer, this->sizeOfMessageBuffer - strlen(this->messageBuffer) - 1);
 
             if (i < IMUDataSamples.size() - 1) {
-                strncat(message, ",", sizeof(message) - strlen(message) - 1);
+                strncat(this->messageBuffer, ",", this->sizeOfMessageBuffer - strlen(this->messageBuffer) - 1);
             }
 
 
         }
-        strncat(message, "]", sizeof(message) - strlen(message) - 1);
+        strncat(this->messageBuffer, "]", this->sizeOfMessageBuffer - strlen(this->messageBuffer) - 1);
     }
 
-    strncat(message, "}\n", sizeof(message) - strlen(message) - 1);
+   // strncat(message, "}\n", sizeof(message) - strlen(message) - 1);
 
-    message[sizeof(message) - 1] = '\0';
+    this->messageBuffer[this->sizeOfMessageBuffer - 1] = '\0';
 
+    this->addMetaData(this->messageBuffer);
     //strcpy(formattedMessage, message);
-    this->jwt->encodeJWT (message, formattedMessage);
+    this->jwt->encodeJWT (this->messageBuffer, formattedMessage);
 
-    strcat(formattedMessage, "\n");
 
     strcat(formattedMessage, "\n");
 }
@@ -506,9 +561,9 @@ void FormattingMessage::formatMessage(char * formattedMessage, long long int IME
 void FormattingMessage::formatLoRaMessage(char * formattedMessage, const CellInformation* aCellInfo, 
     const GNSSData* GNSSInfo, const IMUData_t * imuData,
     const BatteryData  * batteryStatus, char * gatewayEvent) {
-  static char message[2048];
+
   int messageNumber = this->gateway->getLoraMessageNumber ();
-    snprintf(message, sizeof(message), 
+    snprintf(this->messageBuffer, this->sizeOfMessageBuffer, 
     "LORAGNSS,%lld,%d,%s,%.6f,%.6f,%.2f,%.2f,%.2f,%.2f,%s,%d,%d,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f", 
         aCellInfo->IMEI,                    // 1 %lld 
         messageNumber,                      // 2 %d  
@@ -530,30 +585,30 @@ void FormattingMessage::formatLoRaMessage(char * formattedMessage, const CellInf
         imuData->angles.roll,               // 17 %.2f
         imuData->angles.pitch               // 18 %.2f
             );
-    message[sizeof(message) - 1] = '\0';       
+    this->messageBuffer[this->sizeOfMessageBuffer - 1] = '\0';       
 
     uartUSB.write ("plaintext message:\r\n", strlen ("plaintext message:\r\n"));  // debug only
-    uartUSB.write ( message, strlen ( message));  // debug only
+    uartUSB.write ( this->messageBuffer, strlen ( this->messageBuffer));  // debug only
     uartUSB.write ( "\r\n",  3 );  // debug only
 
-    if (this->gateway->prepareLoRaMessage ( message, strlen (message)) == false) {
+    if (this->gateway->prepareLoRaMessage ( this->messageBuffer, strlen (this->messageBuffer)) == false) {
         return;
     }
 
-    size_t originalLength = strlen(message);
-    message[originalLength ] = '|';  // add '||' to indicate the end of the full message 
-    message[originalLength + 1] = '|';     
-    message[originalLength + 2] = '\0';      // Asegurar terminación nula
+    size_t originalLength = strlen(this->messageBuffer);
+    this->messageBuffer[originalLength ] = '|';  // add '||' to indicate the end of the full message 
+    this->messageBuffer[originalLength + 1] = '|';     
+    this->messageBuffer[originalLength + 2] = '\0';      // Asegurar terminación nula
 
-    strcpy (formattedMessage, message);
+    strcpy (formattedMessage, this->messageBuffer);
 }
 
 
 void FormattingMessage::formatLoRaMessage (char * formattedMessage, const CellInformation* aCellInfo, 
  const IMUData_t * imuData, const BatteryData  * batteryStatus, char * gatewayEvent) {
-    static char message[2048];
+
     int messageNumber = this->gateway->getLoraMessageNumber (); 
-    snprintf(message, sizeof(message), 
+    snprintf(this->messageBuffer, this->sizeOfMessageBuffer, 
     "LORALORA,%lld,%d,%s,%lld,%d,%d,%d,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f", 
         aCellInfo->IMEI,                     // 1 %lld
         messageNumber,                      // 2 %d  
@@ -568,22 +623,22 @@ void FormattingMessage::formatLoRaMessage (char * formattedMessage, const CellIn
         imuData->angles.roll,               // 10 %.2f
         imuData->angles.pitch               // 11 %.2f
             );
-    message[sizeof(message) - 1] = '\0';       
+    this->messageBuffer[this->sizeOfMessageBuffer - 1] = '\0';       
 
     uartUSB.write ("plaintext message:\r\n", strlen ("plaintext message:\r\n"));  // debug only
-    uartUSB.write ( message, strlen ( message));  // debug only
+    uartUSB.write ( this->messageBuffer, strlen ( this->messageBuffer));  // debug only
     uartUSB.write ( "\r\n",  3 );  // debug only
 
-    if (this->gateway->prepareLoRaMessage ( message, strlen (message)) == false) {
+    if (this->gateway->prepareLoRaMessage ( this->messageBuffer, strlen (this->messageBuffer)) == false) {
         return;
     }
 
-    size_t originalLength = strlen(message);
-    message[originalLength ] = '|';  // add '||' to indicate the end of the full message 
-    message[originalLength + 1] = '|';     
-    message[originalLength + 2] = '\0';      // Asegurar terminación nula
+    size_t originalLength = strlen(this->messageBuffer);
+    this->messageBuffer[originalLength ] = '|';  // add '||' to indicate the end of the full message 
+    this->messageBuffer[originalLength + 1] = '|';     
+    this->messageBuffer[originalLength + 2] = '\0';      // Asegurar terminación nula
 
-    strcpy (formattedMessage, message);
+    strcpy (formattedMessage, this->messageBuffer);
 }
 
 
@@ -597,7 +652,6 @@ void FormattingMessage::formatMNMNMemoryMessage(char * formattedMessage, const C
     const std::vector<CellInformation*> &neighborsCellInformation, const IMUData_t * imuData,
      const BatteryData  * batteryStatus, char * gatewayEvent) {
 
-    static char message[2048];
     static char tempBuffer[250];
     size_t currentLen = 0;
 
@@ -608,7 +662,7 @@ void FormattingMessage::formatMNMNMemoryMessage(char * formattedMessage, const C
     uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
     uartUSB.write ( "\r\n",  3 );  // debug only}
 
-    currentLen = snprintf(message, sizeof(message),
+    currentLen = snprintf(this->messageBuffer, this->sizeOfMessageBuffer,
         "MNMN,%s,%d,%d,%X,%X,%.2f,%d,%d,%d,%s,%s,%d,%d,%d,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f",
         gatewayEvent,                   // 1 %s
         aCellInfo->mcc,               // 2 %d
@@ -645,21 +699,21 @@ void FormattingMessage::formatMNMNMemoryMessage(char * formattedMessage, const C
                 neighbor->cellId,
                 neighbor->signalLevel
             );
-            strncat(message, tempBuffer, sizeof(message) - strlen(message) - 1);
+            strncat(this->messageBuffer, tempBuffer, this->sizeOfMessageBuffer - strlen(this->messageBuffer) - 1);
 
             uartUSB.write ( tempBuffer,  strlen (tempBuffer) );  // debug only}
         }
     }
-    message[sizeof(message) - 1] = '\0';
-    strcpy(formattedMessage, message);
+    this->messageBuffer[this->sizeOfMessageBuffer - 1] = '\0';
+    strcpy(formattedMessage, this->messageBuffer);
     //formattedMessage[sizeof(formattedMessage) - 1] = '\0';
 }
 
 //// MNGNSS for save on memory
 void FormattingMessage::formatMemoryMessage(char * formattedMessage, const CellInformation* aCellInfo,
  const GNSSData* GNSSInfo,  const IMUData_t * imuData, const BatteryData  * batteryStatus, char * gatewayEvent) {
-    static char message[2048]; 
-    snprintf(message, sizeof(message), 
+
+    snprintf(this->messageBuffer, this->sizeOfMessageBuffer, 
     "MNGNSS,%s,%.6f,%.6f,%.2f,%.2f,%.2f,%.2f,%d,%d,%X,%X,%.2f,%d,%d,%d,%s,%s,%d,%d,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f",
         gatewayEvent,                       // 1 %s
         GNSSInfo->latitude,                 // 2 %.6f
@@ -688,16 +742,16 @@ void FormattingMessage::formatMemoryMessage(char * formattedMessage, const CellI
         imuData->angles.roll,               // 25 %.2f
         imuData->angles.pitch               // 26 %.2f
             );
-    message[sizeof(message) - 1] = '\0';       
-    strcpy(formattedMessage, message);
+    this->messageBuffer[this->sizeOfMessageBuffer - 1] = '\0';       
+    strcpy(formattedMessage, this->messageBuffer);
     //formattedMessage[sizeof(formattedMessage) - 1] = '\0';
 }
 
 //// GNSS for save on memory
 void FormattingMessage::formatGNSSMemoryMessage(char * formattedMessage, const GNSSData* GNSSInfo, 
  const IMUData_t * imuData, const BatteryData  * batteryStatus, char * gatewayEvent) {
-    static char message[2048]; 
-    snprintf(message, sizeof(message), 
+
+    snprintf(this->messageBuffer, this->sizeOfMessageBuffer, 
     "GNSS,%.6f,%.6f,%.2f,%.2f,%.2f,%.2f,%d,%d,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f", 
         gatewayEvent,                       // 1 %s
         GNSSInfo->latitude,                 // 2 %.6f
@@ -717,8 +771,8 @@ void FormattingMessage::formatGNSSMemoryMessage(char * formattedMessage, const G
         imuData->angles.roll,               // 16 %.2f
         imuData->angles.pitch               // 17 %.2f
             );
-    message[sizeof(message) - 1] = '\0';       
-    strcpy(formattedMessage, message);
+    this->messageBuffer[this->sizeOfMessageBuffer - 1] = '\0';       
+    strcpy(formattedMessage, this->messageBuffer);
     //formattedMessage[sizeof(formattedMessage) - 1] = '\0';
 }
 
@@ -726,7 +780,6 @@ void FormattingMessage::formatGNSSMemoryMessage(char * formattedMessage, const G
 void FormattingMessage::formatMemoryMessage(char * formattedMessage, const IMUData_t * imuData,
 const std::vector<IMUData_t*> &IMUDataSamples, const BatteryData  * batteryStatus, char * gatewayEvent) {
 
-    static char message[2048];
     static char tempBuffer[250]; 
     size_t currentLen = 0;
 
@@ -737,7 +790,7 @@ const std::vector<IMUData_t*> &IMUDataSamples, const BatteryData  * batteryStatu
     uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
     uartUSB.write ( "\r\n",  3 );  // debug only}
 
-    currentLen = snprintf(message, sizeof(message),
+    currentLen = snprintf(this->messageBuffer, this->sizeOfMessageBuffer,
         "IMU,%s,%s,%d,%d,%d,%d,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f",
         gatewayEvent,       // 1 %s
         imuData->timestamp, // 2 %s
@@ -765,11 +818,11 @@ const std::vector<IMUData_t*> &IMUDataSamples, const BatteryData  * batteryStatu
                 sample->angles.roll,
                 sample->angles.pitch
             );
-            strncat(message, tempBuffer, sizeof(message) - strlen(message) - 1);
+            strncat(this->messageBuffer, tempBuffer, this->sizeOfMessageBuffer - strlen(this->messageBuffer) - 1);
 
             uartUSB.write ( tempBuffer,  strlen (tempBuffer) );  // debug only}
         }
     }
-    message[sizeof(message) - 1] = '\0';
-    strcpy(formattedMessage, message);
+    this->messageBuffer[this->sizeOfMessageBuffer - 1] = '\0';
+    strcpy(formattedMessage, this->messageBuffer);
 }

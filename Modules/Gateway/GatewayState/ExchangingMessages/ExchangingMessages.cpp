@@ -200,8 +200,7 @@ void ExchangingMessages::exchangeMessages (CellularModule * cellularTransceiver,
             if (this->currentStatus == GATEWAY_STATUS_GNSS_LOADED_MESSAGE) {
                 this->currentStatus = GATEWAY_STATUS_GNSS_OBTAIN_CONNECTION_TO_MOBILE_NETWORK_UNAVAILABLE_LORA_UNAVAILABLE_SAVING_MESSAGE;
             }
-            // new state formatting Message in order to be saved in memory
-            this->gateway->changeState (new FormattingMessage (this->gateway, this->currentStatus));
+            this->gateway->changeState (new GoingToSleep (this->gateway));
             return;
         }
     } else if (this->currentStatus == GATEWAY_STATUS_GNSS_OBTAIN_CONNECTION_TO_MOBILE_NETWORK_UNAVAILABLE_TRYING_LORA || 

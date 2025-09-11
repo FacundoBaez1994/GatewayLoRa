@@ -29,6 +29,9 @@
 #define POWERCHANGEDURATION  700
 #define TIME_BETWEEN_IMU_SAMPLES 10 // 10 seconds
 
+#define URL_PATH_CHANNEL "https://intent-lion-loudly.ngrok-free.app/api/canal/envio"
+#define CURRENT_DEVICE_IDENTIFIER "device/gateway-001"
+
 //=====[Declaration of private data types]=====================================
 
 //=====[Declaration and initialization of public global objects]===============
@@ -43,6 +46,15 @@
 
 //=====[Implementations of public methods]===================================
 Gateway::Gateway () {
+    this->urlPathChannel = new char [100]; 
+    strcpy (this->urlPathChannel, URL_PATH_CHANNEL);
+    this->deviceIdentifier = new char [100];
+    strcpy (this->deviceIdentifier, CURRENT_DEVICE_IDENTIFIER);
+    this->prevChainHash = new char [100];
+    strcpy (this->prevChainHash, "-");
+    this->currChainHash = new char [100];
+    strcpy (this->currChainHash, "-");
+
     Watchdog &watchdog = Watchdog::get_instance(); // singletom
     watchdog.start(TIMEOUT_WATCHDOG_TIMER_MS);
     char StringToSendUSB [50] = "Gateway initialization";
@@ -74,7 +86,7 @@ Gateway::Gateway () {
     this->receptedImuData->timestamp = new char [20];
     this->receptedImuData->timeBetweenSamples = TIME_BETWEEN_IMU_SAMPLES;
 
-    this->currentState =  new SensingBatteryStatus (this);
+    this->currentState =  new SensingBatteryStatus (this); //WaitingForMessage
 
 
     this->LoRaTransciever = new LoRaClass ();
@@ -92,6 +104,15 @@ Gateway::Gateway () {
 }
 
 Gateway::~Gateway() {
+    delete [] this->urlPathChannel; 
+    this->urlPathChannel  = nullptr;
+    delete [] this->deviceIdentifier;
+    this->deviceIdentifier  = nullptr;
+    delete [] this->prevChainHash;
+    this->prevChainHash = nullptr;
+    delete []  this->currChainHash;
+    this->currChainHash = nullptr;
+
     delete this->receptedImuData->timestamp;
     this->receptedImuData->timestamp = nullptr;
     delete this->receptedImuData;
@@ -156,13 +177,11 @@ void Gateway::update () {
     this->currentState->obtainGNSSPosition (this->currentGNSSModule, this->currentGNSSdata);
     this->currentState->connectToMobileNetwork (this->cellularTransceiver,
     this->currentCellInformation);
-    this->currentState->obtainNeighborCellsInformation (this->cellularTransceiver, 
-    this->neighborsCellInformation, numberOfNeighbors );
     this->currentState->formatMessage (formattedMessage, this->currentCellInformation,
     this->currentGNSSdata, this->neighborsCellInformation, this->receptedImuData, this->IMUDataSamples, this->batteryStatus); 
     this->currentState->exchangeMessages (this->cellularTransceiver,
     formattedMessage, this->socketTargetted, receivedMessage );
-    this->currentState->exchangeMessages (this->LoRaTransciever, formattedMessage, receivedMessage);
+    // this->currentState->exchangeMessages (this->LoRaTransciever, formattedMessage, receivedMessage);
     this->currentState->goToSleep (this->cellularTransceiver);
     watchdog.kick();
     
@@ -549,6 +568,40 @@ bool Gateway::checkMessageIntegrity ( char *messageReceived) {
         return false;
     }
  }
+
+
+ 
+void Gateway::getUrlPathChannel ( char * urlPathChannel) {
+    strcpy (urlPathChannel, this->urlPathChannel);
+}
+
+ 
+void Gateway::getDeviceIdentifier ( char * deviceId) {
+    strcpy (deviceId, this->deviceIdentifier);
+}
+
+int Gateway::getSequenceNumber () {
+    return this->sequenceMessageNumber;
+}
+
+
+void Gateway::increaseSequenceNumber () {
+    this->sequenceMessageNumber ++;
+}
+
+void Gateway::progressOnHashChain () {
+    strcpy (this->prevChainHash, this->currChainHash);
+}
+
+void Gateway::setCurrentHashChain (char * hashChain) {
+    strcpy (this->currChainHash, hashChain );
+}
+
+
+void Gateway::getPrevHashChain (char * hashChain) {
+    strcpy (hashChain, this->prevChainHash);
+}
+
 
 
 

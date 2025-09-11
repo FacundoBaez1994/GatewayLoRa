@@ -3,7 +3,6 @@
 #include "FormattingMessage.h"
 #include "Gateway.h" //debido a declaracion adelantada
 #include "Debugger.h" // due to global usbUart
-#include "GatheringCellInformation.h"
 #include "GoingToSleep.h"
 
 //=====[Declaration of private defines]========================================
@@ -55,7 +54,7 @@ void ConnectingToMobileNetwork::updatePowerStatus (CellularModule * cellularTran
             this->gateway->changeState (new FormattingMessage (this->gateway, GATEWAY_STATUS_GNSS_OBTAIN_CONNECTED_TO_MOBILE_NETWORK));
             return;
         } else {
-            this->gateway->changeState  (new GatheringCellInformation (this->gateway));
+            this->gateway->changeState  (new FormattingMessage (this->gateway, GATEWAY_STATUS_GNSS_OBTAIN_CONNECTED_TO_MOBILE_NETWORK));
             return;
         }
     } else if (currentConnectionStatus != CELLULAR_CONNECTION_STATUS_UNAVAIBLE && 

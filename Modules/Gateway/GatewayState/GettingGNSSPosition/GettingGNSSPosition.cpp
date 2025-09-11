@@ -38,7 +38,6 @@ void GettingGNSSPosition::updatePowerStatus (CellularModule * cellularTransceive
 void GettingGNSSPosition::obtainGNSSPosition (GNSSModule * currentGNSSModule, GNSSData * currentGNSSdata) {
    static GNSSState_t GnssCurrentStatus;
    char logMessage [40]; 
-   OperationMode_t operationMode = this->gateway->getOperationMode();
 
     // SIN GNSS
     //this->gateway->changeState  (new ConnectingToMobileNetwork (this->gateway, GATEWAY_STATUS_GNSS_UNAVAILABLE));

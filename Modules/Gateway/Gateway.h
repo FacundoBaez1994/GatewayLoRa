@@ -236,7 +236,51 @@ public:
      */
     bool checkMessageIntegrity ( char *messageReceived);
 
+
+    
+
     bool parseReceptedLoRaMessage (char * messageToParse);
+
+    
+    /**
+     * @brief obtain the url path to the server
+     * @param urlPathChannel Pointer to a string to store the path.
+     */
+    void getUrlPathChannel ( char * urlPathChannel);
+
+    /**
+     * @brief obtain the identifier of this device
+     * @param deviceId Pointer to a string to store the identifier.
+     */
+    void getDeviceIdentifier ( char * deviceId);
+
+    /**
+     * @brief obtain the current Sequence number
+     * @returns an integrer with the current Sequence Number.
+     */
+    int getSequenceNumber ();
+
+    /**
+     * @brief increase the sequence Number by one
+     */
+    void increaseSequenceNumber ();
+
+    /**
+     * @brief copies the current chain hash on the prev chain hash
+     */
+    void progressOnHashChain ();
+
+     /**
+     * @brief set a hash chain as the current one
+     * @param hashChain a valid hash Chain
+     */
+    void setCurrentHashChain (char * hashChain);
+
+    /**
+     * @brief get the prev hash chain
+     * @param hashChain a valid hash Chain
+    */
+    void getPrevHashChain (char * hashChain);
     
 private:
     GatewayState* currentState;            /**< Current operational state */
@@ -244,6 +288,13 @@ private:
     NonBlockingDelay* silentKeepAliveTimer;         /**< Silent mode timer */
     LatencyLevel_t latencyLevel;
     OperationMode_t currentOperationMode;   /**< Current mode of operation */
+
+    int sequenceMessageNumber = 0;
+    char* urlPathChannel;
+    char* deviceIdentifier;
+    char* prevChainHash;
+    char* currChainHash;
+
 
     deviceMotionStatus_t newMotionStatus = DEVICE_ON_MOTION;        /**< Latest motion status */
     deviceMotionStatus_t currentMotionStatus = DEVICE_ON_MOTION;    /**< Current motion status */

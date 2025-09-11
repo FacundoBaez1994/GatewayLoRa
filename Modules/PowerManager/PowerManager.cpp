@@ -4,17 +4,12 @@
 
 //=====[Declaration of private defines]========================================
 #define POWERCHANGEDURATION  700
-//#define REFRESHTIME  1000
-//#define CELLULAR_MODULE_TX_UART PA_9
-//#define CELLULAR_MODULE_RX_UART PA_10
-//#define CELLULAR_MODULE_BAUD_RATE 115200
+
 #define CELLULAR_MODULE_POWER_STATUS_SIGNAL_PIN_INPUT PA_12
 #define CELLULAR_MODULE_POWER_CONTROL_BUTTON_PIN_INPUT PA_0
 #define CELLULAR_MODULE_POWER_KEY_PIN_OUTPUT PB_0
 #define CELLULAR_MODULE_POWER_DOWN_PIN_OUTPUT PB_7
 #define CELLULAR_MODULE_DTR_PIN_OUTPUT PB_6
-
-
 //=====[Declaration of private data types]=====================================
 
 //=====[Declaration and initialization of public global objects]===============
