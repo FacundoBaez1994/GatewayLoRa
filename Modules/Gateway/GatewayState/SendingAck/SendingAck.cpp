@@ -80,15 +80,17 @@ void SendingAck::sendAcknowledgement (LoRaClass * LoRaModule, char * messageToBe
     }
 
     if (messageFormatted == false) {
-        uartUSB.write ("Sending plaintext message:\r\n", strlen ("Sending plaintext message:\r\n"));  // debug only
-        uartUSB.write ( messageToBeSend, strlen ( messageToBeSend));  // debug only
-        uartUSB.write ( "\r\n",  3 );  // debug only
+        uartUSB.write ("Sending plaintext ACKmessage:\r\n", strlen ("Sending plaintext ACKmessage:\r\n"));  // debug only
+
          snprintf(buffer, sizeof(buffer), "%lld,%d,ACK", this->IdDevice, this->messageNumber); //
+
+        uartUSB.write ( buffer, strlen (buffer));  // debug only
+        uartUSB.write ( "\r\n",  3 );  // debug only
 
         if (this->currentGateway->prepareLoRaMessage ( buffer, strlen (buffer)) == false) {
             return;
         }
-        uartUSB.write ("coded message:\r\n", strlen ("coded message:\r\n"));  // debug only
+        uartUSB.write ("coded message ACK:\r\n", strlen ("coded message ACK:\r\n"));  // debug only
         uartUSB.write ( buffer, strlen ( buffer));  // debug only
         uartUSB.write("\r\n", strlen("\r\n"));
 

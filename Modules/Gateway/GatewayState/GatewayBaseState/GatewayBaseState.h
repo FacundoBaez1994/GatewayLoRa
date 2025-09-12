@@ -89,11 +89,9 @@ public:
      */
     virtual void awake (CellularModule * cellularTransceiver, NonBlockingDelay * latency, NonBlockingDelay * silentTimer);
 
-    void sendAcknowledgement (LoRaClass * LoRaModule, char * messageToBeSend, 
-    NonBlockingDelay * backoffTime);
+    virtual void sendAcknowledgement (LoRaClass * LoRaModule, char * messageToBeSend, NonBlockingDelay * backoffTime);
 
-    bool waitForMessage (LoRaClass * LoRaModule, char * messageRecieved,
-    NonBlockingDelay * timeOut);
+    virtual bool waitForMessage (LoRaClass * LoRaModule, char * messageRecieved, NonBlockingDelay * timeOut);
 
 private:
 //=====[Declaration of privates atributes]=========================================

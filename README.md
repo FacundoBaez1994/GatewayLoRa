@@ -1,21 +1,28 @@
 ![](./resources/fiubaLogo.png)
 
 # Project "Rastreador GNSS para Tareas Investigativas" (GNSS Tracker for investigative Tasks)
-# - LoRa Gateway -
+# - LoRA Gateway -
 
 # Brief
 
 The Firmware contained in this repository form part of the project GNSS Tracker for investigation Tasks which
 is the final work of the degree Electronic Engenieering from the
 [Faculty of Engenieering of the University of Buenos Aires](https://www.fi.uba.ar/).
-This code consist in the code upload into the tracker it self, while the others two key components of the project are
-a [LoRa Gateway](https://github.com/FacundoBaez1994/GatewayLoRa) and the [Remote Control Server](https://github.com/joaquinelordi/Torcaza)
+
+This code consist in the code upload into the a LoRa Gateway, while the others two key components of the project are
+a [Tracker](https://github.com/FacundoBaez1994/RastreadorGNSSParaTareasInvestigativas) and the [Remote Control Server](https://github.com/joaquinelordi/Torcaza)
 named Torcaza after an Argentinean dove.
 
 The GNSS tracker system for investigative tasks, consists of an autonomous device built with the objective of getting the localization 
 of himself in real time, and sending it to a remote base, in order to keep the track of a vehicle terrestrial or naval.
 The device was initially conceived for his use in the Argentinian Coast Guard, but is extrapolable to almost any LEA, 
-(Law Enforcement Agent) and it was devised after a real problem.
+(Law Enforcement Agent) and it was devised after a real problem. The Tracker uses and LTE mobile network module as the main transceiver
+but it also has incorporated an LoRa transciever module useful in areas without mobile network. Therefore, a device that work as 
+a LoRa Gateway was added to the proyect.
+
+The LoRa Gateway receives the transmission message from the tracker and forwards it to the remote server either through its
+ Ethernet module—if connected to a nearby router with internet access—or via its own LTE mobile network module, 
+ assuming that mobile network service is available at the Gateway's location but not in the Tracker's area.
 
 Throughout the development, Students have applied knowledge multiple areas of the Electronic Engineering curriculum such as Embedded Systems,
 Algorithms, programming, PCB design, general electronics, informatic security, data communication, among others.
@@ -25,11 +32,10 @@ Algorithms, programming, PCB design, general electronics, informatic security, d
 The hardware of the tracker consists in various OEM Modules listed:
 
 1. Nucleo-L432KC Board from STMicroelectronics
-2. BNO085 Inertial Sensor. This module consists in a Gyroscope, Accelerometer, magnetometer.
-3. EC21-Aux from Quectel. GNSS-LTE Module.
-4. RFM95 LoRa - which has incorporated a Semtech SX1276.
-5. AT24C256 EEPROM Memory.
-6. IP2312 Battery Charger
+2. EC21-Aux from Quectel. GNSS-LTE Module.
+3. RFM95 LoRa - which has incorporated a Semtech SX1276.
+4. 2 LM2596 StepDown voltage regulator
+5. enc28j60 Ethernet module
 
 The system is powered by 18650 Ion-Lithium Batteries in parallel, therefore the device works with a voltage between
 3.0V and 4.2V. Some modules works 3.3V far less than the 4.2V maximum provided by the batteries, therefore

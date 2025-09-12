@@ -79,5 +79,4 @@ NonBlockingDelay * silentTimer ) {
     return;
  }
 
-
 //=====[Implementations of private methods]==================================

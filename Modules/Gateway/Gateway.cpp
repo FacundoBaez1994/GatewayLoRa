@@ -2,6 +2,7 @@
 #include "Gateway.h"
 #include "Debugger.h" // due to global usbUart
 #include "SensingBatteryStatus.h"
+#include "WaitingForMessage.h"
 
 
 //=====[Declaration of private defines]========================================
@@ -21,7 +22,6 @@
 #define VERY_HIGH_LATENCY_KEEP_ALIVE_MULTIPLIER       2  // 12 hours
 #define EXTREMELY_HIGH_LATENCY_KEEP_ALIVE_MULTIPLIER  1 // 24 hours
 
-
 //#define HOUR_MS  (1 * 60 * 60 * 1000)  // 1 hours
 #define HOUR_MS  (3 * 60 * 1000)  // 3 min TEST ONLY
 
@@ -29,8 +29,11 @@
 #define POWERCHANGEDURATION  700
 #define TIME_BETWEEN_IMU_SAMPLES 10 // 10 seconds
 
+#define STANDARD_TIMEOUT 8000
+
 #define URL_PATH_CHANNEL "https://intent-lion-loudly.ngrok-free.app/api/canal/envio"
 #define CURRENT_DEVICE_IDENTIFIER "device/gateway-001"
+
 
 //=====[Declaration of private data types]=====================================
 
@@ -86,10 +89,12 @@ Gateway::Gateway () {
     this->receptedImuData->timestamp = new char [20];
     this->receptedImuData->timeBetweenSamples = TIME_BETWEEN_IMU_SAMPLES;
 
-    this->currentState =  new SensingBatteryStatus (this); //WaitingForMessage
+   // this->currentState =  new SensingBatteryStatus (this); //WaitingForMessage
+    this->currentState =  new WaitingForMessage (this);
 
 
     this->LoRaTransciever = new LoRaClass ();
+    this->timeout = new NonBlockingDelay (STANDARD_TIMEOUT);
 
      //this->encrypter = new Encrypter ();
     this->encrypterBase64 = new EncrypterBase64 ();
@@ -146,6 +151,8 @@ Gateway::~Gateway() {
 
     delete this->LoRaTransciever;
     this->LoRaTransciever  = nullptr;
+    delete this->timeout;
+    this->timeout = nullptr;
 
     //delete this->encrypter;
     //this->encrypter = nullptr;
@@ -173,6 +180,8 @@ void Gateway::update () {
     Watchdog &watchdog = Watchdog::get_instance(); // singleton
     watchdog.kick();
     this->currentState->awake(this->cellularTransceiver, this->latency, this->silentKeepAliveTimer);
+    this->currentState->waitForMessage (this->LoRaTransciever, receivedMessage, this->timeout);
+    this->currentState->sendAcknowledgement (this->LoRaTransciever,  formattedMessage, this->timeout);
     this->currentState->updatePowerStatus (this->cellularTransceiver, this->batteryStatus);
     this->currentState->obtainGNSSPosition (this->currentGNSSModule, this->currentGNSSdata);
     this->currentState->connectToMobileNetwork (this->cellularTransceiver,

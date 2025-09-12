@@ -306,6 +306,7 @@ private:
 
      // LORA
     LoRaClass * LoRaTransciever;    /**< LoRa Module transceiver */
+    NonBlockingDelay * timeout;
 
     // LORA Recepted Data
     long long int IMEIRecepted;
