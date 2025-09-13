@@ -378,12 +378,12 @@ tick_t newKeepAliveLatency = EXTREMELY_LOW_LATENCY_MS;
     uartUSB.write(buffer, strlen(buffer));
 }
 
-
 bool Gateway::parseReceptedLoRaMessage(char * messageToParse) {
     char prefix[16];
     char trackerEvent[64];
     char timestamp[64];
     char logMessage[256];
+    int messageNumber;
 
     // Detectar prefix antes de sscanf
     if (sscanf(messageToParse, "%15[^,]", prefix) != 1) {
@@ -397,17 +397,18 @@ bool Gateway::parseReceptedLoRaMessage(char * messageToParse) {
         double ax, ay, az, yaw, roll, pitch;
 
         if (sscanf(messageToParse,
-                   "LORAGNSS,%lld,%63[^,],%lf,%lf,%lf,%lf,%lf,%lf,%63[^,],%d,%d,%d,%lf,%lf,%lf,%lf,%lf,%lf",
+                   "LORAGNSS,%lld,%d,%63[^,],%lf,%lf,%lf,%lf,%lf,%lf,%63[^,],%d,%d,%d,%lf,%lf,%lf,%lf,%lf,%lf",
                    &this->IMEIRecepted,
+                   &messageNumber,
                    trackerEvent,
                    &latitude, &longitude, &hdop, &altitude, &cog, &spkm,
                    timestamp,
                    &batteryStatus, &chargeLevel, &imuStatus,
-                   &ax, &ay, &az, &yaw, &roll, &pitch) == 18) {
+                   &ax, &ay, &az, &yaw, &roll, &pitch) == 19) {
 
             snprintf(logMessage, sizeof(logMessage),
-                     "GNSS Msg: IMEI=%lld, Event=%s, Lat=%.6f, Lon=%.6f, HDOP=%.2f, Alt=%.2f, COG=%.2f, V=%.2f, Time=%s, Bat=%d, Charge=%d, IMU=%d, Acc=[%.2f,%.2f,%.2f], Ang=[%.2f,%.2f,%.2f]\r\n",
-                     this->IMEIRecepted, trackerEvent, latitude, longitude, hdop,
+                     "GNSS Msg: IMEI=%lld, MsgNum=%d, Event=%s, Lat=%.6f, Lon=%.6f, HDOP=%.2f, Alt=%.2f, COG=%.2f, V=%.2f, Time=%s, Bat=%d, Charge=%d, IMU=%d, Acc=[%.2f,%.2f,%.2f], Ang=[%.2f,%.2f,%.2f]\r\n",
+                     this->IMEIRecepted, messageNumber, trackerEvent, latitude, longitude, hdop,
                      altitude, cog, spkm, timestamp, batteryStatus, chargeLevel, imuStatus,
                      ax, ay, az, yaw, roll, pitch);
             uartUSB.write(logMessage, strlen(logMessage));
@@ -419,17 +420,27 @@ bool Gateway::parseReceptedLoRaMessage(char * messageToParse) {
         double ax, ay, az, yaw, roll, pitch;
 
         if (sscanf(messageToParse,
-                   "LORALORA,%lld,%63[^,],%d,%d,%d,%lf,%lf,%lf,%lf,%lf,%lf",
+                   "LORALORA,%lld,%d,%63[^,],%d,%d,%d,%lf,%lf,%lf,%lf,%lf,%lf",
                    &this->IMEIRecepted,
+                   &messageNumber,
                    trackerEvent,
-                   &batteryStatus, &chargeLevel, &imuStatus,
-                   &ax, &ay, &az, &yaw, &roll, &pitch) == 11) {
+                   &batteryStatus,
+                  &chargeLevel, 
+                  &imuStatus,
+                   &ax, 
+                   &ay, 
+                   &az, 
+                   &yaw, 
+                   &roll,
+                &pitch) == 12) {
 
             snprintf(logMessage, sizeof(logMessage),
-                     "LORA Msg: IMEI=%lld, Event=%s, Bat=%d, Charge=%d, IMU=%d, Acc=[%.2f,%.2f,%.2f], Ang=[%.2f,%.2f,%.2f]\r\n",
-                     this->IMEIRecepted, trackerEvent, batteryStatus, chargeLevel, imuStatus,
+                     "LORA Msg: IMEI=%lld, MsgNum=%d, Event=%s, Bat=%d, Charge=%d, IMU=%d, Acc=[%.2f,%.2f,%.2f], Ang=[%.2f,%.2f,%.2f]\r\n",
+                     this->IMEIRecepted, messageNumber, trackerEvent,
+                     batteryStatus, chargeLevel, imuStatus,
                      ax, ay, az, yaw, roll, pitch);
             uartUSB.write(logMessage, strlen(logMessage));
+            this->loraMessageNumber = messageNumber;
             return true;
         }
     }
@@ -442,44 +453,6 @@ bool Gateway::parseReceptedLoRaMessage(char * messageToParse) {
     return false;
 }
 
-
-/*
-bool Gateway::parseReceptedLoRaMessage (char * messageToParse) {
-    char prefix [15];
-    char payload [1024];
-    char logMessage [100];
-            // message interpretation
-    if (sscanf(messageToParse, "%15[^,],%lld,%d,%1023[^\n]", prefix, &this->IMEIRecepted, &this->loraMessageNumber, payload) == 4) {
-        // Desglose exitoso
-        snprintf(logMessage, sizeof(logMessage), "Prefix: %s\r\n", prefix);
-        uartUSB.write(logMessage, strlen(logMessage));
-
-        snprintf(logMessage, sizeof(logMessage), "Device ID: %lld\r\n", this->IMEIRecepted);
-        uartUSB.write(logMessage, strlen(logMessage));
-
-        snprintf(logMessage, sizeof(logMessage), "Message Number: %d\r\n", this->loraMessageNumber);
-        uartUSB.write(logMessage, strlen(logMessage));
-
-        snprintf(logMessage, sizeof(logMessage), "Payload: %s\r\n", payload);
-        uartUSB.write(logMessage, strlen(logMessage));
-    if (strcmp (prefix, "LORALORA" ) == 0) {
-        uartUSB.write("LORALORA prefix\r\n", strlen("LORALORA prefix\r\n"));
-
-        
-        return true;
-    }
-    if (strcmp (prefix, "LORAGNSS" ) == 0) {
-        uartUSB.write("LORAGNSS prefix\r\n", strlen("LORAGNSS prefix\r\n"));
-        return true;
-    }
-    return false;
-    } else {
-        uartUSB.write("Error parsing message.\r\n", strlen("Error parsing message.\r\n"));
-        //messageReceived = false;
-        return false;
-    }
-}
-*/
 
 bool Gateway::encryptMessage (char * message, unsigned int messageSize) {
     this->encrypterBase64->setNextHandler(nullptr);
@@ -525,59 +498,9 @@ int Gateway::getLoraMessageNumber () {
     return this->loraMessageNumber;
 }
 
-void Gateway::increaseLoraMessageNumber () {
-    this->loraMessageNumber++;
-    if (this->loraMessageNumber >= 2147483647) { // max int value
-        this->loraMessageNumber = 1;
-    }
-    return;
+void Gateway::setLoRaMessageNumber (int messageNumber) {
+    this->loraMessageNumber = messageNumber;
 }
-
-
-bool Gateway::checkMessageIntegrity ( char *messageReceived) {
-    char logMessage [60];
-
-    char payload [60];
-    long long int deviceIdReceived;
-    int messageNumberReceived; 
-    char payloadReceived [60];
-
-    if (sscanf(messageReceived, "%lld,%d,%s", &deviceIdReceived, &messageNumberReceived, payloadReceived) == 3) {
-        bool messageCorrect = false;
-        uartUSB.write ("\r\n", strlen("\r\n"));
-        snprintf(logMessage, sizeof(logMessage), "Device ID Received: %lld\r\n", deviceIdReceived);
-        uartUSB.write(logMessage, strlen(logMessage));
-        if (deviceIdReceived == this->currentCellInformation->IMEI) {
-            uartUSB.write("OK\r\n", strlen("OK\r\n"));
-        } else {
-            uartUSB.write("ACK invalido\r\n", strlen("ACK invalido\r\n"));
-            return false;
-        }
-        snprintf(logMessage, sizeof(logMessage), "Message Number Received: %d\r\n", messageNumberReceived);
-        uartUSB.write(logMessage, strlen(logMessage));
-        if (messageNumberReceived == this->loraMessageNumber) {
-            uartUSB.write("OK\r\n", strlen("OK\r\n"));
-        } else {
-            uartUSB.write("ACK invalido\r\n", strlen("ACK invalido\r\n"));
-            return false;
-        }
-        snprintf(logMessage, sizeof(logMessage), "Payload Received: %s\r\n", payloadReceived);
-        uartUSB.write(logMessage, strlen(logMessage));
-        if (strcmp (payloadReceived, "ACK") == 0 || strcmp (payloadReceived, "ACK\r") == 0 ||
-         strcmp (payloadReceived, "ACK\r\n") == 0 ) {
-            uartUSB.write("OK\r\n", strlen("OK\r\n"));
-        } else {
-            uartUSB.write("ACK invalido\r\n", strlen("ACK invalido\r\n"));
-            return false;
-        }
-        this->increaseLoraMessageNumber ();
-        return true;
-    } else {
-        uartUSB.write("ACK invalido\r\n", strlen("ACK invalido\r\n"));
-        return false;
-    }
- }
-
 
  
 void Gateway::getUrlPathChannel ( char * urlPathChannel) {

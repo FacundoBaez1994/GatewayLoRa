@@ -71,6 +71,11 @@ bool WaitingForMessage::waitForMessage (LoRaClass * LoRaModule, char * messageRe
         timeOut->write(TIMEOUT);
         timeOut->restart();
         uartUSB.write("time out restart\r\n", strlen("time out restart\r\n")); // Debug
+        if (!LoRaModule->begin (915E6)) {
+            uartUSB.write ("LoRa Module Failed to Start!", strlen ("LoRa Module Failed to Start"));  // debug only
+            uartUSB.write ( "\r\n",  3 );  // debug only
+            return false;
+        }
         firstEntryOnThisMethod = false;
     }
 
@@ -170,29 +175,7 @@ bool WaitingForMessage::waitForMessage (LoRaClass * LoRaModule, char * messageRe
             messageReceived = false;
             return false;
         }
-      /*
-        char prefix [15];
-                // message interpretation
-        if (sscanf(processedMessageReceived, "%15[^,],%lld,%d,%1023[^\n]", prefix, &deviceId, &messageNumber, payload) == 4) {
-            // Desglose exitoso
-            snprintf(message, sizeof(message), "Prefix: %s\r\n", prefix);
-            uartUSB.write(message, strlen(message));
 
-            snprintf(message, sizeof(message), "Device ID: %lld\r\n", deviceId);
-            uartUSB.write(message, strlen(message));
-
-            snprintf(message, sizeof(message), "Message Number: %d\r\n", messageNumber);
-            uartUSB.write(message, strlen(message));
-
-            snprintf(message, sizeof(message), "Payload: %s\r\n", payload);
-            uartUSB.write(message, strlen(message));
-
-        } else {
-            uartUSB.write("Error parsing message.\r\n", strlen("Error parsing message.\r\n"));
-            messageReceived = false;
-            return false;
-        }
-        */
 
         messageReceived  = false;
         accumulatedBuffer.clear(); // Elimina todos los elementos del vector

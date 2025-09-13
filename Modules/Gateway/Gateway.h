@@ -223,21 +223,11 @@ public:
     int getLoraMessageNumber ();
 
     /**
-     * @brief increase by one the current numeration of messages sent via LoRa.
+     * @brief set the current numeration of messages recepted via LoRa.
+     * @param  messageNumber an integer with the current message number.
      */
-    void increaseLoraMessageNumber ();
+    void setLoRaMessageNumber (int messageNumber);
 
-    /**
-     * @brief Checks if the message from the gateway is the correct ACK
-     * with the correct identifier and messageNumber.
-     * increases LoraMessageNumber if correct
-     * @param message Pointer to the message buffer in plaintext.
-     * @return bolean true if the ACK message is the expected.
-     */
-    bool checkMessageIntegrity ( char *messageReceived);
-
-
-    
 
     bool parseReceptedLoRaMessage (char * messageToParse);
 
