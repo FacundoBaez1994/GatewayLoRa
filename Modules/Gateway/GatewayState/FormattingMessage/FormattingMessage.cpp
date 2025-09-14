@@ -105,8 +105,7 @@ void FormattingMessage::formatMessage (char * formattedMessage, long long int IM
             snprintf(StringToSendUSB, sizeof(StringToSendUSB),"Switching State to ExchangingMessages"); 
             uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
             uartUSB.write ( "\r\n",  3 );  // debug only}
-            while (1) {}
-            ///this->gateway->changeState (new ExchangingMessages (this->gateway));
+            this->gateway->changeState (new ExchangingMessages (this->gateway));
             break;
 
         case LORAGNSS:
@@ -120,8 +119,7 @@ void FormattingMessage::formatMessage (char * formattedMessage, long long int IM
             snprintf(StringToSendUSB, sizeof(StringToSendUSB),"Switching State to ExchangingMessages"); 
             uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
             uartUSB.write ( "\r\n",  3 );  // debug only}
-            while (1) {}
-            //this->gateway->changeState (new ExchangingMessages (this->gateway));
+            this->gateway->changeState (new ExchangingMessages (this->gateway));
             break;
         default:
             return;

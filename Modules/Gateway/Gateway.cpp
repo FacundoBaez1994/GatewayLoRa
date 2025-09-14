@@ -93,8 +93,8 @@ Gateway::Gateway () {
     this->receptedImuData->timestamp = new char [20];
     this->receptedImuData->timeBetweenSamples = TIME_BETWEEN_IMU_SAMPLES;
 
-   // this->currentState =  new SensingBatteryStatus (this); //WaitingForMessage
-    this->currentState =  new WaitingForMessage (this);
+    this->currentState =  new SensingBatteryStatus (this); //WaitingForMessage
+    //this->currentState =  new WaitingForMessage (this);
 
 
     this->LoRaTransciever = new LoRaClass ();

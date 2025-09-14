@@ -4,6 +4,7 @@
 #include "Debugger.h" // due to global usbUart
 #include "GoingToSleep.h"
 #include "FormattingMessage.h"
+#include "SensingBatteryStatus.h"
 
 //=====[Declaration of private defines]========================================
 #define MAXATTEMPTS 20
@@ -27,6 +28,10 @@ ExchangingMessages::ExchangingMessages (Gateway * gateway, gatewayStatus_t gatew
     this->currentStatus = gatewayStatus;
 }
 
+ExchangingMessages::ExchangingMessages (Gateway * gateway) {
+    this->gateway = gateway;
+}
+
 ExchangingMessages::~ExchangingMessages () {
     this->gateway = nullptr;
 }
@@ -41,190 +46,135 @@ void ExchangingMessages::exchangeMessages (CellularModule * cellularTransceiver,
     static CellularTransceiverStatus_t currentTransmitionStatus;
     static bool newDataAvailable = false;
     static bool enableTransceiver = false;
-    static char payloadRetrived [500];
     char logMessage [100];
     
-    // if conected to mobile network send the message throght LTE Modem
-    if (this->currentStatus == GATEWAY_STATUS_GNSS_UNAVAILABLE_CONNECTED_TO_MOBILE_NETWORK
-     || this->currentStatus == GATEWAY_STATUS_GNSS_OBTAIN_CONNECTED_TO_MOBILE_NETWORK 
-     || this->currentStatus == GATEWAY_STATUS_GNSS_LOADED_MESSAGE
-     || this->currentStatus ==  GATEWAY_STATUS_IMU_LOADED_MESSAGE) {
-        if (enableTransceiver == false) {
-            cellularTransceiver->enableTransceiver();
-            enableTransceiver = true; 
-        }
-       currentTransmitionStatus = cellularTransceiver->exchangeMessages (message, socketTargetted,
-       receivedMessage, &newDataAvailable);
+    if (enableTransceiver == false) {
+        cellularTransceiver->enableTransceiver();
+        enableTransceiver = true; 
+    }
+    currentTransmitionStatus = cellularTransceiver->exchangeMessages (message, socketTargetted,
+    receivedMessage, &newDataAvailable);
 
-        if (currentTransmitionStatus == CELLULAR_TRANSCEIVER_STATUS_SEND_OK) {
-            snprintf(logMessage, sizeof(logMessage), "The message was send with success");
-            uartUSB.write (logMessage , strlen (logMessage));  // debug only
-            uartUSB.write ( "\r\n",  3 );  // debug only}
-
-        if (newDataAvailable == true) {
-
-            //////////////////   MESSAGE INTERPRETATION ////////////////
-            ////////////////////////////////////////////////////////////////
-            newDataAvailable = false;
-            enableTransceiver = false;
-
-            char success[30];
-            char latency[30];
-            char mode[30];
-            char timeSilentString [30];
-            int timeSilent;
-
-            if (extractField(receivedMessage, "\"SUCS\"", success, sizeof(success)) == false) {
-                snprintf(logMessage, sizeof(logMessage), "Corrupted Server Message\r\n");
-                uartUSB.write(logMessage, strlen(logMessage));
-
-                newDataAvailable = false;
-                enableTransceiver = false;
-                if (this->currentStatus == GATEWAY_STATUS_GNSS_UNAVAILABLE_CONNECTED_TO_MOBILE_NETWORK) {
-                    this->currentStatus = GATEWAY_STATUS_GNSS_UNAVAILABLE_CONNECTED_TO_MOBILE_NETWORK_SAVING_MESSAGE;
-                }
-                if (this->currentStatus == GATEWAY_STATUS_GNSS_OBTAIN_CONNECTED_TO_MOBILE_NETWORK) {
-                    this->currentStatus = GATEWAY_STATUS_GNSS_OBTAIN_CONNECTED_TO_MOBILE_NETWORK_SAVING_MESSAGE;
-                }
-                if (this->currentStatus == GATEWAY_STATUS_GNSS_LOADED_MESSAGE) {
-                    this->currentStatus = GATEWAY_STATUS_GNSS_OBTAIN_CONNECTION_TO_MOBILE_NETWORK_UNAVAILABLE_LORA_UNAVAILABLE_SAVING_MESSAGE;
-                }
-                // new state formatting Message in order to be saved in memory
-                this->gateway->changeState (new FormattingMessage (this->gateway, this->currentStatus));
-                return;
-            }
-            snprintf(logMessage, sizeof(logMessage), "SUCCESS: %s\r\n", success);
-            uartUSB.write(logMessage, strlen(logMessage));
-
-            if (strcmp (success, "true") != 0 && strcmp (success, "TRUE") != 0) {
-                snprintf(logMessage, sizeof(logMessage), "Server returns error\r\n");
-                uartUSB.write(logMessage, strlen(logMessage));
-
-                newDataAvailable = false;
-                enableTransceiver = false;
-                if (this->currentStatus == GATEWAY_STATUS_GNSS_UNAVAILABLE_CONNECTED_TO_MOBILE_NETWORK) {
-                    this->currentStatus = GATEWAY_STATUS_GNSS_UNAVAILABLE_CONNECTED_TO_MOBILE_NETWORK_SAVING_MESSAGE;
-                }
-                if (this->currentStatus == GATEWAY_STATUS_GNSS_OBTAIN_CONNECTED_TO_MOBILE_NETWORK) {
-                    this->currentStatus = GATEWAY_STATUS_GNSS_OBTAIN_CONNECTED_TO_MOBILE_NETWORK_SAVING_MESSAGE;
-                }
-                if (this->currentStatus == GATEWAY_STATUS_GNSS_LOADED_MESSAGE) {
-                    this->currentStatus = GATEWAY_STATUS_GNSS_OBTAIN_CONNECTION_TO_MOBILE_NETWORK_UNAVAILABLE_LORA_UNAVAILABLE_SAVING_MESSAGE;
-                }
-                // new state formatting Message in order to be saved in memory
-                this->gateway->changeState (new FormattingMessage (this->gateway, this->currentStatus));
-                return;
-            }
-
-            if (extractField(receivedMessage, "\"LTCY\"", latency, sizeof(latency)) == false) {    
-                newDataAvailable = false;
-                enableTransceiver = false;
-                this->gateway->changeState (new GoingToSleep (this->gateway));
-                return;
-            }
-            snprintf(logMessage, sizeof(logMessage), "LATENCY: %s\r\n", latency);
-            uartUSB.write(logMessage, strlen(logMessage));
-            LatencyLevel_t newLatencyLevel;
-            if (this->parseLatencyLevel(latency, &newLatencyLevel)) {
-                this->gateway->setLatency(newLatencyLevel);
-            }
-            
-
-            if (extractField(receivedMessage, "\"MODE\"", mode, sizeof(mode)) == false) {
-                newDataAvailable = false;
-                enableTransceiver = false;
-                this->gateway->changeState (new GoingToSleep (this->gateway));
-                return;
-            }
-            OperationMode_t newOperationMode;
-            int hoursSilentMode;
-            if (this->parseOperationMode(mode, &newOperationMode)) {
-                if (newOperationMode == SILENT_OPERATION_MODE) {
-                    if (extractField(receivedMessage, "\"TSOP\"", timeSilentString, sizeof(timeSilentString)) == false) {
-                        newDataAvailable = false;
-                        enableTransceiver = false;
-                        this->gateway->changeState (new GoingToSleep (this->gateway));
-                        return;
-                    }
-                    timeSilent = std::atoi(timeSilentString);
-                    if ( timeSilent < 0) {
-                        newDataAvailable = false;
-                        enableTransceiver = false;
-                        this->gateway->changeState (new GoingToSleep (this->gateway));
-                        return;
-                    }
-                    snprintf(logMessage, sizeof(logMessage), "Setted Silent mode of %i hours\r\n", timeSilent );
-                    uartUSB.write(logMessage, strlen(logMessage));
-                    this->gateway->setOperationMode(newOperationMode);
-                    this->gateway->setSilentTimer(timeSilent);
-                } else {
-                    this->gateway->setOperationMode(newOperationMode);
-                }
-
-            }
-
-            snprintf(logMessage, sizeof(logMessage), "MODE: %s\r\n", mode);
-            uartUSB.write(logMessage, strlen(logMessage));
-            
-
-            newDataAvailable = false;
-            enableTransceiver = false;
-            this->gateway->changeState (new GoingToSleep (this->gateway));
-            return;
-            //////////////////   MESSAGE INTERPRETATION ////////////////
-            ////////////////////////////////////////////////////////////////
-            
-            } else {
-                snprintf(logMessage, sizeof(logMessage),"No Messages received:");
-                uartUSB.write (logMessage , strlen (logMessage));  // debug only
-                uartUSB.write ( "\r\n",  3 );  // debug only}
-                newDataAvailable = false;
-                enableTransceiver = false;
-                this->gateway->changeState (new GoingToSleep (this->gateway));
-                return;
-            }    
-        }  else if (currentTransmitionStatus != CELLULAR_TRANSCEIVER_STATUS_TRYNING_TO_SEND
-        && currentTransmitionStatus != CELLULAR_TRANSCEIVER_STATUS_UNAVAIBLE) {
-
-            snprintf(logMessage, sizeof(logMessage),"The message couldn't be sent");
-            uartUSB.write (logMessage , strlen (logMessage));  // debug only
-            uartUSB.write ( "\r\n",  3 );  // debug only}
-            newDataAvailable = false;
-            enableTransceiver = false;
-            if (this->currentStatus == GATEWAY_STATUS_GNSS_UNAVAILABLE_CONNECTED_TO_MOBILE_NETWORK) {
-                this->currentStatus = GATEWAY_STATUS_GNSS_UNAVAILABLE_CONNECTED_TO_MOBILE_NETWORK_SAVING_MESSAGE;
-            }
-            if (this->currentStatus == GATEWAY_STATUS_GNSS_OBTAIN_CONNECTED_TO_MOBILE_NETWORK) {
-                this->currentStatus = GATEWAY_STATUS_GNSS_OBTAIN_CONNECTED_TO_MOBILE_NETWORK_SAVING_MESSAGE;
-            }
-            if (this->currentStatus == GATEWAY_STATUS_GNSS_LOADED_MESSAGE) {
-                this->currentStatus = GATEWAY_STATUS_GNSS_OBTAIN_CONNECTION_TO_MOBILE_NETWORK_UNAVAILABLE_LORA_UNAVAILABLE_SAVING_MESSAGE;
-            }
-            this->gateway->changeState (new GoingToSleep (this->gateway));
-            return;
-        }
-    } else if (this->currentStatus == GATEWAY_STATUS_GNSS_OBTAIN_CONNECTION_TO_MOBILE_NETWORK_UNAVAILABLE_TRYING_LORA || 
-    this->currentStatus == GATEWAY_STATUS_GNSS_UNAVAILABLE_CONNECTION_TO_MOBILE_NETWORK_UNAVAILABLE_TRYING_LORA) {
-        /// LORAS STUFF
-        snprintf(logMessage, sizeof(logMessage),"LoRa Sending");
+    if (currentTransmitionStatus == CELLULAR_TRANSCEIVER_STATUS_SEND_OK) {
+        snprintf(logMessage, sizeof(logMessage), "The message was send with success");
         uartUSB.write (logMessage , strlen (logMessage));  // debug only
         uartUSB.write ( "\r\n",  3 );  // debug only}
+
+    if (newDataAvailable == true) {
+
+        //////////////////   MESSAGE INTERPRETATION ////////////////
+        ////////////////////////////////////////////////////////////////
+        newDataAvailable = false;
+        enableTransceiver = false;
+
+        char success[30];
+        char latency[30];
+        char mode[30];
+        char timeSilentString [30];
+        int timeSilent;
+
+        if (extractField(receivedMessage, "\"SUCS\"", success, sizeof(success)) == false) {
+            snprintf(logMessage, sizeof(logMessage), "Corrupted Server Message\r\n");
+            uartUSB.write(logMessage, strlen(logMessage));
+
+            newDataAvailable = false;
+            enableTransceiver = false;
+            // new state formatting Message in order to be saved in memory
+            this->gateway->changeState (new SensingBatteryStatus (this->gateway));
+            return;
+        }
+        snprintf(logMessage, sizeof(logMessage), "SUCCESS: %s\r\n", success);
+        uartUSB.write(logMessage, strlen(logMessage));
+
+        if (strcmp (success, "true") != 0 && strcmp (success, "TRUE") != 0) {
+            snprintf(logMessage, sizeof(logMessage), "Server returns error\r\n");
+            uartUSB.write(logMessage, strlen(logMessage));
+
+            newDataAvailable = false;
+            enableTransceiver = false;
+            // new state formatting Message in order to be saved in memory
+            this->gateway->changeState (new SensingBatteryStatus (this->gateway));
+            return;
+        }
+
+        if (extractField(receivedMessage, "\"LTCY\"", latency, sizeof(latency)) == false) {    
+            newDataAvailable = false;
+            enableTransceiver = false;
+            this->gateway->changeState (new SensingBatteryStatus (this->gateway));
+            return;
+        }
+        snprintf(logMessage, sizeof(logMessage), "LATENCY: %s\r\n", latency);
+        uartUSB.write(logMessage, strlen(logMessage));
+        LatencyLevel_t newLatencyLevel;
+        if (this->parseLatencyLevel(latency, &newLatencyLevel)) {
+            this->gateway->setLatency(newLatencyLevel);
+        }
         
-        // try with LoRa
-        // NOTA: ESTA PARTE DEBERIA DE SER UNO O DOS ESTADOS APARTE
 
-        snprintf(logMessage, sizeof(logMessage),"LoRa Unavailable");
-        uartUSB.write (logMessage , strlen (logMessage));  // debug only
-        uartUSB.write ( "\r\n",  3 );  // debug only}
-        if (this->currentStatus == GATEWAY_STATUS_GNSS_OBTAIN_CONNECTION_TO_MOBILE_NETWORK_UNAVAILABLE_TRYING_LORA ){
-            this->gateway->changeState (new GoingToSleep (this->gateway));
+        if (extractField(receivedMessage, "\"MODE\"", mode, sizeof(mode)) == false) {
+            newDataAvailable = false;
+            enableTransceiver = false;
+            this->gateway->changeState (new SensingBatteryStatus (this->gateway));
             return;
         }
-        this->gateway->changeState (new GoingToSleep (this->gateway));
+        OperationMode_t newOperationMode;
+        int hoursSilentMode;
+        if (this->parseOperationMode(mode, &newOperationMode)) {
+            if (newOperationMode == SILENT_OPERATION_MODE) {
+                if (extractField(receivedMessage, "\"TSOP\"", timeSilentString, sizeof(timeSilentString)) == false) {
+                    newDataAvailable = false;
+                    enableTransceiver = false;
+                    this->gateway->changeState (new SensingBatteryStatus (this->gateway));
+                    return;
+                }
+                timeSilent = std::atoi(timeSilentString);
+                if ( timeSilent < 0) {
+                    newDataAvailable = false;
+                    enableTransceiver = false;
+                    this->gateway->changeState (new SensingBatteryStatus (this->gateway));
+                    return;
+                }
+                snprintf(logMessage, sizeof(logMessage), "Setted Silent mode of %i hours\r\n", timeSilent );
+                uartUSB.write(logMessage, strlen(logMessage));
+                this->gateway->setOperationMode(newOperationMode);
+                this->gateway->setSilentTimer(timeSilent);
+            } else {
+                this->gateway->setOperationMode(newOperationMode);
+            }
+
+        }
+
+        snprintf(logMessage, sizeof(logMessage), "MODE: %s\r\n", mode);
+        uartUSB.write(logMessage, strlen(logMessage));
+        
+
+        newDataAvailable = false;
+        enableTransceiver = false;
+        this->gateway->changeState (new SensingBatteryStatus (this->gateway));
+        return;
+        //////////////////   MESSAGE INTERPRETATION ////////////////
+        ////////////////////////////////////////////////////////////////
+        
+        } else {
+            snprintf(logMessage, sizeof(logMessage),"No Messages received:");
+            uartUSB.write (logMessage , strlen (logMessage));  // debug only
+            uartUSB.write ( "\r\n",  3 );  // debug only}
+            newDataAvailable = false;
+            enableTransceiver = false;
+            this->gateway->changeState (new SensingBatteryStatus (this->gateway));
+            return;
+        }    
+    }  else if (currentTransmitionStatus != CELLULAR_TRANSCEIVER_STATUS_TRYNING_TO_SEND
+    && currentTransmitionStatus != CELLULAR_TRANSCEIVER_STATUS_UNAVAIBLE) {
+
+        snprintf(logMessage, sizeof(logMessage),"The message couldn't be sent");
+        uartUSB.write (logMessage , strlen (logMessage));  // debug only
+        uartUSB.write ( "\r\n",  3 );  // debug only}
+        newDataAvailable = false;
+        enableTransceiver = false;
+        this->gateway->changeState (new SensingBatteryStatus (this->gateway));
         return;
     }
-
-  
     return;
 }
  

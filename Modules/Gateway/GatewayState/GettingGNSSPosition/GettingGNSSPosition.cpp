@@ -38,11 +38,24 @@ void GettingGNSSPosition::updatePowerStatus (CellularModule * cellularTransceive
 
 void GettingGNSSPosition::obtainGNSSPosition (GNSSModule * currentGNSSModule, GNSSData * currentGNSSdata) {
    static GNSSState_t GnssCurrentStatus;
-   char logMessage [40]; 
+   char logMessage [50]; 
+   static bool moduleTurningOff = false; 
 
     // SIN GNSS
     //this->gateway->changeState  (new ConnectingToMobileNetwork (this->gateway, GATEWAY_STATUS_GNSS_UNAVAILABLE));
     //return;
+    if (moduleTurningOff == true) {
+        if (currentGNSSModule->turnOff()) {
+            snprintf(logMessage, sizeof(logMessage), "Waiting For LoRa Message from the Tracker");
+            uartUSB.write (logMessage , strlen (logMessage ));  // debug only
+            uartUSB.write ( "\r\n",  3 );  // debug only
+            this->gateway->changeState  (new WaitingForMessage (this->gateway));
+            moduleTurningOff = false;
+            return;
+        }
+        return;
+    }
+    
 
     currentGNSSModule->enableGNSS();
     GnssCurrentStatus = currentGNSSModule->retrivGeopositioning(currentGNSSdata);
@@ -50,15 +63,13 @@ void GettingGNSSPosition::obtainGNSSPosition (GNSSModule * currentGNSSModule, GN
         snprintf(logMessage, sizeof(logMessage), "GNSS OBTAIN!!!!");
         uartUSB.write (logMessage , strlen (logMessage ));  // debug only
         uartUSB.write ( "\r\n",  3 );  // debug only
-        this->gateway->changeState  (new WaitingForMessage (this->gateway));
-        return;
+        moduleTurningOff = true;
     }
     if (GnssCurrentStatus == GNSS_STATE_CONNECTION_UNAVAILABLE ) {
         snprintf(logMessage, sizeof(logMessage), "GNSS UNAVAILABLE!!!!");
         uartUSB.write (logMessage , strlen (logMessage ));  // debug only
         uartUSB.write ( "\r\n",  3 );  // debug only}
-        this->gateway->changeState  (new WaitingForMessage (this->gateway));
-        return;
+        moduleTurningOff = true;
     }
 
     return;

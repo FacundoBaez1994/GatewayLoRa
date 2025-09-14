@@ -31,6 +31,12 @@ public:
     ExchangingMessages (Gateway* gateway, gatewayStatus_t gatewayStatus);
 
     /**
+     * @brief Constructor
+     * @param gateway Pointer to the Gateway object managing states and data
+     */
+    ExchangingMessages (Gateway* gateway);
+
+    /**
      * @brief Destructor
      */
     virtual ~ExchangingMessages ();

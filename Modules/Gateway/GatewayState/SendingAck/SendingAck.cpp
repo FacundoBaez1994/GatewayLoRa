@@ -9,6 +9,7 @@
 #define BACKOFFTIME        100
 #define MAX_CHUNK_SIZE     255
 #define FLY_TIME           100
+#define MAX_TRIES           3
 //=====[Declaration of private data types]=====================================
 
 //=====[Declaration and initialization of public global objects]===============
@@ -42,6 +43,7 @@ void SendingAck::sendAcknowledgement (LoRaClass * LoRaModule, char * messageToBe
     static bool messageFormatted = false;
     static bool firstEntryOnThisMethod = true;
     static size_t stringIndex = 0;
+    static size_t numberOffAckSendings = 0;
 
     
     if (firstEntryOnThisMethod == true) {
@@ -111,6 +113,14 @@ void SendingAck::sendAcknowledgement (LoRaClass * LoRaModule, char * messageToBe
         LoRaModule->endPacket();
         stringIndex += chunkSize;
         if (stringIndex  > totalLength) {
+            numberOffAckSendings++;
+            //firstChunkSent = false;
+            stringIndex = 0;
+            backoffTime->restart();
+            if (numberOffAckSendings < MAX_TRIES) {
+                return;
+            }
+            numberOffAckSendings = 0;
             uartUSB.write("\r\n", strlen("\r\n"));
             uartUSB.write ("Changing State to WaitingForMessage:\r\n", 
             strlen ("Changing State to WaitingForMessage:\r\n"));  // debug only
