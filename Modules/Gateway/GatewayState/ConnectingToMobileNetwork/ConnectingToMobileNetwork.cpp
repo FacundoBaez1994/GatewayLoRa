@@ -5,6 +5,7 @@
 #include "Debugger.h" // due to global usbUart
 #include "GoingToSleep.h"
 
+
 //=====[Declaration of private defines]========================================
 #define MAXATTEMPTS 20
 //=====[Declaration of private data types]=====================================
@@ -24,6 +25,10 @@
 //=====[Implementations of public methods]===================================
 ConnectingToMobileNetwork::ConnectingToMobileNetwork (Gateway * gateway, gatewayStatus_t gatewayStatus) {
     this->currentStatus = gatewayStatus;
+    this->gateway = gateway;
+}
+
+ConnectingToMobileNetwork::ConnectingToMobileNetwork (Gateway * gateway) {
     this->gateway = gateway;
 }
 
@@ -50,21 +55,16 @@ void ConnectingToMobileNetwork::updatePowerStatus (CellularModule * cellularTran
     /// test only
 
     if (currentConnectionStatus == CELLULAR_CONNECTION_STATUS_CONNECTED_TO_NETWORK){
-        if (this->currentStatus == GATEWAY_STATUS_GNSS_OBTAIN) {
-            this->gateway->changeState (new FormattingMessage (this->gateway, GATEWAY_STATUS_GNSS_OBTAIN_CONNECTED_TO_MOBILE_NETWORK));
-            return;
-        } else {
-            this->gateway->changeState  (new FormattingMessage (this->gateway, GATEWAY_STATUS_GNSS_OBTAIN_CONNECTED_TO_MOBILE_NETWORK));
-            return;
-        }
-    } else if (currentConnectionStatus != CELLULAR_CONNECTION_STATUS_UNAVAIBLE && 
-        currentConnectionStatus != CELLULAR_CONNECTION_STATUS_TRYING_TO_CONNECT) {
-            this->gateway->changeState  (new GoingToSleep (this->gateway));
-            return;
-        } 
-             
+        this->gateway->changeState (new FormattingMessage (this->gateway));
         return;
-    }
+
+    }  else if (currentConnectionStatus != CELLULAR_CONNECTION_STATUS_UNAVAIBLE && 
+        currentConnectionStatus != CELLULAR_CONNECTION_STATUS_TRYING_TO_CONNECT) {
+        this->gateway->changeState  (new GoingToSleep (this->gateway));
+        return;
+    } 
+    return;
+}
 
 
 

@@ -33,6 +33,11 @@ public:
      */
     ConnectingToMobileNetwork (Gateway * gateway, gatewayStatus_t gatewayStatus);
 
+    /** @brief Constructor
+     * @param gateway Pointer to the Gateway instance for state control and data access
+     */
+    ConnectingToMobileNetwork (Gateway * gateway);
+
     /**
      * @brief Destructor
     */

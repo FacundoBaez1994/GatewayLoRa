@@ -53,9 +53,9 @@ bool GatewayBaseState::waitForMessage (LoRaClass * LoRaModule, char * messageRec
  }
 
 
-void GatewayBaseState::formatMessage (char * formattedMessage, const CellInformation* aCellInfo,
-    const GNSSData* GNSSInfo, const std::vector<CellInformation*> &neighborsCellInformation,
-    const IMUData_t * imuData, const std::vector<IMUData_t*> &IMUDataSample, const BatteryData  * batteryStatus) {
+void GatewayBaseState::formatMessage (char * formattedMessage, long long int IMEIRecepted,
+    const char * receptedTrackerEvent, const int RSSI, const GNSSData* gatewayGNSSInfo, GNSSData* receptedGNSSdata,
+    const IMUData_t * receptedImuData, const BatteryData  * receptedBatteryStatus) {
     return;
 }
 

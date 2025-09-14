@@ -3,6 +3,7 @@
 #include "Gateway.h" //debido a declaracion adelantada
 #include "Debugger.h" // due to global usbUart
 #include "WaitingForMessage.h"
+#include "ConnectingToMobileNetwork.h"
 
 //=====[Declaration of private defines]========================================
 #define BACKOFFTIME        100
@@ -12,43 +13,23 @@
 
 //=====[Declaration and initialization of public global objects]===============
 
-
 //=====[Declaration of external public global variables]=======================
 
 //=====[Declaration and initialization of public global variables]=============
 
 //=====[Declaration and initialization of private global variables]============
 
-
-
-
 //=====[Declarations (prototypes) of private functions]========================
 
-
 //=====[Implementations of private methods]===================================
-/** 
-* @brief attachs the callback function to the ticker
-*/
-
 
 //=====[Implementations of public methods]===================================
-/** 
-* @brief
-* 
-* @param 
-*/
 SendingAck::SendingAck (Gateway * gateway, long long int deviceId, int messageNumber) {
     this->currentGateway = gateway;
     this->IdDevice = deviceId;
     this->messageNumber = messageNumber;
 }
 
-
-/** 
-* @brief
-* 
-* @param 
-*/
 SendingAck::~SendingAck() {
      this->currentGateway = NULL;
 }
@@ -139,7 +120,7 @@ void SendingAck::sendAcknowledgement (LoRaClass * LoRaModule, char * messageToBe
             firstEntryOnThisMethod = true;
             messageFormatted = false; 
             stringIndex = 0;
-            this->currentGateway->changeState(new WaitingForMessage (this->currentGateway));
+            this->currentGateway->changeState(new ConnectingToMobileNetwork (this->currentGateway));
             return;
         }
     }

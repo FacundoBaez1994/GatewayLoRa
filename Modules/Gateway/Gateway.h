@@ -54,6 +54,11 @@ typedef enum {
     EXTREMELY_HIGH_LATENCY,
 } LatencyLevel_t;
 
+typedef enum {
+    LORALORA,
+    LORAGNSS,
+} ReceptedTypeMessage_t;
+
 
 /**
  * @brief Enumeration representing the operation modes of the gateway.
@@ -271,6 +276,20 @@ public:
      * @param hashChain a valid hash Chain
     */
     void getPrevHashChain (char * hashChain);
+
+    
+    /**
+     * @brief get the current message type recieved on LoRa
+     * @param ReceptedTypeMessage_t the type of message recieved on the LoRa Receptor
+    */
+    ReceptedTypeMessage_t getReceptedTypeMessage ( );
+
+    
+     /**
+     * @brief set the RSSI of the current message recepted
+     * @param RSSI a int representing the RSSI 
+     */
+    void setCurrentRSSI (int RSSI);
     
 private:
     GatewayState* currentState;            /**< Current operational state */
@@ -279,6 +298,7 @@ private:
     LatencyLevel_t latencyLevel;
     OperationMode_t currentOperationMode;   /**< Current mode of operation */
 
+    // metadata
     int sequenceMessageNumber = 0;
     char* urlPathChannel;
     char* deviceIdentifier;
@@ -291,7 +311,6 @@ private:
     MovementEvent_t currentMovementEvent = MOVING;                  /**< Current detected movement event */
 
     // IMU 
-
     std::vector<IMUData_t*> IMUDataSamples;      /**< Sampled IMU data */
 
      // LORA
@@ -300,9 +319,13 @@ private:
 
     // LORA Recepted Data
     long long int IMEIRecepted;
+    int RSSI;
     int loraMessageNumber = 1;    /**< interger counting the number of messages sent by LoRa */
+    BatteryData* receptedBatteryData;  
     GNSSData* receptedGNSSdata;  /**< Latest Retrived GNSS data from tracker */
     IMUData_t* receptedImuData;  /**< Latest  Retrived IMU data from tracker */
+    char receptedTrackerEvent [20];
+    ReceptedTypeMessage_t receptedTypeMessage;
 
     
     // MN Module 
@@ -313,7 +336,7 @@ private:
 
     // GNSS Module 
     GNSSModule* currentGNSSModule;      /**< GNSS receiver module */
-    GNSSData* currentGNSSdata;         /**< Latest GNSS data */
+    GNSSData* gatewayGNSSdata;         /**< Latest GNSS data */
 
     // Battery
     BatteryData* batteryStatus;        /**< Current battery status */

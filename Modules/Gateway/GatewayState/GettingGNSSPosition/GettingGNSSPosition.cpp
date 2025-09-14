@@ -4,6 +4,7 @@
 #include "Debugger.h" // due to global usbUart
 #include "ConnectingToMobileNetwork.h"
 #include "FormattingMessage.h"
+#include "WaitingForMessage.h"
 
 //=====[Declaration of private defines]========================================
 
@@ -49,14 +50,14 @@ void GettingGNSSPosition::obtainGNSSPosition (GNSSModule * currentGNSSModule, GN
         snprintf(logMessage, sizeof(logMessage), "GNSS OBTAIN!!!!");
         uartUSB.write (logMessage , strlen (logMessage ));  // debug only
         uartUSB.write ( "\r\n",  3 );  // debug only
-        this->gateway->changeState  (new ConnectingToMobileNetwork (this->gateway, GATEWAY_STATUS_GNSS_OBTAIN));
+        this->gateway->changeState  (new WaitingForMessage (this->gateway));
         return;
     }
     if (GnssCurrentStatus == GNSS_STATE_CONNECTION_UNAVAILABLE ) {
         snprintf(logMessage, sizeof(logMessage), "GNSS UNAVAILABLE!!!!");
         uartUSB.write (logMessage , strlen (logMessage ));  // debug only
         uartUSB.write ( "\r\n",  3 );  // debug only}
-        this->gateway->changeState  (new ConnectingToMobileNetwork (this->gateway, GATEWAY_STATUS_GNSS_UNAVAILABLE));
+        this->gateway->changeState  (new WaitingForMessage (this->gateway));
         return;
     }
 

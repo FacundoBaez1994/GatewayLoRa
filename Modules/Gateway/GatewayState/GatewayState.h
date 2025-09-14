@@ -71,9 +71,9 @@ public:
      * @param IMUDataSample Reference to the vector with IMU data samples.
      * @param batteryStatus Pointer to the battery status.
      */
-    virtual void formatMessage (char* formattedMessage, const CellInformation* aCellInfo,
-    const GNSSData* GNSSInfo, const std::vector<CellInformation*> &neighborsCellInformation,
-     const IMUData_t* imuData, const std::vector<IMUData_t*> &IMUDataSample, const BatteryData* batteryStatus); 
+    virtual void formatMessage (char * formattedMessage, long long int IMEIRecepted,
+    const char * receptedTrackerEvent, const int RSSI, const GNSSData* gatewayGNSSInfo, GNSSData* receptedGNSSdata,
+    const IMUData_t * receptedImuData, const BatteryData  * receptedBatteryStatus); 
 
     /**
      * @brief Exchanges messages with a remote server via the cellular transceiver.

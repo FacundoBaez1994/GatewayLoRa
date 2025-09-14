@@ -37,6 +37,12 @@ public:
     FormattingMessage (Gateway * gateway, gatewayStatus_t gatewayStatus);
 
     /**
+     * @brief Constructor
+     * @param gateway Pointer to the Gateway instance managing states and data.
+     */
+    FormattingMessage (Gateway * gateway);
+
+    /**
      * @brief Destructor
      */
     virtual ~FormattingMessage ();
@@ -52,16 +58,14 @@ public:
      * @brief Formats a message combining cellular info, GNSS data, inertial data,
      * battery status, and neighbors' cell info for transmission or storage.
      * @param formattedMessage Output buffer for the formatted message.
-     * @param aCellInfo Pointer to the primary cellular cell info.
-     * @param GNSSInfo Pointer to GNSS data.
-     * @param neighborsCellInformation Vector of pointers to neighboring cell info.
-     * @param imuData Pointer to IMU data structure.
-     * @param IMUDataSamples Vector of IMU data samples.
-     * @param batteryStatus Pointer to battery data.
+     * @param gatewayGNSSInfo Pointer to GNSS data related to the gatway position.
+     * @param receptedGNSSdata Pointer to GNSS data related to the tracker.
+     * @param receptedImuData Pointer to IMU data structure.
+     * @param receptedBatteryStatus Pointer to battery data.
      */
-    virtual void formatMessage (char * formattedMessage, const CellInformation* aCellInfo,
-    const GNSSData* GNSSInfo, const std::vector<CellInformation*> &neighborsCellInformation,
-    const IMUData_t * imuData,  const std::vector<IMUData_t*> &IMUDataSamples, const BatteryData  * batteryStatus); 
+    virtual void formatMessage (char * formattedMessage, long long int IMEIRecepted,
+    const char * receptedTrackerEvent, const int RSSI, const GNSSData* gatewayGNSSInfo, GNSSData* receptedGNSSdata,
+    const IMUData_t * receptedImuData, const BatteryData  * receptedBatteryStatus); 
 
 private:
 //=====[Declaration of privates methods]=========================================
@@ -79,8 +83,10 @@ private:
      * @param batteryStatus Pointer to battery data.
      * @param gatewayEvent String showing a movement event.
     */
-    void formatMessage(char * formattedMessage, const CellInformation* aCellInfo,
-    const GNSSData* GNSSInfo, const IMUData_t * imuData, const BatteryData  * batteryStatus, char * gatewayEvent);
+    void formatLORAGNSSMessage (char * formattedMessage, const long long int IMEIRecepted,
+    const char * receptedTrackerEvent, const int RSSI, const GNSSData* receptedGNSSdata, 
+    const IMUData_t * receptedImuData, 
+    const BatteryData  * receptedBatteryStatus); 
 
     /**
      * @brief Creates a JWT type message combining several cellular info , inertial data,
@@ -93,117 +99,10 @@ private:
      * @param batteryStatus Pointer to battery data.
      * @param gatewayEvent String showing a movement event.
     */
-    void formatMessage(char * formattedMessage, const CellInformation* aCellInfo, 
-    const std::vector<CellInformation*> &neighborsCellInformation, const IMUData_t * imuData,
-     const BatteryData  * batteryStatus, char * gatewayEvent);
+    void formatLORALORAMessage (char * formattedMessage, long long int IMEIRecepted,
+    const char * receptedTrackerEvent, const int RSSI, const GNSSData* gatewayGNSSInfo,
+    const IMUData_t * receptedImuData, const BatteryData  * receptedBatteryStatus); 
 
-    /**
-     * @brief Creates a JWT type message combining several cellular info , inertial data,
-     * battery status, in order to be send to a remote server through Mobile network
-     * @param formattedMessage Output buffer for the formatted message.
-     * @param IMEI long long int with the IMEI of the device.
-     * @param GNSSInfo Pointer to GNSS data.
-     * @param imuData Pointer to IMU data structure.
-     * @param batteryStatus Pointer to battery data.
-     * @param gatewayEvent String showing a movement event.
-    */
-    void formatMessage(char* formattedMessage, long long int IMEI,
-    const GNSSData* GNSSInfo, const IMUData_t* imuData, const BatteryData* batteryStatus, 
-    char * gatewayEvent);
-
-    /**
-     * @brief Creates a JWT type message combining several cellular info , inertial data,
-     * battery status, in order to be send to a remote server through Mobile network
-     * @param formattedMessage Output buffer for the formatted message.
-     * @param IMEI long long int with the IMEI of the device.
-     * @param GNSSInfo Pointer to GNSS data.
-     * @param imuData Pointer to IMU data structure.
-     * @param IMUDataSamples Vector of IMU data structure with inertial samples
-     * @param batteryStatus Pointer to battery data.
-     * @param gatewayEvent String showing a movement event.
-    */
-    void formatMessage(char* formattedMessage, long long int IMEI, const IMUData_t* inertialData, 
-    const std::vector<IMUData_t*> &IMUDataSamples, 
-    const BatteryData* batteryStatus, char* gatewayEvent);
-
-    /**
-     * @brief Creates a message combining several cellular info, GNSS related info, inertial data,
-     * battery status, in order to be send to a LoRaGateway through a LoRa transceiver Module
-     * @param formattedMessage Output buffer for the formatted message.
-     * @param aCellInfo Pointer to the primary cellular cell info.
-     * @param GNSSInfo Pointer to GNSS data.
-     * @param imuData Pointer to IMU data structure.
-     * @param batteryData Pointer to battery data.
-     * @param gatewayEvent String showing a movement event.
-    */
-    void formatLoRaMessage(char* formattedMessage, const CellInformation* aCellInfo,
-    const GNSSData* GNSSInfo, const IMUData_t* imuData, 
-    const BatteryData* batteryStatus, char* gatewayEvent);
-
-    /**
-     * @brief Creates a message combining cellular info, GNSS related info, inertial data,
-     * battery status, in order to be send to a LoRaGateway through a LoRa transceiver Module
-     * @param formattedMessage Output buffer for the formatted message.
-     * @param aCellInfo Pointer to the primary cellular cell info.
-     * @param imuData Pointer to IMU data structure.
-     * @param batteryData Pointer to battery data.
-     * @param gatewayEvent String showing a movement event.
-    */
-    void formatLoRaMessage(char* formattedMessage, const CellInformation* aCellInfo, 
-    const IMUData_t* imuData, const BatteryData* batteryStatus, char* gatewayEvent);
-
-
-    /**
-     * @brief Creates a message combining GNSS related info, inertial data,
-     * battery status, in order to be saved on a non volatile memory
-     * @param formattedMessage Output buffer for the formatted message.
-     * @param GNSSInfo Pointer to GNSS data.
-     * @param inertialData Pointer to IMU data structure.
-     * @param batteryData Pointer to battery data.
-     * @param gatewayEvent String showing a movement event.
-    */
-    void formatGNSSMemoryMessage(char* formattedMessage, const GNSSData* GNSSInfo, 
-    const IMUData_t* inertialData, const BatteryData* batteryStatus, char* gatewayEvent);
-
-    /**
-     * @brief Creates a message combining GNSS related info, inertial data,
-     * battery status, to be saved on a non volatile memory.
-     * @param formattedMessage Output buffer for the formatted message.
-     * @param aCellInfo Pointer to the primary cellular cell info.
-     * @param neighborsCellInformation Vector of pointers to neighboring cell info.
-     * @param imuData Pointer to IMU data structure.
-     * @param batteryStatus Pointer to battery data.
-     * @param gatewayEvent String showing a movement event.
-    */
-    void formatMNMNMemoryMessage (char* formattedMessage, const CellInformation* aCellInfo, 
-    const std::vector<CellInformation*> &neighborsCellInformation, const IMUData_t* imuData,
-     const BatteryData* batteryStatus, char* gatewayEvents);
-
-    /**
-     * @brief Creates a message combining GNSS related info, inertial data,
-     * battery status, in order tto be saved on a non volatile memory.
-     * @param formattedMessage Output buffer for the formatted message.
-     * @param aCellInfo Pointer to the primary cellular cell info.
-     * @param GNSSInfo Pointer to GNSS data.
-     * @param inertialData Pointer to IMU data structure.
-     * @param batteryData Pointer to battery data.
-     * @param gatewayEvent String showing a movement event.
-    */
-    void formatMemoryMessage(char* formattedMessage, const CellInformation* aCellInfo, const GNSSData* GNSSInfo, 
-    const IMUData_t * inertialData, const BatteryData* batteryStatus, char* gatewayEvent);
-
-
-    /**
-     * @brief Creates a message combining GNSS related info, inertial data,
-     * battery status, in order to be saved on a non volatile memory
-     * @param formattedMessage Output buffer for the formatted message.
-     * @param inertialData Pointer to IMU data structure.
-     * @param IMUDataSamples Vector of IMU data structure with inertial samples.
-     * @param batteryData Pointer to battery data.
-     * @param gatewayEvent String showing a movement event.
-    */
-    void formatMemoryMessage(char* formattedMessage, const IMUData_t* inertialData, 
-    const std::vector<IMUData_t*> &IMUDataSamples, const BatteryData* batteryStatus, char* gatewayEvent);
 
 //=====[Declaration of privates atributes]=========================================
     Gateway* gateway; ///< Pointer to gateway instance for state transitions and data access

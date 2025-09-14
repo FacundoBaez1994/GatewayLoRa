@@ -81,9 +81,13 @@ Gateway::Gateway () {
     this->currentCellInformation->timestamp  = new char [20];
     this->currentCellInformation->band = new char [20];
 
-    this->currentGNSSdata = new GNSSData;
+    this->gatewayGNSSdata = new GNSSData;
+    this->gatewayGNSSdata->latitude = 0;
+    this->gatewayGNSSdata->longitude = 0; 
+    this->gatewayGNSSdata->altitude = 0;
     this->receptedGNSSdata = new GNSSData;
     this->batteryStatus = new BatteryData;
+    this->receptedBatteryData = new BatteryData;
 
     this->receptedImuData = new IMUData_t;
     this->receptedImuData->timestamp = new char [20];
@@ -123,14 +127,19 @@ Gateway::~Gateway() {
     delete this->receptedImuData;
     this->receptedImuData = nullptr;
 
+    delete this->receptedBatteryData;
+    this->receptedBatteryData = nullptr;
+    delete this->batteryStatus;
+    this->batteryStatus = nullptr;
+
     delete[] this->currentCellInformation->timestamp;
     this->currentCellInformation->timestamp = nullptr;
     delete[] this->currentCellInformation->band;
     this->currentCellInformation->band = nullptr;
     delete this->currentCellInformation;
     this->currentCellInformation = nullptr;
-    delete this->currentGNSSdata;
-    this->currentGNSSdata = nullptr;
+    delete this->gatewayGNSSdata;
+    this->gatewayGNSSdata = nullptr;
 
     delete  this->receptedGNSSdata;
     this->receptedGNSSdata = nullptr;
@@ -183,11 +192,12 @@ void Gateway::update () {
     this->currentState->waitForMessage (this->LoRaTransciever, receivedMessage, this->timeout);
     this->currentState->sendAcknowledgement (this->LoRaTransciever,  formattedMessage, this->timeout);
     this->currentState->updatePowerStatus (this->cellularTransceiver, this->batteryStatus);
-    this->currentState->obtainGNSSPosition (this->currentGNSSModule, this->currentGNSSdata);
+    this->currentState->obtainGNSSPosition (this->currentGNSSModule, this->gatewayGNSSdata);
     this->currentState->connectToMobileNetwork (this->cellularTransceiver,
     this->currentCellInformation);
-    this->currentState->formatMessage (formattedMessage, this->currentCellInformation,
-    this->currentGNSSdata, this->neighborsCellInformation, this->receptedImuData, this->IMUDataSamples, this->batteryStatus); 
+    this->currentState->formatMessage (formattedMessage, this->IMEIRecepted,
+    this->receptedTrackerEvent, this->RSSI, this->gatewayGNSSdata, this->receptedGNSSdata,
+    this->receptedImuData, this->receptedBatteryData); 
     this->currentState->exchangeMessages (this->cellularTransceiver,
     formattedMessage, this->socketTargetted, receivedMessage );
     // this->currentState->exchangeMessages (this->LoRaTransciever, formattedMessage, receivedMessage);
@@ -242,6 +252,9 @@ MovementEvent_t Gateway::getMovementEvent () {
     return this->currentMovementEvent;
 }
 
+ReceptedTypeMessage_t Gateway::getReceptedTypeMessage () {
+    return this->receptedTypeMessage;
+}
 
 OperationMode_t  Gateway::getOperationMode () {
     return this->currentOperationMode;
@@ -378,11 +391,12 @@ tick_t newKeepAliveLatency = EXTREMELY_LOW_LATENCY_MS;
     uartUSB.write(buffer, strlen(buffer));
 }
 
+
 bool Gateway::parseReceptedLoRaMessage(char * messageToParse) {
     char prefix[16];
-    char trackerEvent[64];
-    char timestamp[64];
-    char logMessage[256];
+    char trackerEvent[20];
+    char timestamp[20];
+    char logMessage[512];
     int messageNumber;
 
     // Detectar prefix antes de sscanf
@@ -392,55 +406,114 @@ bool Gateway::parseReceptedLoRaMessage(char * messageToParse) {
     }
 
     if (strcmp(prefix, "LORAGNSS") == 0) {
-        double latitude, longitude, hdop, altitude, cog, spkm;
-        int batteryStatus, chargeLevel, imuStatus;
-        double ax, ay, az, yaw, roll, pitch;
+
+        int tmpStatus, tmpBat, tmpCharge;
 
         if (sscanf(messageToParse,
-                   "LORAGNSS,%lld,%d,%63[^,],%lf,%lf,%lf,%lf,%lf,%lf,%63[^,],%d,%d,%d,%lf,%lf,%lf,%lf,%lf,%lf",
-                   &this->IMEIRecepted,
-                   &messageNumber,
-                   trackerEvent,
-                   &latitude, &longitude, &hdop, &altitude, &cog, &spkm,
-                   timestamp,
-                   &batteryStatus, &chargeLevel, &imuStatus,
-                   &ax, &ay, &az, &yaw, &roll, &pitch) == 19) {
+                   "LORAGNSS,%lld,%d,%19[^,],%f,%f,%f,%f,%f,%f,%19[^,],%d,%d,%d,%f,%f,%f,%f,%f,%f",
+                    &this->IMEIRecepted,
+                    &this->loraMessageNumber,
+                    trackerEvent,
+                    &this->receptedGNSSdata->latitude,
+                    &this->receptedGNSSdata->longitude, 
+                    &this->receptedGNSSdata->hdop, 
+                    &this->receptedGNSSdata->altitude, 
+                    &this->receptedGNSSdata->cog, 
+                    &this->receptedGNSSdata->spkm,
+                    timestamp,
+                    &tmpBat,
+                    &tmpCharge,
+                    &tmpStatus,
+                    &this->receptedImuData->acceleration.ax, 
+                    &this->receptedImuData->acceleration.ay, 
+                    &this->receptedImuData->acceleration.az, 
+                    &this->receptedImuData->angles.yaw, 
+                    &this->receptedImuData->angles.roll,
+                    &this->receptedImuData->angles.pitch) == 19) {
+
+            this->receptedBatteryData->batteryChargeStatus = (uint8_t)tmpBat;
+            this->receptedBatteryData->chargeLevel = (uint8_t)tmpCharge;
+            this->receptedImuData->status = (uint8_t)tmpStatus;
+
+            strcpy(this->receptedGNSSdata->timestamp, timestamp);   
+            strcpy(this->receptedTrackerEvent, trackerEvent);  
 
             snprintf(logMessage, sizeof(logMessage),
-                     "GNSS Msg: IMEI=%lld, MsgNum=%d, Event=%s, Lat=%.6f, Lon=%.6f, HDOP=%.2f, Alt=%.2f, COG=%.2f, V=%.2f, Time=%s, Bat=%d, Charge=%d, IMU=%d, Acc=[%.2f,%.2f,%.2f], Ang=[%.2f,%.2f,%.2f]\r\n",
-                     this->IMEIRecepted, messageNumber, trackerEvent, latitude, longitude, hdop,
-                     altitude, cog, spkm, timestamp, batteryStatus, chargeLevel, imuStatus,
-                     ax, ay, az, yaw, roll, pitch);
+                     "GNSS Msg: IMEI=%lld, MsgNum=%d, Event=%s, "
+                     "Lat=%.6f, Lon=%.6f, HDOP=%.2f, Alt=%.2f, "
+                     "COG=%.2f, V=%.2f, Time=%s, Bat=%d, Charge=%d, "
+                     "IMUStatus=%d, Acc=[%.2f,%.2f,%.2f], "
+                     "Ang=[%.2f,%.2f,%.2f]\r\n",
+                     this->IMEIRecepted, this->loraMessageNumber, 
+                     this->receptedTrackerEvent,
+                     this->receptedGNSSdata->latitude, 
+                     this->receptedGNSSdata->longitude, 
+                     this->receptedGNSSdata->hdop,
+                     this->receptedGNSSdata->altitude, 
+                     this->receptedGNSSdata->cog, 
+                     this->receptedGNSSdata->spkm,
+                     this->receptedGNSSdata->timestamp,
+                     this->receptedBatteryData->batteryChargeStatus,
+                     this->receptedBatteryData->chargeLevel,
+                     this->receptedImuData->status,
+                     this->receptedImuData->acceleration.ax, 
+                     this->receptedImuData->acceleration.ay,
+                     this->receptedImuData->acceleration.az, 
+                     this->receptedImuData->angles.yaw, 
+                     this->receptedImuData->angles.roll,
+                     this->receptedImuData->angles.pitch);
+            this->receptedTypeMessage = LORAGNSS;
             uartUSB.write(logMessage, strlen(logMessage));
             return true;
         }
     }
     else if (strcmp(prefix, "LORALORA") == 0) {
-        int batteryStatus, chargeLevel, imuStatus;
-        double ax, ay, az, yaw, roll, pitch;
+
+        int tmpStatus, tmpBat, tmpCharge;
 
         if (sscanf(messageToParse,
-                   "LORALORA,%lld,%d,%63[^,],%d,%d,%d,%lf,%lf,%lf,%lf,%lf,%lf",
-                   &this->IMEIRecepted,
-                   &messageNumber,
-                   trackerEvent,
-                   &batteryStatus,
-                  &chargeLevel, 
-                  &imuStatus,
-                   &ax, 
-                   &ay, 
-                   &az, 
-                   &yaw, 
-                   &roll,
-                &pitch) == 12) {
+                   "LORALORA,%lld,%d,%19[^,],%d,%d,%19[^,],%d,%f,%f,%f,%f,%f,%f",
+                    &this->IMEIRecepted,
+                    &this->loraMessageNumber,
+                    trackerEvent,
+                    &tmpBat,
+                    &tmpCharge,
+                    timestamp,
+                    &tmpStatus,
+                    &this->receptedImuData->acceleration.ax, 
+                    &this->receptedImuData->acceleration.ay, 
+                    &this->receptedImuData->acceleration.az, 
+                    &this->receptedImuData->angles.yaw, 
+                    &this->receptedImuData->angles.roll,
+                    &this->receptedImuData->angles.pitch) == 13) {
+
+            this->receptedBatteryData->batteryChargeStatus = (uint8_t)tmpBat;
+            this->receptedBatteryData->chargeLevel = (uint8_t)tmpCharge;
+            this->receptedImuData->status    = (uint8_t)tmpStatus;
+            strcpy(this->receptedTrackerEvent, trackerEvent);       
+            strcpy(this->receptedImuData->timestamp, timestamp);   
 
             snprintf(logMessage, sizeof(logMessage),
-                     "LORA Msg: IMEI=%lld, MsgNum=%d, Event=%s, Bat=%d, Charge=%d, IMU=%d, Acc=[%.2f,%.2f,%.2f], Ang=[%.2f,%.2f,%.2f]\r\n",
-                     this->IMEIRecepted, messageNumber, trackerEvent,
-                     batteryStatus, chargeLevel, imuStatus,
-                     ax, ay, az, yaw, roll, pitch);
+                     "LORA Msg: IMEI=%lld, MsgNum=%d, Event=%s, "
+                     "Bat=%d, Charge=%d, IMU=%d, "
+                     "Acc=[%.2f,%.2f,%.2f], "
+                     "Ang=[%.2f,%.2f,%.2f]"
+                     "TIME=%s\r\n",
+                     this->IMEIRecepted, 
+                     this->loraMessageNumber, 
+                     this->receptedTrackerEvent,
+                     this->receptedBatteryData->batteryChargeStatus,
+                     this->receptedBatteryData->chargeLevel,
+                     this->receptedImuData->status, 
+                     this->receptedImuData->acceleration.ax, 
+                     this->receptedImuData->acceleration.ay, 
+                     this->receptedImuData->acceleration.az, 
+                     this->receptedImuData->angles.yaw, 
+                     this->receptedImuData->angles.roll, 
+                     this->receptedImuData->angles.pitch,
+                     this->receptedImuData->timestamp);
+            this->receptedTypeMessage = LORALORA;
             uartUSB.write(logMessage, strlen(logMessage));
-            this->loraMessageNumber = messageNumber;
             return true;
         }
     }
@@ -500,6 +573,11 @@ int Gateway::getLoraMessageNumber () {
 
 void Gateway::setLoRaMessageNumber (int messageNumber) {
     this->loraMessageNumber = messageNumber;
+}
+
+
+void Gateway::setCurrentRSSI (int RSSI) {
+    this->RSSI = RSSI;
 }
 
  
