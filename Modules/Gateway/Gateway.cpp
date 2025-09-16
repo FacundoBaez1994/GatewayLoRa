@@ -56,7 +56,9 @@ Gateway::Gateway () {
 
     //this->currentState = new WaitingForMessage (this);
     char pay [250] = "payloadLaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaarrrrrrrrrrrrrrrrrgoooooooooo";
-    this->currentState =  new SendingTCPMessage(this, 1, 1, pay);
+   // this->currentState =  new SendingTCPMessage(this, 1, 1, pay);
+   //ConnectingEthernet
+    this->currentState =  new ConnectingEthernet(this);
 
     Watchdog &watchdog = Watchdog::get_instance(); // singletom
     watchdog.start(TIMEOUT_MS);
@@ -114,6 +116,8 @@ void Gateway::update () {
     Watchdog &watchdog = Watchdog::get_instance(); // singletom
     watchdog.kick();
 
+    this->currentState->connectEthernetToLocalNetwork (this->ethernetModule, this->timer);
+    this->currentState->queryUTCTimeViaRemoteServer (this->ethernetModule, this->timer);
     this->currentState->receiveMessage (this->LoRaTransciever, this->timer);
     this->currentState->sendAcknowledgement (this->LoRaTransciever, this->timer);
     this->currentState->sendTCPMessage (this->ethernetModule, this->timer);

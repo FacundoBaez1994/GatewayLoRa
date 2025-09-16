@@ -1,7 +1,7 @@
 //=====[#include guards - begin]===============================================
 
-#ifndef _SENDING_TCP_MESSAGE_H_
-#define _SENDING_TCP_MESSAGE_H_
+#ifndef _CONNECTING_ETHERNET_H_
+#define _CONNECTING_ETHERNET_H_
 
 //==================[Libraries]===============================================
 
@@ -19,19 +19,18 @@ class Gateway; //debido a declaracion adelantada
  *  class - State desing pattern
  * 
  */
-class SendingTCPMessage : public GatewayState {
+class ConnectingEthernet : public GatewayState {
 public:
 //=====[Declaration of public methods]=========================================
-    SendingTCPMessage (Gateway * gateway, int IdDevice, int messageNumber, char * payload);
-    virtual ~SendingTCPMessage ();
+    ConnectingEthernet (Gateway * gateway);
+    virtual ~ConnectingEthernet ();
+    virtual void connectEthernetToLocalNetwork (UipEthernet * ethernetModule, NonBlockingDelay * delay);
     virtual void receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay * delay);
+    virtual void queryUTCTimeViaRemoteServer (UipEthernet * ethernetModule, NonBlockingDelay * delay);
     virtual void sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay * delay);
     virtual void sendTCPMessage (UipEthernet * ethernetModule, NonBlockingDelay * delay);
 private:
-    void disconnect (UipEthernet * ethernetModule, TcpClient * socket);
     Gateway * gateway;
-    int IdDevice;
-    int messageNumber;
     int connectionRetries;
     char payload [250];
 //=====[Declaration of privates atributes]=========================================
@@ -44,4 +43,4 @@ private:
 
 //=====[#include guards - end]=================================================
 
-#endif //  _SENDING_TCP_MESSAGE_H_
+#endif //   _CONNECTING_ETHERNET_H_

@@ -140,6 +140,17 @@ void WaitingForMessage::sendTCPMessage (UipEthernet * ethernetModule, NonBlockin
     return;
 }
 
+
+void WaitingForMessage::queryUTCTimeViaRemoteServer (UipEthernet * ethernetModule, NonBlockingDelay * delay){
+    return;
+}
+
+
+void WaitingForMessage::connectEthernetToLocalNetwork (UipEthernet * ethernetModule, NonBlockingDelay * delay) {
+    return;
+}
+
+
 //=====[Implementations of private functions]==================================
 
 

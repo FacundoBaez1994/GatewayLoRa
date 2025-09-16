@@ -3,7 +3,7 @@
 #include "SendingAck.h"
 #include "Gateway.h" //debido a declaracion adelantada
 #include "Debugger.h" // due to global usbUart
-#include "SendingTCPMessage.h"
+#include "SendingMessageThroughEthernet.h"
 
 //=====[Declaration of private defines]========================================
 
@@ -76,13 +76,23 @@ void SendingAck::sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay *
     LoRaModule->write((uint8_t *)ACKmessage, strlen(ACKmessage));
     LoRaModule->endPacket();
 
-    uartUSB.write("Changing To Sending TPC Message State\r\n", strlen("Changing To Sending TPC Message State\r\n\r\n"));
-    this->gateway->changeState (new SendingTCPMessage(this->gateway, this->IdDevice, this->messageNumber, this->payload));
+    uartUSB.write("Changing To Sending Tcp Message State\r\n", strlen("Changing To Sending TPC Message State\r\n\r\n"));
+    this->gateway->changeState (new SendingMessageThroughEthernet(this->gateway, this->IdDevice, this->messageNumber, this->payload));
 
     return;
 }
 
 void SendingAck::sendTCPMessage (UipEthernet * ethernetModule, NonBlockingDelay * delay) {
+    return;
+}
+
+
+void SendingAck::queryUTCTimeViaRemoteServer (UipEthernet * ethernetModule, NonBlockingDelay * delay){
+    return;
+}
+
+
+void SendingAck::connectEthernetToLocalNetwork (UipEthernet * ethernetModule, NonBlockingDelay * delay) {
     return;
 }
 

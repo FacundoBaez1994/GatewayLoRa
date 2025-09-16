@@ -1,7 +1,7 @@
 //=====[#include guards - begin]===============================================
 
-#ifndef _WAITING_FOR_MESSAGE_H_
-#define _WAITING_FOR_MESSAGE_H_
+#ifndef _OBTAING_TIME_UTR_THROUGH_ETHENET_H_
+#define _OBTAING_TIME_UTR_THROUGH_ETHENET_H_
 
 //==================[Libraries]===============================================
 
@@ -9,32 +9,30 @@
 #include "arm_book_lib.h"
 #include "GatewayState.h"
 #include "Non_Blocking_Delay.h"
-#include "SendingAck.h"
 
 //=====[Declaration of public data types]======================================
 class Gateway; //debido a declaracion adelantada
+//struct TcpSocket;
 
 //=====[Declaration of public classes]=========================================
 /*
  *  class - State desing pattern
  * 
  */
-class WaitingForMessage : public GatewayState {
+class ObtaingTimeUTCThroughEthernet : public GatewayState {
 public:
 //=====[Declaration of public methods]=========================================
-    WaitingForMessage (Gateway * gateway);
-    virtual ~WaitingForMessage ();
+    ObtaingTimeUTCThroughEthernet (Gateway * gateway);
+    virtual ~ObtaingTimeUTCThroughEthernet ();
     virtual void connectEthernetToLocalNetwork (UipEthernet * ethernetModule, NonBlockingDelay * delay);
     virtual void queryUTCTimeViaRemoteServer (UipEthernet * ethernetModule, NonBlockingDelay * delay);
     virtual void receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay * delay);
     virtual void sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay * delay);
     virtual void sendTCPMessage (UipEthernet * ethernetModule, NonBlockingDelay * delay);
 private:
-    //bool checkResponse (char * response, char * retrivMessage);
     Gateway * gateway;
-    char payload [50];
-    int IdDeviceReceived;
-    int messageNumberReceived;
+    int connectionRetries;
+    char payload [250];
 //=====[Declaration of privates atributes]=========================================
 
 //=====[Declaration of privates methods]=========================================
@@ -45,4 +43,4 @@ private:
 
 //=====[#include guards - end]=================================================
 
-#endif // _WAITING_FOR_MESSAGE_H_
+#endif //   _OBTAING_TIME_UTR_THROUGH_ETHENET_H_

@@ -1,7 +1,7 @@
 //=====[#include guards - begin]===============================================
 
-#ifndef _WAITING_FOR_MESSAGE_H_
-#define _WAITING_FOR_MESSAGE_H_
+#ifndef _SENDING_MESSAGE_THROUGH_ETHERNET_H_
+#define _SENDING_MESSAGE_THROUGH_ETHERNET_H_
 
 //==================[Libraries]===============================================
 
@@ -9,32 +9,34 @@
 #include "arm_book_lib.h"
 #include "GatewayState.h"
 #include "Non_Blocking_Delay.h"
-#include "SendingAck.h"
 
 //=====[Declaration of public data types]======================================
 class Gateway; //debido a declaracion adelantada
+//struct TcpSocket;
 
 //=====[Declaration of public classes]=========================================
 /*
  *  class - State desing pattern
  * 
  */
-class WaitingForMessage : public GatewayState {
+class SendingMessageThroughEthernet : public GatewayState {
 public:
 //=====[Declaration of public methods]=========================================
-    WaitingForMessage (Gateway * gateway);
-    virtual ~WaitingForMessage ();
+    SendingMessageThroughEthernet (Gateway * gateway);
+    SendingMessageThroughEthernet (Gateway * gateway, int IdDevice, int messageNumber, char * payload);
+    virtual ~SendingMessageThroughEthernet ();
     virtual void connectEthernetToLocalNetwork (UipEthernet * ethernetModule, NonBlockingDelay * delay);
     virtual void queryUTCTimeViaRemoteServer (UipEthernet * ethernetModule, NonBlockingDelay * delay);
     virtual void receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay * delay);
     virtual void sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay * delay);
     virtual void sendTCPMessage (UipEthernet * ethernetModule, NonBlockingDelay * delay);
 private:
-    //bool checkResponse (char * response, char * retrivMessage);
+    void disconnect (UipEthernet * ethernetModule, TcpClient * socket);
     Gateway * gateway;
-    char payload [50];
-    int IdDeviceReceived;
-    int messageNumberReceived;
+    int IdDevice;
+    int messageNumber;
+    int connectionRetries;
+    char payload [2248];
 //=====[Declaration of privates atributes]=========================================
 
 //=====[Declaration of privates methods]=========================================
@@ -45,4 +47,4 @@ private:
 
 //=====[#include guards - end]=================================================
 
-#endif // _WAITING_FOR_MESSAGE_H_
+#endif //  _SENDING_MESSAGE_THROUGH_ETHERNET_H_

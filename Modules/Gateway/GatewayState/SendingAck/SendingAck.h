@@ -27,6 +27,8 @@ public:
     virtual void receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay * delay);
     virtual void sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay * delay);
     virtual void sendTCPMessage (UipEthernet * ethernetModule, NonBlockingDelay * delay);
+    virtual void connectEthernetToLocalNetwork (UipEthernet * ethernetModule, NonBlockingDelay * delay);
+    virtual void queryUTCTimeViaRemoteServer (UipEthernet * ethernetModule, NonBlockingDelay * delay);
 private:
     Gateway * gateway;
     int IdDevice;

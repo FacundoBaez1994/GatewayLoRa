@@ -6,7 +6,7 @@
 #include "mbed.h"
 #include "GatewayState.h"
 
-#include "SendingTCPMessage.h"
+#include "SendingMessageThroughEthernet.h"
 
 #include "Non_Blocking_Delay.h"
 #include "arm_book_lib.h"
@@ -14,6 +14,7 @@
 #include "LoRa.h"
 #include "UipEthernet.h"
 #include "WaitingForMessage.h"
+#include "ConnectingEthernet.h"
 
 
 

@@ -1,13 +1,10 @@
 //=====[Libraries]=============================================================
-#include "SendingTCPMessage.h"
+#include "SendingMessageThroughEthernet.h"
 #include "Gateway.h" //debido a declaracion adelantada
 #include "Debugger.h" // due to global usbUart
 #include "WaitingForMessage.h"
 #include "EthernetInterface.h"   // la interfaz de red cableada
-
-#include "mbedtls/ssl.h"
-#include "TLSSocket.h"           // socket TLS (HTTPS)
-#include "EthernetInterface.h"
+#include "ConnectingEthernet.h"
 
 //=====[Declaration of private defines]========================================
 #define TIMEOUT_MS 80000
@@ -41,18 +38,28 @@
 * 
 * @param 
 */
-SendingTCPMessage::SendingTCPMessage (Gateway * gateway, int IdDevice, int messageNumber, char * payload) {
+SendingMessageThroughEthernet::SendingMessageThroughEthernet (Gateway * gateway) {
+    this->gateway = gateway;
+    this->connectionRetries = 0;
+
+    strcpy (this->payload, "eyJhbGciOiAiSFMyNTYiLCJ0eXAiOiJKV1QifQ.eyJjdXJyIjoib29CcTVuT3RXOFZUR09XOXV2UzIzUmt4cUJjZks3a1ViVkVqLytLQVVSdz0iLCJpc3MiOiJkZXZpY2UvdHJhY2tlci0wMDEiLCJhdWQiOiJodHRwczovL2ludGVudC1saW9uLWxvdWRseS5uZ3Jvay1mcmVlLmFwcC9hcGkvY2FuYWwvZW52aW8iLCJpYXMiOiIwNjA5MjUyMzEyMTAiLCJleHAiOiIwNzA5MjUyMzEyMTAiLCJkIjoiT1c4MnI3dnF6MUVjcFdhYXRnQzU2ZzZ2SmltYVdCQ0hGcXo3ZGM2T29CYz0iLCJzZXEiOjAsInByZXYiOiItIiwiVHlwZSI6Ik1OTU4iLCJJTUVJIjo4Njg0NTAwNDE3MzM3MTYsIkVWTlQiOiJNT1ZFIiwiTUNDIjo3MjIsIk1OQyI6NywiTEFDIjoiMTFDMiIsIkNJRCI6IjYyQjcxMDIiLCJTTFZMIjotNTMuMDAsIlRFQ0giOjcsIlJFR1MiOjEsIkNITkwiOjIwMDAsIkJBTkQiOiJMVEUgQkFORCA0IiwiVElNRSI6IjA2MDkyNTIzMTA1NyIsIkJTVEEiOjAsIkJMVkwiOjg2LCJTSU1VIjozLCJBWCI6MC4wMCwiQVkiOi0wLjAwLCJBWiI6MC4wMCwiWUFXIjo0MS4zOSwiUk9MTCI6MC4xMiwiUFRDSCI6LTEuNTgsIk5laWdoYm9ycyI6W3siVEVDSCI6MiwiTUNDIjo3MjIsIk1OQyI6MzQsIkxBQyI6IjEzRjUiLCJDSUQiOiJDMEMiLCJTTFZMIjotODUuMDB9LHsiVEVDSCI6MiwiTUNDIjo3MjIsIk1OQyI6MzQsIkxBQyI6IjEzRjUiLCJDSUQiOiIxNjBCIiwiU0xWTCI6LTg3LjAwfSx7IlRFQ0giOjQsIk1DQyI6NzIyLCJNTkMiOjM0LCJMQUMiOiIzQjA1IiwiQ0lEIjoiN0MwNkYwMCIsIlNMVkwiOi04NS4wMH0seyJURUNIIjo0LCJNQ0MiOjcyMiwiTU5DIjozNCwiTEFDIjoiM0IwNSIsIkNJRCI6IjdDMDZGMDAiLCJTTFZMIjotODUuMDB9LHsiVEVDSCI6NCwiTUNDIjo3MjIsIk1OQyI6MzQsIkxBQyI6IjNCMDUiLCJDSUQiOiI3QzA2RjExIiwiU0xWTCI6LTkwLjAwfSx7IlRFQ0giOjQsIk1DQyI6NzIyLCJNTkMiOjM0LCJMQUMiOiIzQjA1IiwiQ0lEIjoiN0ExRjcwNCIsIlNMVkwiOi0xMDIuMDB9LHsiVEVDSCI6NCwiTUNDIjo3MjIsIk1OQyI6MzQsIkxBQyI6IjNCMDUiLCJDSUQiOiI3QTNDRTEyIiwiU0xWTCI6LTExNC4wMH0seyJURUNIIjo0LCJNQ0MiOjcyMiwiTU5DIjozNCwiTEFDIjoiM0IwNSIsIkNJRCI6IjdBMUFCMDYiLCJTTFZMIjotMTE3LjAwfSx7IlRFQ0giOjIsIk1DQyI6NzIyLCJNTkMiOjMxMCwiTEFDIjoiMUJENyIsIkNJRCI6IjRFMjQiLCJTTFZMIjotODYuMDB9LHsiVEVDSCI6NCwiTUNDIjo3MjIsIk1OQyI6MzEwLCJMQUMiOiJERjU3IiwiQ0lEIjoiMTA0MDIiLCJTTFZMIjotOTkuMDB9XX0.1Ak6MlD3E6tcBqq5JsgJs3lEKwx9DErJ0PAGUwBWj5c");
+}
+
+
+
+SendingMessageThroughEthernet::SendingMessageThroughEthernet (Gateway * gateway, int IdDevice, int messageNumber, char * payload) {
     this->gateway = gateway;
     this->IdDevice = IdDevice;
     this->messageNumber = messageNumber;
     this->connectionRetries = 0;
-
+    
     if (payload != nullptr) {
         strncpy(this->payload, payload, sizeof(this->payload) - 1); // Copiar hasta 49 caracteres
         this->payload[sizeof(this->payload) - 1] = '\0';            // Asegurar terminación nula
     } else {
         this->payload[0] = '\0'; // Si payload es nullptr, dejar vacío
     }
+
 }
 
 
@@ -61,24 +68,32 @@ SendingTCPMessage::SendingTCPMessage (Gateway * gateway, int IdDevice, int messa
 * 
 * @param 
 */
-SendingTCPMessage::~SendingTCPMessage() {
+SendingMessageThroughEthernet::~SendingMessageThroughEthernet() {
      this->gateway = NULL;
 }
 
 
 
-void SendingTCPMessage::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
+void SendingMessageThroughEthernet::receiveMessage (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
     return;
 }
 
-void SendingTCPMessage::sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
-
-
-
+void SendingMessageThroughEthernet::sendAcknowledgement (LoRaClass * LoRaModule, NonBlockingDelay * delay) {
     return;
 }
 
-void SendingTCPMessage::sendTCPMessage (UipEthernet * ethernetModule, NonBlockingDelay * delay) {
+void SendingMessageThroughEthernet::queryUTCTimeViaRemoteServer (UipEthernet * ethernetModule, NonBlockingDelay * delay){
+    return;
+}
+
+
+void SendingMessageThroughEthernet::connectEthernetToLocalNetwork (UipEthernet * ethernetModule, NonBlockingDelay * delay) {
+    return;
+}
+
+
+// envio a wirehook
+void SendingMessageThroughEthernet::sendTCPMessage (UipEthernet * ethernetModule, NonBlockingDelay * delay) {
     const time_t    TIMEOUT = 5;    // Connection timeout time
     time_t          timeOut;
     char*           remaining;
@@ -89,31 +104,126 @@ void SendingTCPMessage::sendTCPMessage (UipEthernet * ethernetModule, NonBlockin
 
     Watchdog &watchdog = Watchdog::get_instance(); // singleton
     watchdog.kick();
-
-    snprintf(logMessage, sizeof(logMessage), "Sending HTTP POST through Ethernet\n");
-    uartUSB.write(logMessage, strlen(logMessage));
-
-    // Conexión de red
-    if (ethernetModule->connect(15) != 0) {
-        snprintf(logMessage, sizeof(logMessage), "Ethernet connection not available\n");
+   
+    // Crear socket TCP
+    TcpClient socket;
+   
+    result = socket.open(ethernetModule);
+    if (result != 0) {
+        snprintf(logMessage, sizeof(logMessage), "Error! socket.open() returned: %d\n", result);
         uartUSB.write(logMessage, strlen(logMessage));
         return;
     }
 
+
+    // Conectar al servidor ngrok
+    timeOut = time(NULL) + TIMEOUT;
+    snprintf(logMessage, sizeof(logMessage), "Connecting to ngrok server ...\r\n");
+    uartUSB.write(logMessage, strlen(logMessage));
+
     watchdog.kick();
+    //result = socket.connect("intent-lion-loudly.ngrok-free.app", 80); // HTTP plano
+    result = socket.connect("webhook.site", 80); // HTTP plano  //  LocalHost 5133
+    if (result != 0) {
+        snprintf(logMessage, sizeof(logMessage), "Error! socket.connect() returned: %d\n", result);
+        uartUSB.write(logMessage, strlen(logMessage));
+        this->connectionRetries ++;
+        if (this->connectionRetries >= MAX_RETRIES) {
+            this->disconnect (ethernetModule, &socket);
+            return;
+        }
+        return;
+    }
 
-    // Mostrar parámetros de red
-    const char* ip = ethernetModule->get_ip_address();
-    const char* netmask = ethernetModule->get_netmask();
-    const char* gateway = ethernetModule->get_gateway();
-
-    snprintf(logMessage, sizeof(logMessage), "IP address: %s\n", ip ? ip : "None");
-    uartUSB.write(logMessage, strlen(logMessage));
-    snprintf(logMessage, sizeof(logMessage), "Netmask: %s\n", netmask ? netmask : "None");
-    uartUSB.write(logMessage, strlen(logMessage));
-    snprintf(logMessage, sizeof(logMessage), "Gateway: %s\n", gateway ? gateway : "None");
+    snprintf(logMessage, sizeof(logMessage), "Server connected.\r\n");
     uartUSB.write(logMessage, strlen(logMessage));
 
+    // ==== Construcción del cuerpo JSON ====
+    char body[128];
+    snprintf(body, sizeof(body), "{\"id\":%d,\"message\":\"%s\"}", this->IdDevice, this->payload);
+
+    // ==== Construcción del POST HTTP ====
+    char httpRequest[512];
+    snprintf(httpRequest, sizeof(httpRequest),
+      //  "POST /api/canal/envio HTTP/1.1\r\n"
+      //  "Host: intent-lion-loudly.ngrok-free.app\r\n"      // LocalHost
+
+      //  "POST /apendice/canal-secundario/envio HTTP/1.1\r\n"
+      //  "Host: intent-lion-loudly.ngrok-free.app\r\n"       
+        "POST /0245a952-f9f0-4927-80b9-cd0c0ce91291 HTTP/1.1\r\n" // VARIA CON EL TIEMPO
+        "Host: webhook.site\r\n" 
+        "Content-Type: text/plain\r\n"
+        "Content-Length: %d\r\n"
+        "Connection: close\r\n"
+        "\r\n"
+        "%s",
+        strlen(body),
+        body
+    );
+
+    // ==== Envío al servidor ====
+    remaining = httpRequest;
+    while ((result = socket.send((uint8_t*)remaining, strlen(remaining))) > 0) {
+        remaining += result;
+        if (*remaining == '\0') break;
+    }
+    if (result < 0) {
+        snprintf(logMessage, sizeof(logMessage), "Error! socket.send() returned: %d\n", result);
+        uartUSB.write(logMessage, strlen(logMessage));
+        this->disconnect (ethernetModule, &socket);
+        return;
+    }
+
+    snprintf(logMessage, sizeof(logMessage), "HTTP POST sent, waiting for response...\r\n");
+    uartUSB.write(logMessage, strlen(logMessage));
+
+    // ==== Esperar respuesta del servidor ====
+    while (socket.available() == 0) {
+        if (time(NULL) > timeOut) {
+            snprintf(logMessage, sizeof(logMessage),"Connection time out.\r\n");
+            uartUSB.write(logMessage, strlen(logMessage));
+            this->disconnect (ethernetModule, &socket);
+            return;
+        }
+    }
+
+    // ==== Leer respuesta HTTP ====
+    while ((result = socket.available()) > 0) {
+        recvBuf = (uint8_t*)malloc(result);
+        result = socket.recv(recvBuf, result);
+        if (result < 0) {
+            snprintf(logMessage, sizeof(logMessage),"Error! socket.recv() returned: %d\n", result);
+            uartUSB.write(logMessage, strlen(logMessage));
+            this->disconnect (ethernetModule, &socket);
+            free(recvBuf);
+            return;
+        }
+        snprintf(logMessage, sizeof(logMessage),"%.*s\r\n", result, recvBuf);
+        uartUSB.write(logMessage, strlen(logMessage));
+        free(recvBuf);
+    }
+    uartUSB.write("\r\n", strlen("\r\n"));
+
+    // ==== Cerrar conexión ====
+    this->disconnect(ethernetModule, &socket);
+
+    wait_us (10000);
+}
+
+
+/*
+void SendingMessageThroughEthernet::sendTCPMessage (UipEthernet * ethernetModule, NonBlockingDelay * delay) {
+    const time_t    TIMEOUT = 5;    // Connection timeout time
+    time_t          timeOut;
+    char*           remaining;
+    uint8_t*        recvBuf;
+    int             result;
+    char logMessage [1024];
+
+
+    Watchdog &watchdog = Watchdog::get_instance(); // singleton
+    watchdog.kick();
+   
     // Crear socket TCP
     TcpClient socket;
    
@@ -216,7 +326,7 @@ void SendingTCPMessage::sendTCPMessage (UipEthernet * ethernetModule, NonBlockin
 
     wait_us (10000);
 }
-
+*/
 
 
 
@@ -347,12 +457,16 @@ void SendingTCPMessage::sendTCPMessage (UipEthernet * ethernetModule, NonBlockin
 
 
 //=====[Implementations of private functions]==================================
-void SendingTCPMessage::disconnect (UipEthernet * ethernetModule, TcpClient * socket) {
+void SendingMessageThroughEthernet::disconnect (UipEthernet * ethernetModule, TcpClient * socket) {
     uartUSB.write("disconnecting\r\n", strlen("disconnecting\r\n"));
     socket->close();
     ethernetModule->disconnect();
     uartUSB.write("Changing Waiting For Message State\r\n", strlen("Changing To Waiting For Message State\r\n"));
     //this->gateway->changeState (new WaitingForMessage(this->gateway));
+
+    wait_us (10000000);
+    this->gateway->changeState (new ConnectingEthernet(this->gateway));
+
 }
 
 
