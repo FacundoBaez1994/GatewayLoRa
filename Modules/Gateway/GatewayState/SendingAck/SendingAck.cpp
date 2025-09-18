@@ -4,11 +4,12 @@
 #include "Debugger.h" // due to global usbUart
 #include "WaitingForMessage.h"
 #include "ConnectingToMobileNetwork.h"
+#include "ConnectingEthernet.h"
 
 //=====[Declaration of private defines]========================================
 #define BACKOFFTIME        100
 #define MAX_CHUNK_SIZE     255
-#define FLY_TIME           100
+#define FLY_TIME           1000
 #define MAX_TRIES           3
 //=====[Declaration of private data types]=====================================
 
@@ -25,6 +26,14 @@
 //=====[Implementations of private methods]===================================
 
 //=====[Implementations of public methods]===================================
+SendingAck::SendingAck (Gateway * gateway, long long int deviceId, int messageNumber,  gatewayStatus_t gatewayStatus) {
+    this->currentGateway = gateway;
+    this->IdDevice = deviceId;
+    this->messageNumber = messageNumber;
+    this->currentStatus = gatewayStatus;
+}
+
+
 SendingAck::SendingAck (Gateway * gateway, long long int deviceId, int messageNumber) {
     this->currentGateway = gateway;
     this->IdDevice = deviceId;
@@ -130,7 +139,7 @@ void SendingAck::sendAcknowledgement (LoRaClass * LoRaModule, char * messageToBe
             firstEntryOnThisMethod = true;
             messageFormatted = false; 
             stringIndex = 0;
-            this->currentGateway->changeState(new ConnectingToMobileNetwork (this->currentGateway));
+            this->currentGateway->changeState(new ConnectingEthernet (this->currentGateway, this->currentStatus));
             return;
         }
     }

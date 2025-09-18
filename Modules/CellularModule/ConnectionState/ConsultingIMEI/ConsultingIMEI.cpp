@@ -44,6 +44,7 @@ ConsultingIMEI::ConsultingIMEI (CellularModule * mobileModule) {
 
 ConsultingIMEI::~ConsultingIMEI () {
     this->mobileNetworkModule = nullptr;
+    this->connectionAttempts = 0; 
 }
 
 void ConsultingIMEI::enableConnection () {
@@ -109,6 +110,7 @@ CellInformation * currentCellInformation) {
         this->IMEIRetrived= false;
         this->connectionAttempts++;
         if (this->connectionAttempts >= this->maxConnectionAttempts) {
+            this->connectionAttempts = 0; 
             return CELLULAR_CONNECTION_STATUS_MODULE_DISCONNECTED;
         }
     }

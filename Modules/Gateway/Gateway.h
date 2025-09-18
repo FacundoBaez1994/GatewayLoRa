@@ -22,7 +22,7 @@
 #include "string.h"
 #include "GatewayState.h"
 #include "GatewayStatus.h"
-
+#include "UipEthernet.h"
 #include "motion.h"
 
 #include "LoRa.h"
@@ -238,10 +238,16 @@ public:
 
     
     /**
-     * @brief obtain the url path to the server
+     * @brief obtain the url Main path to the server
      * @param urlPathChannel Pointer to a string to store the path.
      */
-    void getUrlPathChannel ( char * urlPathChannel);
+    void getUrlPathMainChannel ( char * urlPathChannel);
+
+    /**
+     * @brief obtain the url Secondary path to the server
+     * @param urlPathChannel Pointer to a string to store the path.
+     */
+    void getUrlPathSecondaryChannel ( char * urlPathChannel);
 
     /**
      * @brief obtain the identifier of this device
@@ -289,7 +295,7 @@ public:
      * @brief set the RSSI of the current message recepted
      * @param RSSI a int representing the RSSI 
      */
-    void setCurrentRSSI (int RSSI);
+    void setCurrentRSSI (int newRSSI);
     
 private:
     GatewayState* currentState;            /**< Current operational state */
@@ -300,10 +306,15 @@ private:
 
     // metadata
     int sequenceMessageNumber = 0;
-    char* urlPathChannel;
+    char* urlPathMainChannel;
+    char* urlPathSecondaryChannel;
     char* deviceIdentifier;
     char* prevChainHash;
     char* currChainHash;
+
+    // Ethernet
+    UipEthernet * ethernetModule;
+    DigitalOut * resetEth;
 
 
     deviceMotionStatus_t newMotionStatus = DEVICE_ON_MOTION;        /**< Latest motion status */

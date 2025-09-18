@@ -11,6 +11,7 @@
 #include "CellularModule.h"
 #include "GNSSModule.h"
 #include "LoRa.h"
+#include "UipEthernet.h"
 #include "motion.h"
 
 
@@ -112,6 +113,9 @@ public:
     
     virtual bool waitForMessage (LoRaClass * LoRaModule, char * messageRecieved, NonBlockingDelay * timeOut);
 
+    virtual void connectEthernetToLocalNetwork (UipEthernet * ethernetModule, NonBlockingDelay * delay);
+    virtual void exchangeMessagesThroughEthernet (UipEthernet * ethernetModule, NonBlockingDelay * delay, char * payload);
+    virtual void queryUTCTimeViaRemoteServer (UipEthernet * ethernetModule, NonBlockingDelay * delay);
 //=====[Declaration of privates atributes]=========================================
 
 //=====[Declaration of privates methods]=========================================

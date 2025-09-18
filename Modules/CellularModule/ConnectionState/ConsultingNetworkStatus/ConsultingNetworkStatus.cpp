@@ -50,6 +50,7 @@ ConsultingNetworkStatus::ConsultingNetworkStatus (CellularModule * mobileModule)
 
 ConsultingNetworkStatus::~ConsultingNetworkStatus () {
     this->mobileNetworkModule = nullptr;
+        this->connectionAttempts = 0;
 }
 
 void ConsultingNetworkStatus::enableConnection () {
@@ -123,6 +124,7 @@ CellularConnectionStatus_t ConsultingNetworkStatus::connect (ATCommandHandler * 
         this->cellDataRetrived = false;
         this->connectionAttempts++;
         if (this->connectionAttempts >= this->maxConnectionAttempts) {
+            this->connectionAttempts = 0;
             return CELLULAR_CONNECTION_STATUS_UNAVAIBLE_TO_REGISTER;
         }
     }

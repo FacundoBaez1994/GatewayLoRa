@@ -4,6 +4,7 @@
 #include "Gateway.h" //debido a declaracion adelantada
 #include "Debugger.h" // due to global usbUart
 #include "GoingToSleep.h"
+#include "SensingBatteryStatus.h"
 
 
 //=====[Declaration of private defines]========================================
@@ -49,19 +50,14 @@ void ConnectingToMobileNetwork::updatePowerStatus (CellularModule * cellularTran
     cellularTransceiver->turnOn();
     cellularTransceiver->enableConnection();
     currentConnectionStatus = cellularTransceiver->connectToMobileNetwork (currentCellInformation);
-    
-    /// test only
-   //currentConnectionStatus = CELLULAR_CONNECTION_STATUS_UNAVAIBLE_TO_ATTACH_TO_PACKET_SERVICE;
-   // this->currentStatus = GATEWAY_STATUS_GNSS_OBTAIN;
-    /// test only
 
     if (currentConnectionStatus == CELLULAR_CONNECTION_STATUS_CONNECTED_TO_NETWORK){
-        this->gateway->changeState (new FormattingMessage (this->gateway));
+        this->gateway->changeState (new FormattingMessage (this->gateway, this->currentStatus ));
         return;
 
     }  else if (currentConnectionStatus != CELLULAR_CONNECTION_STATUS_UNAVAIBLE && 
         currentConnectionStatus != CELLULAR_CONNECTION_STATUS_TRYING_TO_CONNECT) {
-        this->gateway->changeState  (new GoingToSleep (this->gateway));
+        this->gateway->changeState  (new SensingBatteryStatus (this->gateway));
         return;
     } 
     return;

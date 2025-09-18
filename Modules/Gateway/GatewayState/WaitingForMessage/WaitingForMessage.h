@@ -30,7 +30,6 @@ public:
 //=====[Declaration of public methods]=========================================
     WaitingForMessage  (Gateway * gateway);
     virtual ~WaitingForMessage  ();
-    virtual void sendAcknowledgement (LoRaClass * LoRaModule, char * messageToBeSend, NonBlockingDelay * backoffTime);
     virtual bool waitForMessage (LoRaClass * LoRaModule, char * messageRecieved, NonBlockingDelay * timeOut);
 private:
     Gateway * currentGateway;

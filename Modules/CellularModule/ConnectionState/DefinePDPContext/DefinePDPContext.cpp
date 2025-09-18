@@ -61,6 +61,7 @@ DefinePDPContext::DefinePDPContext (CellularModule * mobileModule) {
 
 
 DefinePDPContext::~DefinePDPContext () {
+    this->connectionAttempts = 0;
     this->mobileNetworkModule = nullptr;
 }
 
@@ -100,6 +101,7 @@ CellInformation * currentCellInformation) {
         this->readyToSend = true;
         this->connectionAttempts++;
         if (this->connectionAttempts >= this->maxConnectionAttempts) {
+            this->connectionAttempts = 0;
             return CELLULAR_CONNECTION_STATUS_UNAVAIBLE_TO_SET_PDP_CONTEXT;
         }
     }

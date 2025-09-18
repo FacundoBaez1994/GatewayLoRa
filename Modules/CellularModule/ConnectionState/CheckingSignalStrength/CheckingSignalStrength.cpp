@@ -54,6 +54,7 @@ CheckingSignalStrength::CheckingSignalStrength (CellularModule * mobileModule) {
 
 CheckingSignalStrength::~CheckingSignalStrength () {
     this->mobileNetworkModule = nullptr;
+    this->connectionAttemptsATResponse = 0; 
 }
 
 void CheckingSignalStrength::enableConnection () {
@@ -125,6 +126,7 @@ CellInformation * currentCellInformation) {
         this->signalLevelRetrived = false;
         this->connectionAttemptsATResponse++;
         if (this->connectionAttemptsATResponse >= this->maxConnectionAttemptsATResponse) {
+            this->connectionAttemptsATResponse = 0; 
             return CELLULAR_CONNECTION_STATUS_MODULE_DISCONNECTED;
         }
     }

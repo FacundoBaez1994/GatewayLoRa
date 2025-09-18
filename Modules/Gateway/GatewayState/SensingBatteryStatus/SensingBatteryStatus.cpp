@@ -47,6 +47,7 @@ SensingBatteryStatus::~SensingBatteryStatus ( ) {
 void SensingBatteryStatus::updatePowerStatus (CellularModule * cellularTransceiver,
  BatteryData * currentBatteryStatus) {
     cellularTransceiver->startStopUpdate();
+    cellularTransceiver->turnOn();
     if (cellularTransceiver->measureBattery(currentBatteryStatus) == true){
         this->gateway->changeState  (new GettingGNSSPosition (this->gateway));
         return;

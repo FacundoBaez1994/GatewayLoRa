@@ -48,6 +48,7 @@ RetrievingTimeAndDate::RetrievingTimeAndDate (CellularModule * mobileModule) {
 
 RetrievingTimeAndDate::~RetrievingTimeAndDate () {
     this->mobileNetworkModule = nullptr;
+    this->connectionAttempts = 0;
 }
 
 void RetrievingTimeAndDate::enableConnection () {
@@ -116,6 +117,7 @@ CellularConnectionStatus_t RetrievingTimeAndDate::connect (ATCommandHandler * AT
         this->readyToSend = true;
         this->connectionAttempts++;
         if (this->connectionAttempts >= this->maxConnectionAttempts) {
+            this->connectionAttempts = 0;
             return CELLULAR_CONNECTION_STATUS_UNAVAIBLE_TO_RETRIV_DATETIME;
         }
     }

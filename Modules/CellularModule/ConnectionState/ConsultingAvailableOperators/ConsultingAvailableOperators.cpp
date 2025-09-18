@@ -49,6 +49,7 @@ ConsultingAvailableOperators::ConsultingAvailableOperators (CellularModule * mob
 ConsultingAvailableOperators::~ConsultingAvailableOperators () {
     this->mobileNetworkModule = nullptr;
     this->currentOperator = nullptr;
+    this->connectionAttempts = 0; 
 }
 
 
@@ -110,6 +111,7 @@ CellInformation * currentCellInformation) {
         this->readyToSend = true;
         this->connectionAttempts++;
         if (this->connectionAttempts >= this->maxConnectionAttempts) {
+            this->connectionAttempts = 0; 
             return CELLULAR_CONNECTION_STATUS_UNAVAIBLE_TO_RETRIV_OPERATORS_INFO;
         }
     }

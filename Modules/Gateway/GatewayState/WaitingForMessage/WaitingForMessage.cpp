@@ -42,11 +42,6 @@ WaitingForMessage::~WaitingForMessage() {
      this->currentGateway = NULL;
 }
 
-void WaitingForMessage::sendAcknowledgement (LoRaClass * LoRaModule, char * messageToBeSend, 
-NonBlockingDelay * backoffTime) {
-    return; 
-}
-
 bool WaitingForMessage::waitForMessage (LoRaClass * LoRaModule, char * messageRecieved,
  NonBlockingDelay * timeOut){
     static bool messageReceived = false; 
@@ -135,6 +130,7 @@ bool WaitingForMessage::waitForMessage (LoRaClass * LoRaModule, char * messageRe
 
                         int packetRSSI = LoRaModule->packetRssi();
                         snprintf(message, sizeof(message), "packet RSSI: %d\r\n", packetRSSI);
+                        this->currentGateway->setCurrentRSSI(packetRSSI);
                         uartUSB.write(message, strlen(message));
                     }
                     iterations++;
@@ -182,9 +178,19 @@ bool WaitingForMessage::waitForMessage (LoRaClass * LoRaModule, char * messageRe
         stringInsertCount = 0;
         fullMessage.clear();       // Elimina todo el contenido de la cadena
         uartUSB.write("Changing To Sending ACK State\r\n", strlen("Changing To Sending ACK State\r\n"));
-        this->currentGateway->changeState (new SendingAck (this->currentGateway, this->currentGateway->getReceptedIMEI(), 
-        this->currentGateway->getLoraMessageNumber()));
-        return true;
+        ReceptedTypeMessage_t type = this->currentGateway->getReceptedTypeMessage();
+        if (type == LORALORA) {
+            this->currentGateway->changeState (new SendingAck (this->currentGateway, this->currentGateway->getReceptedIMEI(), 
+            this->currentGateway->getLoraMessageNumber(), GATEWAY_STATUS_RECEPTED_LORALORA_MESSAGE_TRYING_ETHERNET));
+            return true;
+        }
+        if (type == LORAGNSS) {
+            this->currentGateway->changeState (new SendingAck (this->currentGateway, this->currentGateway->getReceptedIMEI(), 
+            this->currentGateway->getLoraMessageNumber(), GATEWAY_STATUS_RECEPTED_LORAGNSS_MESSAGE_TRYING_ETHERNET));
+            return true;
+        }
+
+
     }
 
     return false;

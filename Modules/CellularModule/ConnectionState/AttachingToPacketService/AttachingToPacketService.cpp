@@ -54,6 +54,7 @@ AttachingToPacketService::AttachingToPacketService (CellularModule * mobileModul
 
 AttachingToPacketService::~AttachingToPacketService () {
     this->mobileNetworkModule = nullptr;
+    this->connectionAttempts = 0; 
 }
 
 
@@ -99,6 +100,7 @@ NonBlockingDelay * refreshTime,
         this->readyToSend = true;
         this->connectionAttempts++;
         if (this->connectionAttempts >= this->maxConnectionAttempts) {
+            this->connectionAttempts = 0; 
             return CELLULAR_CONNECTION_STATUS_UNAVAIBLE_TO_ATTACH_TO_PACKET_SERVICE;
         }
     }

@@ -3,7 +3,7 @@
 #include "Gateway.h" 
 #include "Debugger.h" // due to global usbUart
 #include "ExchangingMessages.h"
-
+#include "SendingMessageThroughEthernet.h"
 //=====[Declaration of private defines]========================================
 
 //=====[Declaration of private data types]=====================================
@@ -105,7 +105,16 @@ void FormattingMessage::formatMessage (char * formattedMessage, long long int IM
             snprintf(StringToSendUSB, sizeof(StringToSendUSB),"Switching State to ExchangingMessages"); 
             uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
             uartUSB.write ( "\r\n",  3 );  // debug only}
-            this->gateway->changeState (new ExchangingMessages (this->gateway));
+
+            if (this->currentStatus ==  GATEWAY_STATUS_RECEPTED_LORALORA_MESSAGE_TRYING_MOBILE_NETWORK 
+            || this->currentStatus == GATEWAY_STATUS_RECEPTED_LORAGNSS_MESSAGE_TRYING_MOBILE_NETWORK) {
+                this->gateway->changeState (new ExchangingMessages (this->gateway));
+                return;
+            } else {    
+                this->gateway->changeState (new SendingMessageThroughEthernet (this->gateway, this->currentStatus));
+                return;
+            }
+   
             break;
 
         case LORAGNSS:
@@ -119,7 +128,16 @@ void FormattingMessage::formatMessage (char * formattedMessage, long long int IM
             snprintf(StringToSendUSB, sizeof(StringToSendUSB),"Switching State to ExchangingMessages"); 
             uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
             uartUSB.write ( "\r\n",  3 );  // debug only}
-            this->gateway->changeState (new ExchangingMessages (this->gateway));
+
+            
+            if (this->currentStatus ==  GATEWAY_STATUS_RECEPTED_LORALORA_MESSAGE_TRYING_MOBILE_NETWORK 
+            || this->currentStatus == GATEWAY_STATUS_RECEPTED_LORAGNSS_MESSAGE_TRYING_MOBILE_NETWORK) {
+                this->gateway->changeState (new ExchangingMessages (this->gateway));
+                return;
+            } else {    
+                this->gateway->changeState (new SendingMessageThroughEthernet (this->gateway, this->currentStatus));
+                return;
+            }
             break;
         default:
             return;
@@ -152,10 +170,15 @@ void FormattingMessage::addMetaData(char *messageToAddMetaData) {
     char * timestampJson = new char [sizeOfTimeStamp];
     char * timestampJsonExpiration = new char [sizeOfTimeStamp];
 
-
-
     int currentSequenceNumber = this->gateway->getSequenceNumber();
-    this->gateway->getUrlPathChannel(urlPathChannel);
+
+    if (this->currentStatus ==  GATEWAY_STATUS_RECEPTED_LORALORA_MESSAGE_TRYING_MOBILE_NETWORK 
+    || this->currentStatus == GATEWAY_STATUS_RECEPTED_LORAGNSS_MESSAGE_TRYING_MOBILE_NETWORK) {
+        this->gateway->getUrlPathMainChannel(urlPathChannel);
+    } else {    
+        this->gateway->getUrlPathSecondaryChannel(urlPathChannel);
+    }
+
     this->gateway->getDeviceIdentifier(deviceIdentifier);
     this->gateway->getPrevHashChain(hashPrevJson);
 

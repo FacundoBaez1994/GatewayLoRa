@@ -63,6 +63,7 @@ ConsultingSIMCardStatus::ConsultingSIMCardStatus (CellularModule * mobileModule)
 }
 
 ConsultingSIMCardStatus::~ConsultingSIMCardStatus () {
+    this->connectionAttempts = 0;
     this->mobileNetworkModule = nullptr;
 }
 
@@ -131,6 +132,7 @@ CellInformation * currentCellInformation) {
         this->connectionAttempts ++;
         if ( this->connectionAttempts >= this->maxConnectionAttempts) {
             this->mobileNetworkModule->reboot();
+            this->connectionAttempts = 0;
             return CELLULAR_CONNECTION_STATUS_INVALID_SIM;
         }
     }

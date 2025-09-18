@@ -31,8 +31,15 @@
 
 #define STANDARD_TIMEOUT 8000
 
-#define URL_PATH_CHANNEL "https://intent-lion-loudly.ngrok-free.app/api/canal/envio"
+#define URL_PATH_MAIN_CHANNEL "https://intent-lion-loudly.ngrok-free.app/api/canal/envio"
+#define URL_PATH_SECONDARY_CHANNEL "https://intent-lion-loudly.ngrok-free.app/apendice/canal-secundario/envio"
 #define CURRENT_DEVICE_IDENTIFIER "device/gateway-001"
+
+#define IP      "192.168.1.35"
+#define GATEWAY "192.168.1.1"
+#define NETMASK "255.255.255.0"
+
+const uint8_t   MAC[6] = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05 };
 
 
 //=====[Declaration of private data types]=====================================
@@ -49,8 +56,11 @@
 
 //=====[Implementations of public methods]===================================
 Gateway::Gateway () {
-    this->urlPathChannel = new char [100]; 
-    strcpy (this->urlPathChannel, URL_PATH_CHANNEL);
+    // metaData
+    this->urlPathMainChannel = new char [100]; 
+    strcpy (this->urlPathMainChannel, URL_PATH_MAIN_CHANNEL);
+    this->urlPathSecondaryChannel = new char [100]; 
+    strcpy (this->urlPathSecondaryChannel, URL_PATH_SECONDARY_CHANNEL);
     this->deviceIdentifier = new char [100];
     strcpy (this->deviceIdentifier, CURRENT_DEVICE_IDENTIFIER);
     this->prevChainHash = new char [100];
@@ -62,6 +72,12 @@ Gateway::Gateway () {
     watchdog.start(TIMEOUT_WATCHDOG_TIMER_MS);
     char StringToSendUSB [50] = "Gateway initialization";
     uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
+
+    // Ethernet
+    this->ethernetModule = new UipEthernet (MAC, PB_5, PB_4, PB_3, PA_4);  // mac, mosi, miso, sck, cs
+    this->resetEth =  new DigitalOut (PA_1);
+    this->resetEth->write(HIGH);
+
 
     this->currentOperationMode = NORMAL_OPERATION_MODE;
     //this->currentOperationMode = PERSUIT_OPERATION_MODE;
@@ -113,14 +129,22 @@ Gateway::Gateway () {
 }
 
 Gateway::~Gateway() {
-    delete [] this->urlPathChannel; 
-    this->urlPathChannel  = nullptr;
+    delete [] this->urlPathMainChannel; 
+    this->urlPathMainChannel  = nullptr;
+    delete [] this->urlPathSecondaryChannel; 
+    this->urlPathSecondaryChannel  = nullptr;
     delete [] this->deviceIdentifier;
     this->deviceIdentifier  = nullptr;
     delete [] this->prevChainHash;
     this->prevChainHash = nullptr;
     delete []  this->currChainHash;
     this->currChainHash = nullptr;
+
+    // Ethernet
+    delete this->resetEth; 
+    this->resetEth = nullptr;
+    delete this->ethernetModule; 
+    this->ethernetModule = nullptr;
 
     delete this->receptedImuData->timestamp;
     this->receptedImuData->timestamp = nullptr;
@@ -200,7 +224,12 @@ void Gateway::update () {
     this->receptedImuData, this->receptedBatteryData); 
     this->currentState->exchangeMessages (this->cellularTransceiver,
     formattedMessage, this->socketTargetted, receivedMessage );
-    // this->currentState->exchangeMessages (this->LoRaTransciever, formattedMessage, receivedMessage);
+
+    
+    this->currentState->connectEthernetToLocalNetwork (this->ethernetModule, this->timeout);
+    this->currentState->queryUTCTimeViaRemoteServer (this->ethernetModule, this->timeout);
+    this->currentState->exchangeMessagesThroughEthernet (this->ethernetModule, this->timeout, formattedMessage);
+
     this->currentState->goToSleep (this->cellularTransceiver);
     watchdog.kick();
     
@@ -576,15 +605,18 @@ void Gateway::setLoRaMessageNumber (int messageNumber) {
 }
 
 
-void Gateway::setCurrentRSSI (int RSSI) {
-    this->RSSI = RSSI;
+void Gateway::setCurrentRSSI (int newRSSI) {
+    this->RSSI = newRSSI;
 }
 
  
-void Gateway::getUrlPathChannel ( char * urlPathChannel) {
-    strcpy (urlPathChannel, this->urlPathChannel);
+void Gateway::getUrlPathMainChannel ( char * urlPathChannel) {
+    strcpy (urlPathChannel, this->urlPathMainChannel);
 }
 
+void Gateway::getUrlPathSecondaryChannel ( char * urlPathChannel) {
+    strcpy (urlPathChannel, this->urlPathSecondaryChannel);
+}
  
 void Gateway::getDeviceIdentifier ( char * deviceId) {
     strcpy (deviceId, this->deviceIdentifier);

@@ -79,4 +79,16 @@ NonBlockingDelay * silentTimer ) {
     return;
  }
 
+void GatewayBaseState::connectEthernetToLocalNetwork (UipEthernet * ethernetModule, NonBlockingDelay * delay){
+    return;
+ }
+
+void GatewayBaseState::exchangeMessagesThroughEthernet (UipEthernet * ethernetModule, NonBlockingDelay * delay, char * payload){
+    return;
+ }
+
+void GatewayBaseState::queryUTCTimeViaRemoteServer (UipEthernet * ethernetModule, NonBlockingDelay * delay){
+    return;
+ }
+
 //=====[Implementations of private methods]==================================

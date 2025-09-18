@@ -24,6 +24,7 @@ class SendingAck : public GatewayBaseState {
 public:
 //=====[Declaration of public methods]=========================================
     SendingAck  (Gateway * gateway, long long int deviceId, int messageNumber);
+    SendingAck (Gateway * gateway, long long int deviceId, int messageNumber,  gatewayStatus_t gatewayStatus);
     virtual ~SendingAck  ();
     virtual void sendAcknowledgement (LoRaClass * LoRaModule, char * messageToBeSend, NonBlockingDelay * backoffTime);
     virtual bool waitForMessage (LoRaClass * LoRaModule, char * messageRecieved, NonBlockingDelay * timeOut);
@@ -31,8 +32,8 @@ private:
     Gateway * currentGateway;
     long long int IdDevice;
     int messageNumber;
-    //int connectionRetries;
-    // char payload [50];
+    gatewayStatus_t currentStatus; ///< Current gateway status
+
 //=====[Declaration of privates atributes]=========================================
 
 //=====[Declaration of privates methods]=========================================
