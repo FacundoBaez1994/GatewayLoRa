@@ -11,7 +11,7 @@
 //=====[Declaration of private defines]========================================
 #define TIMEOUT_MS_ETHERNET_CONNECTION      80000
 #define MAX_ETHERNET_RETRIES                20
-#define ETHERNET_CONNECT_TIMEOUT_S          60
+#define ETHERNET_CONNECT_TIMEOUT_S          15
 #define LOG_BUFFER_SIZE                     128
 
 #define LOG_MSG_ETH_CONNECTING              "Connecting Ethernet Module to Local network\n"

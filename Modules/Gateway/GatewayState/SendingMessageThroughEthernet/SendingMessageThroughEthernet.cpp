@@ -10,6 +10,31 @@
 //=====[Declaration of private defines]========================================
 #define TIMEOUT_MS 80000
 #define MAX_RETRIES 20
+
+#define ETHERNET_QUERY_TIMEOUT_S          5
+#define LOG_BUFFER_SIZE                   512
+#define HTTP_REQUEST_BUFFER_SIZE          2500
+
+#define NGROK_HOSTNAME                    "intent-lion-loudly.ngrok-free.app"
+#define NGROK_PORT                        80
+#define NGROK_PATH                       "/apendice/canal-secundario/envio"    
+#define WEBHOOK_HOSTNAME                  "webhook.site"
+#define WEBHOOK_PORT                      80
+#define WEBHOOK_PATH                      "/17a904ed-4df1-4d29-95ae-9bdfa70ad9bb" // VARIA CON EL TIEMPO
+
+#define HTTP_CONTENT_TYPE_TEXT_PLAIN      "Content-Type: text/plain\r\n"
+#define HTTP_CONNECTION_CLOSE             "Connection: close\r\n"
+#define CRLF                              "\r\n"
+
+#define LOG_MSG_SOCKET_OPEN_ERROR         "Error! socket.open() returned: %d\n"
+#define LOG_MSG_SOCKET_CONNECT_ERROR      "Error! socket.connect() returned: %d\n"
+#define LOG_MSG_SOCKET_SEND_ERROR         "Error! socket.send() returned: %d\n"
+#define LOG_MSG_SOCKET_RECV_ERROR         "Error! socket.recv() returned: %d\n"
+#define LOG_MSG_CONNECTING_TO_SERVER      "Connecting to ngrok server ...\r\n"
+#define LOG_MSG_SERVER_CONNECTED          "Server connected.\r\n"
+#define LOG_MSG_HTTP_POST_SENT            "HTTP POST sent, waiting for response...\r\n"
+#define LOG_MSG_CONNECTION_TIMEOUT        "Connection time out.\r\n"
+#define LOG_MSG_DISCONNECTING             "disconnecting\r\n"
 //=====[Declaration of private data types]=====================================
 
 //=====[Declaration and initialization of public global objects]===============
@@ -34,23 +59,12 @@
 
 
 //=====[Implementations of public methods]===================================
-/** 
-* @brief
-* 
-* @param 
-*/
 SendingMessageThroughEthernet::SendingMessageThroughEthernet (Gateway * gateway, gatewayStatus_t gatewayStatus) {
     this->gateway = gateway;
     this->connectionRetries = 0;
     this->currentStatus = gatewayStatus;
 }
 
-
-/** 
-* @brief
-* 
-* @param 
-*/
 SendingMessageThroughEthernet::~SendingMessageThroughEthernet() {
      this->gateway = NULL;
 }
@@ -60,23 +74,22 @@ SendingMessageThroughEthernet::~SendingMessageThroughEthernet() {
 // envio a wirehook
 void SendingMessageThroughEthernet::exchangeMessagesThroughEthernet (UipEthernet * ethernetModule, NonBlockingDelay * delay,
 char * payload) {
-    const time_t    TIMEOUT = 5;    // Connection timeout time
+    const time_t    TIMEOUT = ETHERNET_QUERY_TIMEOUT_S;    // Connection timeout time
     time_t          timeOut;
     char*           remaining;
     uint8_t*        recvBuf;
     int             result;
-    char logMessage [1024];
+    char logMessage [LOG_BUFFER_SIZE];
 
 
     Watchdog &watchdog = Watchdog::get_instance(); // singleton
     watchdog.kick();
    
-    // Crear socket TCP
     TcpClient socket;
    
     result = socket.open(ethernetModule);
     if (result != 0) {
-        snprintf(logMessage, sizeof(logMessage), "Error! socket.open() returned: %d\n", result);
+        snprintf(logMessage, sizeof(logMessage), LOG_MSG_SOCKET_OPEN_ERROR, result);
         uartUSB.write(logMessage, strlen(logMessage));
         if (this->currentStatus ==  GATEWAY_STATUS_RECEPTED_LORALORA_MESSAGE_TRYING_ETHERNET ) {
             this->currentStatus = GATEWAY_STATUS_RECEPTED_LORALORA_MESSAGE_TRYING_MOBILE_NETWORK;
@@ -91,17 +104,15 @@ char * payload) {
         return;
     }
 
-
-    // Conectar al servidor ngrok
     timeOut = time(NULL) + TIMEOUT;
-    snprintf(logMessage, sizeof(logMessage), "Connecting to ngrok server ...\r\n");
+    snprintf(logMessage, sizeof(logMessage), LOG_MSG_CONNECTING_TO_SERVER);
     uartUSB.write(logMessage, strlen(logMessage));
 
     watchdog.kick();
-    //result = socket.connect("intent-lion-loudly.ngrok-free.app", 80); // HTTP plano
-    result = socket.connect("webhook.site", 80); // HTTP plano  //  LocalHost 5133
+  //result = socket.connect(NGROK_HOSTNAME, NGROK_PORT); // HTTP plano
+    result = socket.connect(WEBHOOK_HOSTNAME, WEBHOOK_PORT); // HTTP plano  //  LocalHost 5133
     if (result != 0) {
-        snprintf(logMessage, sizeof(logMessage), "Error! socket.connect() returned: %d\n", result);
+        snprintf(logMessage, sizeof(logMessage), LOG_MSG_SOCKET_CONNECT_ERROR, result);
         uartUSB.write(logMessage, strlen(logMessage));
         this->connectionRetries ++;
         if (this->connectionRetries >= MAX_RETRIES) {
@@ -121,38 +132,32 @@ char * payload) {
         return;
     }
 
-    snprintf(logMessage, sizeof(logMessage), "Server connected.\r\n");
+    snprintf(logMessage, sizeof(logMessage), LOG_MSG_SERVER_CONNECTED);
     uartUSB.write(logMessage, strlen(logMessage));
 
-    // ==== Construcción del cuerpo JSON ====
 
-    // ==== Construcción del POST HTTP ====
-    char httpRequest[2048];
+    char httpRequest[HTTP_REQUEST_BUFFER_SIZE];
     snprintf(httpRequest, sizeof(httpRequest),
-      //  "POST /api/canal/envio HTTP/1.1\r\n"
-      //  "Host: intent-lion-loudly.ngrok-free.app\r\n"      // LocalHost
-
-      //  "POST /apendice/canal-secundario/envio HTTP/1.1\r\n"
-      //  "Host: intent-lion-loudly.ngrok-free.app\r\n" 
-        "POST /17a904ed-4df1-4d29-95ae-9bdfa70ad9bb HTTP/1.1\r\n" // VARIA CON EL TIEMPO
-        "Host: webhook.site\r\n" 
-        "Content-Type: text/plain\r\n"
+      //  "POST NGROK_PATH  HTTP/1.1\r\n"
+      //  "Host: NGROK_HOSTNAME \r\n" 
+        "POST WEBHOOK_PATH HTTP/1.1\r\n" // VARIA CON EL TIEMPO
+        "Host: WEBHOOK_HOSTNAME \r\n" 
+        HTTP_CONTENT_TYPE_TEXT_PLAIN
         "Content-Length: %d\r\n"
-        "Connection: close\r\n"
+         HTTP_CONNECTION_CLOSE
         "\r\n"
         "%s",
         strlen(payload),
         payload
     );
 
-    // ==== Envío al servidor ====
     remaining = httpRequest;
     while ((result = socket.send((uint8_t*)remaining, strlen(remaining))) > 0) {
         remaining += result;
         if (*remaining == '\0') break;
     }
     if (result < 0) {
-        snprintf(logMessage, sizeof(logMessage), "Error! socket.send() returned: %d\n", result);
+        snprintf(logMessage, sizeof(logMessage), LOG_MSG_SOCKET_SEND_ERROR, result);
         uartUSB.write(logMessage, strlen(logMessage));
         this->disconnect (ethernetModule, &socket);
         if (this->currentStatus ==  GATEWAY_STATUS_RECEPTED_LORALORA_MESSAGE_TRYING_ETHERNET ) {
@@ -168,13 +173,12 @@ char * payload) {
         return;
     }
 
-    snprintf(logMessage, sizeof(logMessage), "HTTP POST sent, waiting for response...\r\n");
+    snprintf(logMessage, sizeof(logMessage), LOG_MSG_HTTP_POST_SENT);
     uartUSB.write(logMessage, strlen(logMessage));
 
-    // ==== Esperar respuesta del servidor ====
     while (socket.available() == 0) {
         if (time(NULL) > timeOut) {
-            snprintf(logMessage, sizeof(logMessage),"Connection time out.\r\n");
+            snprintf(logMessage, sizeof(logMessage), LOG_MSG_CONNECTION_TIMEOUT);
             uartUSB.write(logMessage, strlen(logMessage));
             this->disconnect (ethernetModule, &socket);
             if (this->currentStatus ==  GATEWAY_STATUS_RECEPTED_LORALORA_MESSAGE_TRYING_ETHERNET ) {
@@ -191,7 +195,7 @@ char * payload) {
         }
     }
 
-    // ==== Leer respuesta HTTP ====
+
     while ((result = socket.available()) > 0) {
         recvBuf = (uint8_t*)malloc(result);
         result = socket.recv(recvBuf, result);

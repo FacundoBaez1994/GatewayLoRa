@@ -3,7 +3,6 @@
 #include "FormattingMessage.h"
 #include "Gateway.h" //debido a declaracion adelantada
 #include "Debugger.h" // due to global usbUart
-#include "GoingToSleep.h"
 #include "SensingBatteryStatus.h"
 
 

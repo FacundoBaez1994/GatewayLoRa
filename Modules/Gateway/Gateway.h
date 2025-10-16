@@ -142,11 +142,6 @@ public:
      */
     void setMovementEvent (char * event);
 
-    /**
-     * @brief Gets the current movement event as an enumeration.
-     * @return Current movement event.
-     */
-    MovementEvent_t getMovementEvent ();
 
     /**
      * @brief Gets the current movement event as a string.
@@ -155,34 +150,11 @@ public:
     void getMovementEvent (char * movementEventString);
 
     /**
-     * @brief Sets the latency level for gateway operations.
-     * @param level Latency level.
-     */
-    void setLatency(LatencyLevel_t level);
-
-    /**
-     * @brief Retrieves the current operation mode.
-     * @return Current operation mode.
-     */
-    OperationMode_t getOperationMode ();
-
-    /**
      * @brief 
      * @return
      */
     long long int getReceptedIMEI ();
 
-    /**
-     * @brief Sets the current operation mode.
-     * @param newOperationMode New operation mode.
-     */
-    void setOperationMode (OperationMode_t newOperationMode);
-
-    /**
-     * @brief Configures the silent mode timer.
-     * @param hours Duration of silent mode in hours.
-     */
-    void setSilentTimer (int hours);
 
     /**
      * @brief Actualize the keep alive timer.
@@ -319,9 +291,6 @@ public:
     
 private:
     GatewayState* currentState;            /**< Current operational state */
-    NonBlockingDelay* latency;             /**< Latency timer */
-    NonBlockingDelay* silentKeepAliveTimer;         /**< Silent mode timer */
-    LatencyLevel_t latencyLevel;
     OperationMode_t currentOperationMode;   /**< Current mode of operation */
 
     // metadata

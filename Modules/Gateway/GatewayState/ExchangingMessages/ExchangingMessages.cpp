@@ -2,7 +2,6 @@
 #include "ExchangingMessages.h"
 #include "Gateway.h" //debido a declaracion adelantada
 #include "Debugger.h" // due to global usbUart
-#include "GoingToSleep.h"
 #include "FormattingMessage.h"
 #include "SensingBatteryStatus.h"
 
@@ -122,7 +121,7 @@ void ExchangingMessages::exchangeMessages (CellularModule * cellularTransceiver,
         uartUSB.write(logMessage, strlen(logMessage));
         LatencyLevel_t newLatencyLevel;
         if (this->parseLatencyLevel(latency, &newLatencyLevel)) {
-            this->gateway->setLatency(newLatencyLevel);
+            //this->gateway->setLatency(newLatencyLevel);
         }
         
 
@@ -151,10 +150,10 @@ void ExchangingMessages::exchangeMessages (CellularModule * cellularTransceiver,
                 }
                 snprintf(logMessage, sizeof(logMessage), "Setted Silent mode of %i hours\r\n", timeSilent );
                 uartUSB.write(logMessage, strlen(logMessage));
-                this->gateway->setOperationMode(newOperationMode);
-                this->gateway->setSilentTimer(timeSilent);
+                //this->gateway->setOperationMode(newOperationMode);
+                //this->gateway->setSilentTimer(timeSilent);
             } else {
-                this->gateway->setOperationMode(newOperationMode);
+                //this->gateway->setOperationMode(newOperationMode);
             }
 
         }

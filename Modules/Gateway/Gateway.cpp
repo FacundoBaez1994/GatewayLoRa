@@ -75,10 +75,6 @@ Gateway::Gateway () {
     this->resetEth->write(HIGH);
 
 
-    this->currentOperationMode = NORMAL_OPERATION_MODE;
-    //this->currentOperationMode = PERSUIT_OPERATION_MODE;
-    this->latency = new NonBlockingDelay (EXTREMELY_LOW_LATENCY_MS);
-    this->silentKeepAliveTimer = new NonBlockingDelay (HOUR_MS);
     this->cellularTransceiver = new CellularModule ( );
     this->currentGNSSModule = new GNSSModule (this->cellularTransceiver->getPowerManager()
     , this->cellularTransceiver->getATHandler());
@@ -171,10 +167,6 @@ Gateway::~Gateway() {
     delete this->serverTargetted;
     this->serverTargetted = nullptr;
 
-    delete this->latency;
-    this->latency = nullptr; 
-    delete this->silentKeepAliveTimer;
-    this->silentKeepAliveTimer = nullptr;
     delete this->currentGNSSModule;
     this->currentGNSSModule = nullptr;
     delete this->cellularTransceiver;
@@ -208,31 +200,31 @@ Gateway::~Gateway() {
 }
 
 void Gateway::update () {
-    static char formattedMessage [MESSAGE_BUFFER_SIZE];
-    static char receivedMessage [MESSAGE_BUFFER_SIZE];
+    static char bufferMessage [MESSAGE_BUFFER_SIZE];
+    //static char receivedMessage [MESSAGE_BUFFER_SIZE];
 
     static int numberOfNeighbors = 0;
     Watchdog &watchdog = Watchdog::get_instance(); // singleton
     watchdog.kick();
-    this->currentState->awake(this->cellularTransceiver, this->latency, this->silentKeepAliveTimer);
-    this->currentState->waitForMessage (this->LoRaTransciever, receivedMessage, this->timeout);
-    this->currentState->sendAcknowledgement (this->LoRaTransciever,  formattedMessage, this->timeout);
+    //this->currentState->awake(this->cellularTransceiver, this->latency, this->silentKeepAliveTimer);
+    this->currentState->waitForMessage (this->LoRaTransciever, bufferMessage, this->timeout);
+    this->currentState->sendAcknowledgement (this->LoRaTransciever,  bufferMessage, this->timeout);
     this->currentState->updatePowerStatus (this->cellularTransceiver, this->batteryStatus);
     this->currentState->obtainGNSSPosition (this->currentGNSSModule, this->gatewayGNSSdata);
     this->currentState->connectToMobileNetwork (this->cellularTransceiver,
     this->currentCellInformation);
-    this->currentState->formatMessage (formattedMessage, this->IMEIRecepted,
+    this->currentState->formatMessage (bufferMessage, this->IMEIRecepted,
     this->receptedTrackerEvent, this->RSSI, this->gatewayGNSSdata, this->receptedGNSSdata,
     this->receptedImuData, this->receptedBatteryData); 
     this->currentState->exchangeMessages (this->cellularTransceiver,
-    formattedMessage, this->serverTargetted, receivedMessage );
+    bufferMessage, this->serverTargetted, bufferMessage );
 
     
     this->currentState->connectEthernetToLocalNetwork (this->ethernetModule, this->timeout);
     this->currentState->queryUTCTimeViaRemoteServer (this->ethernetModule, this->timeout);
-    this->currentState->exchangeMessagesThroughEthernet (this->ethernetModule, this->timeout, formattedMessage);
+    this->currentState->exchangeMessagesThroughEthernet (this->ethernetModule, this->timeout, bufferMessage);
 
-    this->currentState->goToSleep (this->cellularTransceiver);
+    //this->currentState->goToSleep (this->cellularTransceiver);
     watchdog.kick();
     
 }
@@ -241,22 +233,6 @@ void Gateway::update () {
 void Gateway::changeState  (GatewayState * newGatewayState) {
     delete this->currentState;
     this->currentState = newGatewayState;
-}
-
-
-void Gateway::getMovementEvent (char * movementEventString) {
-    if (this->currentMovementEvent == MOVING) {
-        strcpy (movementEventString, "MOVE");
-    }
-    if (this->currentMovementEvent == PARKING) {
-        strcpy (movementEventString, "PARK");
-    }
-    if (this->currentMovementEvent == STOPPED) {
-        strcpy (movementEventString, "STOP");
-    }
-    if (this->currentMovementEvent == MOVEMENT_RESTARTED) {
-        strcpy (movementEventString, "MVRS");
-    }
 }
 
 void Gateway::setMovementEvent (char * movementEventString) {
@@ -278,18 +254,10 @@ void Gateway::setMovementEvent (char * movementEventString) {
     }
 }
 
-
-MovementEvent_t Gateway::getMovementEvent () {
-    return this->currentMovementEvent;
-}
-
 ReceptedTypeMessage_t Gateway::getReceptedTypeMessage () {
     return this->receptedTypeMessage;
 }
 
-OperationMode_t  Gateway::getOperationMode () {
-    return this->currentOperationMode;
-}
 
 void Gateway::updateMovementEvent () {
     char buffer[100];
@@ -330,98 +298,6 @@ void Gateway::updateMovementEvent () {
 
     this->currentMotionStatus = this->newMotionStatus;
 }
-
-void Gateway::setOperationMode(OperationMode_t newOperationMode) {
-    this->currentOperationMode = newOperationMode;
-}
-
-void Gateway::setSilentTimer (int hours) {
-    this->silentKeepAliveTimer->write(hours * HOUR_MS);
-}
-
-void Gateway::setLatency(LatencyLevel_t level) {
-    tick_t newLatency = EXTREMELY_LOW_LATENCY_MS;
-
-    switch (level) {
-        case EXTREMELY_LOW_LATENCY:
-            this->latencyLevel = EXTREMELY_LOW_LATENCY;
-            newLatency = EXTREMELY_LOW_LATENCY_MS;
-            break;
-        case VERY_LOW_LATENCY:
-            this->latencyLevel = VERY_LOW_LATENCY;
-            newLatency = VERY_LOW_LATENCY_MS;
-            break;
-        case LOW_LATENCY:
-            this->latencyLevel = LOW_LATENCY;
-            newLatency = LOW_LATENCY_MS;
-            break;
-        case MEDIUM_LATENCY:
-            this->latencyLevel = MEDIUM_LATENCY;
-            newLatency = MEDIUM_LATENCY_MS;
-            break;
-        case HIGH_LATENCY:
-            this->latencyLevel = HIGH_LATENCY;
-            newLatency = HIGH_LATENCY_MS;
-            break;
-        case VERY_HIGH_LATENCY:
-            this->latencyLevel = VERY_HIGH_LATENCY;
-            newLatency = VERY_HIGH_LATENCY_MS;
-            break;
-        case EXTREMELY_HIGH_LATENCY:
-            this->latencyLevel = EXTREMELY_HIGH_LATENCY;
-            newLatency = EXTREMELY_HIGH_LATENCY_MS;
-            break;
-        default:
-            break;
-    }
-
-    this->latency->write(newLatency);
-    this->latency->restart();
-
-    char buffer[100];
-    snprintf(buffer, sizeof(buffer), "\n\rNew latency set: %llu ms\n\r", newLatency);
-    uartUSB.write(buffer, strlen(buffer));
-}
-
-
-
-void Gateway::actualizeKeepAliveLatency () {
-tick_t newKeepAliveLatency = EXTREMELY_LOW_LATENCY_MS;
-
-    switch (this->latencyLevel) {
-        case EXTREMELY_LOW_LATENCY:
-            newKeepAliveLatency = EXTREMELY_LOW_LATENCY_MS * EXTREMELY_LOW_LATENCY_KEEP_ALIVE_MULTIPLIER ;
-            break;
-        case VERY_LOW_LATENCY:
-            newKeepAliveLatency = VERY_LOW_LATENCY_MS * VERY_LOW_LATENCY_KEEP_ALIVE_MULTIPLIER ;
-            break;
-        case LOW_LATENCY:
-            newKeepAliveLatency = LOW_LATENCY_MS * VERY_LOW_LATENCY_KEEP_ALIVE_MULTIPLIER;
-            break;
-        case MEDIUM_LATENCY:
-            newKeepAliveLatency = MEDIUM_LATENCY_MS * MEDIUM_LATENCY_KEEP_ALIVE_MULTIPLIER;
-            break;
-        case HIGH_LATENCY:
-            newKeepAliveLatency = HIGH_LATENCY_MS * HIGH_LATENCY_KEEP_ALIVE_MULTIPLIER;
-            break;
-        case VERY_HIGH_LATENCY:
-            newKeepAliveLatency = VERY_HIGH_LATENCY_MS * VERY_HIGH_LATENCY_KEEP_ALIVE_MULTIPLIER;
-            break;
-        case EXTREMELY_HIGH_LATENCY:
-            newKeepAliveLatency = EXTREMELY_HIGH_LATENCY_MS * EXTREMELY_HIGH_LATENCY_KEEP_ALIVE_MULTIPLIER;
-            break;
-        default:
-            break;
-    }
-
-    this->silentKeepAliveTimer->write(newKeepAliveLatency);
-    this->silentKeepAliveTimer->restart();
-
-    char buffer[100];
-    snprintf(buffer, sizeof(buffer), "\n\rNew keep alive latency set: %llu ms\n\r", newKeepAliveLatency);
-    uartUSB.write(buffer, strlen(buffer));
-}
-
 
 bool Gateway::parseReceptedLoRaMessage(char * messageToParse) {
     char prefix[16];

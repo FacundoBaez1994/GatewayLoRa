@@ -86,9 +86,6 @@ void FormattingMessage::formatMessage (char * formattedMessage, long long int IM
     const char * receptedTrackerEvent, const int RSSI, const GNSSData* gatewayGNSSInfo, GNSSData* receptedGNSSdata,
     const IMUData_t * receptedImuData, const BatteryData  * receptedBatteryStatus) {
     char StringToSendUSB [50];
-    char trackerEvent [20];
-
-    this->gateway->getMovementEvent(trackerEvent);
 
     ReceptedTypeMessage_t ReceptedTypeMessage = this->gateway->getReceptedTypeMessage ();
 
