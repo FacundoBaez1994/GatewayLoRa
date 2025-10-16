@@ -1,10 +1,8 @@
 //=====[#include guards - begin]===============================================
-
 #ifndef _ENCRYPTER_BASE_64_H_
 #define _ENCRYPTER_BASE_64_H_
 
 //==================[Libraries]===============================================
-
 #include "mbed.h"
 #include "arm_book_lib.h"
 #include "BaseMessageHandler.h"
@@ -12,6 +10,10 @@
 #include "mbedtls/base64.h"
 #include <string.h>
 #include <stdio.h>
+#include "BufferSizes.h"
+
+//=====[Declaration of public defines]=========================================
+#define BUFFER_SIZE_ADDITION_BASE64_ENCRYPION 548
  
 //=====[Declaration of public data types]======================================
 class MessageHandler; //< Forward declaration to avoid circular dependency
@@ -47,8 +49,8 @@ public:
     virtual MessageHandlerStatus_t handleMessage (char* message,  unsigned int sizeOfMessage) override;
 private:
 //=====[Declaration of privates atributes]=========================================
-    char* base64_encoded;           //< Pointer to hold Base64-encoded result
-    size_t sizeOfBuffer = 3048;      //< Internal buffer size for encoded data
+    char base64_encoded [BUFFER_SIZE_ADDITION_BASE64_ENCRYPION + MESSAGE_BUFFER_SIZE];           //< Pointer to hold Base64-encoded result
+    size_t sizeOfBuffer = BUFFER_SIZE_ADDITION_BASE64_ENCRYPION + MESSAGE_BUFFER_SIZE;      //< Internal buffer size for encoded data
     AES* aes;                     //< AES encryption helper instance
 
 //=====[Declaration of privates constants]=========================================

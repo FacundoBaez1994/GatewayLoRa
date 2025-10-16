@@ -50,7 +50,7 @@ void TransceiverUnavailable::enableTransceiver () {
 }
 
 CellularTransceiverStatus_t TransceiverUnavailable::exchangeMessages (ATCommandHandler * ATHandler,
-    NonBlockingDelay * refreshTime, char * message, TcpSocket * socketTargetted,
+    NonBlockingDelay * refreshTime, char * message, RemoteServerInformation* serverTargetted,
      char * receivedMessage, bool * newDataAvailable) {
     return CELLULAR_TRANSCEIVER_STATUS_UNAVAIBLE;
 }

@@ -87,6 +87,7 @@ private:
     int registrationStatus; //!< Network registration status code. 
     int connectionAttempts; //!< Number of connection attempts made.
     int maxConnectionAttempts;  //!< Maximum number of retries before failure.
+    
 //=====[Declaration of privates methods]=========================================
     /**
      * @brief Parses a response to extract registration and cell-related data.

@@ -60,7 +60,7 @@ void GatewayBaseState::formatMessage (char * formattedMessage, long long int IME
 }
 
 void GatewayBaseState::exchangeMessages (CellularModule * cellularTransceiver,
-    char * message, TcpSocket * socketTargetted, char * receivedMessage ){
+    char * message, RemoteServerInformation* serverTargetted, char * receivedMessage ){
 
     return;
 }

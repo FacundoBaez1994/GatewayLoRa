@@ -60,7 +60,7 @@ CellularTransceiverStatus_t Receiving::exchangeMessages(
     ATCommandHandler* ATHandler,
     NonBlockingDelay* refreshTime,
     char* message,
-    TcpSocket* socketTargetted,
+    RemoteServerInformation* serverTargetted,
     char* receivedMessage,
     bool* newDataAvailable) {
 
@@ -81,6 +81,12 @@ CellularTransceiverStatus_t Receiving::exchangeMessages(
 
     int connectID = 0;
 
+    if (ATHandler == nullptr ||  refreshTime == nullptr || 
+     message == nullptr || receivedMessage == nullptr || serverTargetted == nullptr) {
+        return CELLULAR_TRANSCEIVER_STATUS_ERROR_NULL_POINTER;
+    }
+
+
     snprintf(StringToBeSend, sizeof(StringToBeSend), "%s%d", ATcommandFirstPart, connectID);
 
     if (readyToSend) {
@@ -97,7 +103,7 @@ CellularTransceiverStatus_t Receiving::exchangeMessages(
         //refreshTime->restart();
     }
 
-    if (ATHandler->readATResponse(StringToBeRead)) {
+    if (ATHandler->readATResponse(StringToBeRead, BUFFER_LEN)) {
         uartUSB.write(StringToBeRead, strlen(StringToBeRead));
         uartUSB.write("\r\n", 3);
 
@@ -147,7 +153,7 @@ CellularTransceiverStatus_t Receiving::exchangeMessages(
             dataRetrieved = false;
             thereIsDataToRetrieve = false;
             attempts = 0;
-
+            
             this->mobileNetworkModule->changeTransceiverState(
                 new CloseSocket(this->mobileNetworkModule, true)
             );

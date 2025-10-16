@@ -57,15 +57,11 @@ const uint8_t   MAC[6] = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05 };
 //=====[Implementations of public methods]===================================
 Gateway::Gateway () {
     // metaData
-    this->urlPathMainChannel = new char [100]; 
-    strcpy (this->urlPathMainChannel, URL_PATH_MAIN_CHANNEL);
-    this->urlPathSecondaryChannel = new char [100]; 
-    strcpy (this->urlPathSecondaryChannel, URL_PATH_SECONDARY_CHANNEL);
-    this->deviceIdentifier = new char [100];
+    this->deviceIdentifier = new char [DEVICE_IDENTIFIER_BUFFER_SIZE];
     strcpy (this->deviceIdentifier, CURRENT_DEVICE_IDENTIFIER);
-    this->prevChainHash = new char [100];
+    this->prevChainHash = new char [HASH_BASE_64_BUFFER_SIZE];
     strcpy (this->prevChainHash, "-");
-    this->currChainHash = new char [100];
+    this->currChainHash = new char [HASH_BASE_64_BUFFER_SIZE];
     strcpy (this->currChainHash, "-");
 
     Watchdog &watchdog = Watchdog::get_instance(); // singletom
@@ -88,14 +84,16 @@ Gateway::Gateway () {
     , this->cellularTransceiver->getATHandler());
     //both share the same power manager and ATHandler (uart)
 
-    this->socketTargetted = new TcpSocket;
-    this->socketTargetted->IpDirection = new char[16]; // 
-    strcpy(this->socketTargetted->IpDirection, "186.19.62.251");
-    this->socketTargetted->TcpPort = 123;
+
+    this->serverTargetted = new RemoteServerInformation;
+    this->serverTargetted->url = new char[URL_SERVER_BUFFER_SIZE]; // 
+    strcpy (this->serverTargetted->url, URL_PATH_MAIN_CHANNEL);
+    this->serverTargetted->secondaryUrl = new char[URL_SERVER_BUFFER_SIZE]; // 
+    strcpy (this->serverTargetted->secondaryUrl, URL_PATH_SECONDARY_CHANNEL);
 
     this->currentCellInformation = new CellInformation;
-    this->currentCellInformation->timestamp  = new char [20];
-    this->currentCellInformation->band = new char [20];
+    this->currentCellInformation->timestamp  = new char [TIMESTAMP_BUFFER_SIZE];
+    this->currentCellInformation->band = new char [BAND_STRING_BUFFER_SIZE];
 
     this->gatewayGNSSdata = new GNSSData;
     this->gatewayGNSSdata->latitude = 0;
@@ -106,7 +104,7 @@ Gateway::Gateway () {
     this->receptedBatteryData = new BatteryData;
 
     this->receptedImuData = new IMUData_t;
-    this->receptedImuData->timestamp = new char [20];
+    this->receptedImuData->timestamp = new char [TIMESTAMP_BUFFER_SIZE];
     this->receptedImuData->timeBetweenSamples = TIME_BETWEEN_IMU_SAMPLES;
 
     this->currentState =  new SensingBatteryStatus (this); //WaitingForMessage
@@ -126,13 +124,11 @@ Gateway::Gateway () {
     this->authVer = new AuthenticationVerifier ();
      //this->decrypter = new Decrypter ();
     this->decrypterBase64 = new DecrypterBase64 ();
+
+    this->jwt = new JWTManager ();
 }
 
 Gateway::~Gateway() {
-    delete [] this->urlPathMainChannel; 
-    this->urlPathMainChannel  = nullptr;
-    delete [] this->urlPathSecondaryChannel; 
-    this->urlPathSecondaryChannel  = nullptr;
     delete [] this->deviceIdentifier;
     this->deviceIdentifier  = nullptr;
     delete [] this->prevChainHash;
@@ -168,10 +164,13 @@ Gateway::~Gateway() {
     delete  this->receptedGNSSdata;
     this->receptedGNSSdata = nullptr;
 
-    delete[] this->socketTargetted->IpDirection; // Libera la memoria asignada a IpDirection
-    this->socketTargetted->IpDirection = nullptr;
-    delete this->socketTargetted; // Libera la memoria asignada al socketTargetted
-    this->socketTargetted = nullptr;
+    delete [] this->serverTargetted->secondaryUrl;
+    this->serverTargetted->secondaryUrl = nullptr;
+    delete [] this->serverTargetted->url;
+    this->serverTargetted->url = nullptr;
+    delete this->serverTargetted;
+    this->serverTargetted = nullptr;
+
     delete this->latency;
     this->latency = nullptr; 
     delete this->silentKeepAliveTimer;
@@ -203,11 +202,14 @@ Gateway::~Gateway() {
     //this->decrypter = nullptr;
     delete this->decrypterBase64;
     this->decrypterBase64 = nullptr;
+
+    delete this->jwt;
+    this->jwt = nullptr;
 }
 
 void Gateway::update () {
-    static char formattedMessage [2048];
-    static char receivedMessage [2048];
+    static char formattedMessage [MESSAGE_BUFFER_SIZE];
+    static char receivedMessage [MESSAGE_BUFFER_SIZE];
 
     static int numberOfNeighbors = 0;
     Watchdog &watchdog = Watchdog::get_instance(); // singleton
@@ -223,7 +225,7 @@ void Gateway::update () {
     this->receptedTrackerEvent, this->RSSI, this->gatewayGNSSdata, this->receptedGNSSdata,
     this->receptedImuData, this->receptedBatteryData); 
     this->currentState->exchangeMessages (this->cellularTransceiver,
-    formattedMessage, this->socketTargetted, receivedMessage );
+    formattedMessage, this->serverTargetted, receivedMessage );
 
     
     this->currentState->connectEthernetToLocalNetwork (this->ethernetModule, this->timeout);
@@ -611,15 +613,19 @@ void Gateway::setCurrentRSSI (int newRSSI) {
 
  
 void Gateway::getUrlPathMainChannel ( char * urlPathChannel) {
-    strcpy (urlPathChannel, this->urlPathMainChannel);
+    strcpy (urlPathChannel, this->serverTargetted->url);
 }
 
 void Gateway::getUrlPathSecondaryChannel ( char * urlPathChannel) {
-    strcpy (urlPathChannel, this->urlPathSecondaryChannel);
+    strcpy (urlPathChannel, this->serverTargetted->secondaryUrl);
 }
  
-void Gateway::getDeviceIdentifier ( char * deviceId) {
-    strcpy (deviceId, this->deviceIdentifier);
+char* Gateway::getDeviceIdentifier ( ) {
+    return this->deviceIdentifier;
+}
+
+void Gateway::getDeviceIdentifier (char * deviceId) {
+    strcpy (deviceId, this->deviceIdentifier );
 }
 
 int Gateway::getSequenceNumber () {
@@ -639,12 +645,22 @@ void Gateway::setCurrentHashChain (char * hashChain) {
     strcpy (this->currChainHash, hashChain );
 }
 
+char* Gateway::getPrevHashChain () {
+    return this->prevChainHash;
+}
 
 void Gateway::getPrevHashChain (char * hashChain) {
     strcpy (hashChain, this->prevChainHash);
 }
 
 
+void Gateway::encodeJWT(char * payloadToJWT, char * jwtEncoded)  {
+    this->jwt->encodeJWT (payloadToJWT, jwtEncoded);
+}
+
+bool Gateway::decodeJWT(char * jwtToDecode, char * payloadRetrived) {
+    return this->jwt->decodeJWT(jwtToDecode, payloadRetrived);
+}
 
 
 

@@ -61,7 +61,6 @@ DefinePDPContext::DefinePDPContext (CellularModule * mobileModule) {
 
 
 DefinePDPContext::~DefinePDPContext () {
-    this->connectionAttempts = 0;
     this->mobileNetworkModule = nullptr;
 }
 
@@ -74,25 +73,25 @@ CellInformation * currentCellInformation) {
     char StringToSend [APN_LEN + 1] = APN;
     char StringToSendUSB [LOG_MESSAGE_LEN + 1] = LOG_MESSAGE;
 
+    if (ATHandler == nullptr || refreshTime == nullptr || currentCellInformation == nullptr) {
+        return CELLULAR_CONNECTION_STATUS_ERROR_NULL_POINTER;
+    }
+
+
     if (this->readyToSend == true) {
         ATHandler->sendATCommand(StringToSend);
         this->readyToSend  = false;
-        ////   ////   ////   ////   ////   ////
         uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
         uartUSB.write ( "\r\n",  3 );  // debug only
         uartUSB.write (StringToSend  , strlen (StringToSend  ));  // debug only
         uartUSB.write ( "\r\n",  3 );  // debug only
-        ////   ////   ////   ////   ////   ////   
     }
 
-    if ( ATHandler->readATResponse ( StringToBeRead) == true) {
-         ////   ////   ////   ////   ////   ////
+    if ( ATHandler->readATResponse ( StringToBeRead, BUFFER_LEN) == true) {
         uartUSB.write (StringToBeRead , strlen (StringToBeRead));  // debug only
         uartUSB.write ( "\r\n",  3 );  // debug only
-         ////   ////   ////   ////   ////   ////
 
         if (strcmp (StringToBeRead, ExpectedResponse) == 0) {
-            ////   ////   ////   ////   ////   ////        
             this->mobileNetworkModule->changeConnectionState (new ConnectedState (this->mobileNetworkModule));
             return CELLULAR_CONNECTION_STATUS_TRYING_TO_CONNECT;
         }

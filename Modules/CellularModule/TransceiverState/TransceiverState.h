@@ -12,7 +12,7 @@
 #include "TransceiverStatus.h"
 
 //=====[Declaration of public data types]======================================
-struct TcpSocket; //!< Forward declaration for TCP socket structure used in communication.
+struct RemoteServerInformation; //!< Forward declaration for TCP socket structure used in communication.
 
 //=====[Declaration of public classes]=========================================
 /**
@@ -29,13 +29,13 @@ public:
      * @param ATHandler Pointer to the AT command handler.
      * @param refreshTime Pointer to the non-blocking delay used for timing control.
      * @param message Message to be sent.
-     * @param socketTargetted Target TCP socket to be used for sending/receiving data.
+     * @param socketTargetted struct with information over the server Target.
      * @param receivedMessage Buffer to store received message.
      * @param newDataAvailable Pointer to a flag set to true when new data is received.
      * @returns Status of the transceiver after the attempt to exchange messages.
      */
     virtual CellularTransceiverStatus_t exchangeMessages (ATCommandHandler * ATHandler,
-    NonBlockingDelay * refreshTime, char * message, TcpSocket * socketTargetted,
+    NonBlockingDelay * refreshTime, char * message, RemoteServerInformation* serverTargetted,
      char * receivedMessage, bool * newDataAvailable);
 
     /**

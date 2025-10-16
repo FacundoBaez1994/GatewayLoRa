@@ -3,7 +3,19 @@
 #include "Debugger.h" // due to global usbUart
 
 //=====[Declaration of private defines]========================================
+#define LOG_MESSAGE_BUFFER_SIZE 64
 
+#define LOG_ORIGINAL_MESSAGE               "\r\nOriginal message:\r\n"
+#define LOG_ORIGINAL_MESSAGE_LEN           (sizeof(LOG_ORIGINAL_MESSAGE)-1)
+
+#define LOG_ENCRYPTED_MESSAGE              "\r\nEncrypted message:\r\n"
+#define LOG_ENCRYPTED_MESSAGE_LEN          (sizeof(LOG_ENCRYPTED_MESSAGE)-1)
+
+#define LOG_ENCRYPTED_BASE64_MESSAGE       "\r\nEncrypted + Base64:\r\n"
+#define LOG_ENCRYPTED_BASE64_MESSAGE_LEN   (sizeof(LOG_ENCRYPTED_BASE64_MESSAGE)-1)
+
+#define LOG_ERROR_BASE64_ENCODE            "\r\nFailed convertion Error code: %d\r\n"
+#define LOG_ERROR_BASE64_ENCODE_LEN(x)     (snprintf(nullptr,0,LOG_ERROR_BASE64_ENCODE,x)) 
 //=====[Declaration of private data types]=====================================
 
 //=====[Declaration and initialization of public global objects]===============
@@ -28,22 +40,18 @@ EncrypterBase64::~EncrypterBase64 () {
     delete this->aes;
     this->aes = nullptr;
     this->nextHandler = nullptr;
-
-    delete [] this->base64_encoded ;
-    this->base64_encoded  = nullptr;
 }
 
 MessageHandlerStatus_t EncrypterBase64::handleMessage(char* message,  unsigned int sizeOfMessage) {
-    static char log [120];
+    static char log [LOG_MESSAGE_BUFFER_SIZE];
     static bool initialization = false;
 
-    if (initialization  == false) {
-        this->base64_encoded = new char [this->sizeOfBuffer];
-        initialization = true;
+    if (message == nullptr) {
+        return MESSAGE_HANDLER_STATUS_ERROR_NULL_PTR;
     }
 
-    uartUSB.write("\r\nOriginal message:\r\n", strlen("\r\nOriginal message:\r\n"));
-    uartUSB.write(message, strlen(message));  // advertencia: puede fallar si hay '\0'
+    uartUSB.write(LOG_ORIGINAL_MESSAGE, LOG_ORIGINAL_MESSAGE_LEN);
+    uartUSB.write(message, strlen(message)); 
     uartUSB.write("\r\n", 2);
 
     this->aes->setup(this->key, AES::KEY_256, AES::MODE_CBC, this->iv);
@@ -51,8 +59,8 @@ MessageHandlerStatus_t EncrypterBase64::handleMessage(char* message,  unsigned i
     this->aes->encrypt(message, encryptedSize);
     this->aes->clear();
 
-    uartUSB.write("\r\nEncrypted message:\r\n", strlen("\r\nEncrypted message:\r\n"));
-    uartUSB.write(message, strlen(message));  // advertencia: puede fallar si hay '\0'
+    uartUSB.write(LOG_ENCRYPTED_MESSAGE, LOG_ENCRYPTED_MESSAGE_LEN);
+    uartUSB.write(message, strlen(message));
     uartUSB.write("\r\n", 2);
 
 
@@ -60,18 +68,16 @@ MessageHandlerStatus_t EncrypterBase64::handleMessage(char* message,  unsigned i
     int ret = mbedtls_base64_encode((unsigned char*)this->base64_encoded, this->sizeOfBuffer, &olen,
                                     (unsigned char*)message, encryptedSize);
     if (ret != 0) {
-        snprintf(log, sizeof(log), "\r\nError codificando en base64: %d\r\n", ret);
+        snprintf(log, sizeof(log), LOG_ERROR_BASE64_ENCODE, ret);
         uartUSB.write (log, strlen (log));  // debug only
     } else {
         base64_encoded[olen] = '\0';
-        //uartUSB.write ("\r\nEncrypted + Base64:\r\n", strlen ("\r\nEncrypted + Base64:\r\n"));  // debug only
-        //uartUSB.write (base64_encoded, strlen (base64_encoded));
     }
 
     strcpy (message, base64_encoded);
 
 
-    uartUSB.write("\r\nEncrypted + Base64:\r\n", strlen("\r\nEncrypted + Base64:\r\n"));
+    uartUSB.write(LOG_ENCRYPTED_BASE64_MESSAGE, LOG_ENCRYPTED_BASE64_MESSAGE_LEN);
     uartUSB.write(message, strlen(message));  //
     uartUSB.write("\r\n", 2);
 
@@ -79,13 +85,13 @@ MessageHandlerStatus_t EncrypterBase64::handleMessage(char* message,  unsigned i
     // Llamada al siguiente handler
     if (this->nextHandler != nullptr) {
         initialization = false;
-        delete [] this->base64_encoded ;
-        this->base64_encoded  = nullptr;
+        //delete [] this->base64_encoded ;
+        //this->base64_encoded  = nullptr;
         return this->nextHandler->handleMessage(message, sizeOfMessage);
     } else {
         initialization = false;
-        delete [] this->base64_encoded ;
-        this->base64_encoded  = nullptr;
+        //delete [] this->base64_encoded ;
+        //this->base64_encoded  = nullptr;
         return MESSAGE_HANDLER_STATUS_PROCESSED;
     }
 }

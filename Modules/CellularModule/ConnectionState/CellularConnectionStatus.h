@@ -13,7 +13,8 @@ typedef enum {
     CELLULAR_CONNECTION_STATUS_UNAVAIBLE_TO_ATTACH_TO_PACKET_SERVICE, //!< Cannot attach to packet-switched data service
     CELLULAR_CONNECTION_STATUS_UNAVAIBLE_TO_SET_PDP_CONTEXT,      //!< PDP context configuration failed
     CELLULAR_CONNECTION_STATUS_INVALID_SIM,                       //!< SIM card is missing, locked or invalid
-    CELLULAR_CONNECTION_STATUS_CONNECTED_TO_NETWORK               //!< Successfully connected to the network
+    CELLULAR_CONNECTION_STATUS_CONNECTED_TO_NETWORK,             //!< Successfully connected to the network
+    CELLULAR_CONNECTION_STATUS_ERROR_NULL_POINTER               //!< The method has detected an nullptr pass as param
 } CellularConnectionStatus_t;
 
 #endif // _CELLULAR_CONNECTION_STATUS_H_

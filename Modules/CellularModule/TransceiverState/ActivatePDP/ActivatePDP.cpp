@@ -21,21 +21,15 @@
 
 //=====[Declaration and initialization of public global objects]===============
 
-
 //=====[Declaration of external public global variables]=======================
 
 //=====[Declaration and initialization of public global variables]=============
 
 //=====[Declaration and initialization of private global variables]============
 
-
-
-
 //=====[Declarations (prototypes) of private functions]========================
 
-
 //=====[Implementations of private methods]===================================
-
 
 //=====[Implementations of public methods]===================================
 ActivatePDP::ActivatePDP () {
@@ -55,6 +49,7 @@ ActivatePDP::ActivatePDP (CellularModule * mobileModule) {
 
 ActivatePDP::~ActivatePDP () {
     this->mobileNetworkModule = nullptr;
+    this->Attempts = 0; 
 }
 
 void ActivatePDP::enableTransceiver () {
@@ -62,13 +57,18 @@ void ActivatePDP::enableTransceiver () {
 }
 
 CellularTransceiverStatus_t ActivatePDP::exchangeMessages (ATCommandHandler * ATHandler,
-    NonBlockingDelay * refreshTime, char * message, TcpSocket * socketTargetted,
+    NonBlockingDelay * refreshTime, char * message, RemoteServerInformation* serverTargetted,
      char * receivedMessage, bool * newDataAvailable) {
     char StringToBeRead [BUFFER_LEN];
     char ExpectedResponse [AT_CMD_ACTIVATE_PDP_EXPECTED_RESPONSE_LEN + 1] = AT_CMD_ACTIVATE_PDP_EXPECTED_RESPONSE;
     char StringToSendUSB [LOG_MESSAGE_LEN + 1] =  LOG_MESSAGE;
     char StringToSend [AT_CMD_ACTIVATE_PDP_LEN + 1] =  AT_CMD_ACTIVATE_PDP;
 
+    if (ATHandler == nullptr ||  refreshTime == nullptr || 
+     message == nullptr || receivedMessage == nullptr || serverTargetted == nullptr) {
+        return CELLULAR_TRANSCEIVER_STATUS_ERROR_NULL_POINTER;
+    }
+ 
     if (this->readyToSend == true) {
         ATHandler->sendATCommand(StringToSend);
         this->readyToSend  = false;
@@ -78,10 +78,11 @@ CellularTransceiverStatus_t ActivatePDP::exchangeMessages (ATCommandHandler * AT
         uartUSB.write ( "\r\n",  3 );  // debug only
     }
 
-    if ( ATHandler->readATResponse ( StringToBeRead) == true) {
+    if ( ATHandler->readATResponse (StringToBeRead, BUFFER_LEN) == true) {
         uartUSB.write (StringToBeRead , strlen (StringToBeRead));  // debug only
         uartUSB.write ( "\r\n",  3 );  // debug only
         if (strcmp (StringToBeRead, ExpectedResponse) == 0) {
+            this->Attempts = 0; 
             this->mobileNetworkModule->changeTransceiverState (new CreateSocket (this->mobileNetworkModule));
             return CELLULAR_TRANSCEIVER_STATUS_TRYNING_TO_SEND;
         }
@@ -91,6 +92,7 @@ CellularTransceiverStatus_t ActivatePDP::exchangeMessages (ATCommandHandler * AT
         this->readyToSend = true;
         this->Attempts++;
         if (this->Attempts >= this->maxAttempts) {
+            this->Attempts = 0; 
             return CELLULAR_TRANSCEIVER_STATUS_FAIL_TO_ACTIVATE_PDP;
         }
     }

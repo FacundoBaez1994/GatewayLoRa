@@ -13,7 +13,7 @@
 
 //=====[Declaration of public data types]======================================
 class CellularModule;  ///< Forward declaration of CellularModule
-struct TcpSocket;       ///< Forward declaration of TcpSocket
+struct RemoteServerInformation;       ///< Forward declaration for a struct with infomation over the remote server
 
 //=====[Declaration of public classes]=========================================
 /**
@@ -46,13 +46,13 @@ public:
      * @param ATHandler Pointer to the AT command handler.
      * @param refreshTime Pointer to a non-blocking delay object for retries.
      * @param message Not used in this state.
-     * @param socketTargetted Not used in this state.
+     * @param serverTargetted Not used in this state.
      * @param receivedMessage Not used in this state.
      * @param newDataAvailable Not used in this state.
      * @return CellularTransceiverStatus_t Current status of the transceiver process.
      */
     virtual CellularTransceiverStatus_t exchangeMessages (ATCommandHandler * ATHandler,
-    NonBlockingDelay * refreshTime, char * message, TcpSocket * socketTargetted,
+    NonBlockingDelay * refreshTime, char * message, RemoteServerInformation* serverTargetted,
      char * receivedMessage, bool * newDataAvailable);
      
 private:

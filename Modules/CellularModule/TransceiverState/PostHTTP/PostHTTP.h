@@ -18,7 +18,7 @@
 
 //=====[Declaration of public data types]======================================
 class CellularModule; 
-struct TcpSocket;
+struct RemoteServerInformation; ///< Forward declaration for a struct with infomation over the remote server
 
 /**
  * @enum PostResult_t
@@ -83,13 +83,13 @@ public:
      * @param ATHandler Pointer to the AT command handler interface.
      * @param refreshTime Pointer to the non-blocking delay timer.
      * @param message Null-terminated message string to be sent.
-     * @param socketTargetted Pointer to the TCP socket used for communication (can be null).
+     * @param serverTargetted Pointer to a struct with information of the remote server.
      * @param receivedMessage Buffer to store any received message.
      * @param newDataAvailable Pointer to flag indicating whether new data was received.
      * @return CellularTransceiverStatus_t Status of the transceiver after attempting the exchange.
      */
     virtual CellularTransceiverStatus_t exchangeMessages (ATCommandHandler * ATHandler,
-    NonBlockingDelay * refreshTime, char * message, TcpSocket * socketTargetted,
+    NonBlockingDelay * refreshTime, char * message, RemoteServerInformation* serverTargetted,
      char * receivedMessage, bool * newDataAvailable);
 private:
 //=====[Declaration of privates atributes]=========================================
@@ -98,7 +98,7 @@ private:
     int Attempts;                          ///< Counter for retry attempts.
     int maxAttempts;                       ///< Maximum number of retry attempts.
     PostStatus_t currentStatus;            ///< Current internal status of the HTTP POST state machine.
-    JWTManager * jwt;                      ///< Pointer to the JWT decoder utility.
+   // JWTManager * jwt;                      ///< Pointer to the JWT decoder utility.
 
 //=====[Declaration of privates methods]=========================================
     /**

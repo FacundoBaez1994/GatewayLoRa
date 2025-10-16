@@ -59,6 +59,10 @@ CellInformation * currentCellInformation) {
     char ExpectedResponse [AT_CMD_CHECK_MODULE_RESPONSE_EXPECTED_RESPONSE_LEN + 1] = AT_CMD_CHECK_MODULE_RESPONSE_EXPECTED_RESPONSE;
     char StringToSendUSB [LOG_MESSAGE_LEN + 1] = LOG_MESSAGE;
 
+    if (ATHandler == nullptr || refreshTime == nullptr || currentCellInformation == nullptr) {
+        return CELLULAR_CONNECTION_STATUS_ERROR_NULL_POINTER;
+    }
+
     if (this->readyToSend == true) {
         ATHandler->sendATCommand(StringToSend);
         this->readyToSend = false;
@@ -70,7 +74,7 @@ CellInformation * currentCellInformation) {
         ////   ////   ////   ////   ////   ////   
     }
 
-    if ( ATHandler->readATResponse ( StringToBeRead) == true) {
+    if ( ATHandler->readATResponse ( StringToBeRead, BUFFER_LEN) == true) {
          ////   ////   ////   ////   ////   ////
         uartUSB.write (StringToBeRead , strlen (StringToBeRead));  // debug only
         uartUSB.write ( "\r\n",  3 );  // debug only

@@ -3,7 +3,34 @@
 #include "Debugger.h" // due to global usbUart
 
 //=====[Declaration of private defines]========================================
-#define LOG_BUFFER 256
+
+#define LOG_BUFFER                                     256
+
+#define LOG_MESSAGE_DATA_HEADER                        "\r\nData: = %s\r\n"
+#define LOG_MESSAGE_DATA_LENGTH                        "\r\nData Length: = %i\r\n"
+
+#define LOG_MESSAGE_GENERATING_JWT                     "Generating a JWT\r\n"
+#define LOG_MESSAGE_GENERATING_JWT_LEN                 (sizeof(LOG_MESSAGE_GENERATING_JWT) - 1)
+
+#define LOG_MESSAGE_HEADER_INFO                        "Header Info\r\n"
+#define LOG_MESSAGE_HEADER_INFO_LEN                    (sizeof(LOG_MESSAGE_HEADER_INFO) - 1)
+
+#define LOG_MESSAGE_PAYLOAD_INFO                       "Payload Info\r\n"
+#define LOG_MESSAGE_PAYLOAD_INFO_LEN                   (sizeof(LOG_MESSAGE_PAYLOAD_INFO) - 1)
+
+#define LOG_MESSAGE_SIGNATURE_INFO                     "Signature Info\r\n"
+#define LOG_MESSAGE_SIGNATURE_INFO_LEN                 (sizeof(LOG_MESSAGE_SIGNATURE_INFO) - 1)
+
+#define LOG_MESSAGE_FINAL_OUTPUT_INFO                  "Final Output Info\r\n"
+#define LOG_MESSAGE_FINAL_OUTPUT_INFO_LEN              (sizeof(LOG_MESSAGE_FINAL_OUTPUT_INFO) - 1)
+
+#define LOG_MESSAGE_DECODING_JWT                       "Decoding and verifying the JWT\r\n"
+#define LOG_MESSAGE_DECODING_JWT_LEN                   (sizeof(LOG_MESSAGE_DECODING_JWT) - 1)
+
+#define LOG_MESSAGE_DECODE_RESULT                      "JWT Decode ended with result:\r\n"
+#define LOG_MESSAGE_DECODE_RESULT_LEN                  (sizeof(LOG_MESSAGE_DECODE_RESULT) - 1)
+
+#define LOG_MESSAGE_CODE_RESULT                        "\r\nCode result = %i\r\n"
 
 //=====[Declaration of private data types]=====================================
 
@@ -17,19 +44,18 @@
 
 //=====[Declarations (prototypes) of private functions]========================
 
-//=====[Implementations of public functions]===================================
+//=====[Implementations of private helper functions]===========================
 void printData(char *data, size_t dataLen) {
-    char logMessage [LOG_BUFFER];
-    snprintf(logMessage, sizeof(logMessage), "\n\rData: = %s \n\r", data);
-    uartUSB.write(logMessage , strlen(logMessage ));
-      snprintf(logMessage, sizeof(logMessage), "\n\rData Length: = %i \n\r", dataLen);
-    uartUSB.write(logMessage , strlen(logMessage ));
+    char logMessage[LOG_BUFFER];
+    snprintf(logMessage, sizeof(logMessage), LOG_MESSAGE_DATA_HEADER, data);
+    uartUSB.write(logMessage, strlen(logMessage));
+    snprintf(logMessage, sizeof(logMessage), LOG_MESSAGE_DATA_LENGTH, dataLen);
+    uartUSB.write(logMessage, strlen(logMessage));
 }
 
-
-//=====[Implementations of public methods]===================================
-JWTManager::JWTManager () {
-    this->jwt = new CustomJWT (this->JWTKey, 256);
+//=====[Implementations of public methods]=====================================
+JWTManager::JWTManager() {
+    this->jwt = new CustomJWT(this->JWTKey, 256);
 }
 
 JWTManager::~JWTManager() {
@@ -37,69 +63,67 @@ JWTManager::~JWTManager() {
     this->jwt = nullptr;
 }
 
-void JWTManager::encodeJWT(char * payloadToJWT, char * jwtEncoded) {
-    char logMessage [LOG_BUFFER];
+void JWTManager::encodeJWT(char *payloadToJWT, char *jwtEncoded) {
+    if (payloadToJWT == nullptr || jwtEncoded == nullptr) {
+        return;
+    }
+
     this->jwt->allocateJWTMemory();
-    snprintf(logMessage, sizeof(logMessage), "Generating a JWT"); 
-    uartUSB.write(logMessage , strlen(logMessage ));
 
-    this->jwt->encodeJWT( payloadToJWT);
+    uartUSB.write(LOG_MESSAGE_GENERATING_JWT, LOG_MESSAGE_GENERATING_JWT_LEN);
 
-    snprintf(logMessage, sizeof(logMessage), "Header Info"); 
-    uartUSB.write(logMessage , strlen(logMessage ));
+    this->jwt->encodeJWT(payloadToJWT);
+
+    uartUSB.write(LOG_MESSAGE_HEADER_INFO, LOG_MESSAGE_HEADER_INFO_LEN);
     printData(this->jwt->header, this->jwt->headerLength);
 
-    snprintf(logMessage, sizeof(logMessage), "Payload Info"); 
-    uartUSB.write(logMessage , strlen(logMessage ));
+    uartUSB.write(LOG_MESSAGE_PAYLOAD_INFO, LOG_MESSAGE_PAYLOAD_INFO_LEN);
     printData(this->jwt->payload, this->jwt->payloadLength);
 
-    snprintf(logMessage, sizeof(logMessage), "Signaure Info"); 
-    uartUSB.write(logMessage , strlen(logMessage ));;
+    uartUSB.write(LOG_MESSAGE_SIGNATURE_INFO, LOG_MESSAGE_SIGNATURE_INFO_LEN);
     printData(this->jwt->signature, this->jwt->signatureLength);
 
-    snprintf(logMessage, sizeof(logMessage), "Final Output Info"); 
-    uartUSB.write(logMessage , strlen(logMessage ));;
+    uartUSB.write(LOG_MESSAGE_FINAL_OUTPUT_INFO, LOG_MESSAGE_FINAL_OUTPUT_INFO_LEN);
     printData(this->jwt->out, this->jwt->outputLength);
 
-    strcpy (jwtEncoded, this->jwt->out);
-    jwtEncoded [this->jwt->outputLength] = '\0';
+    strncpy(jwtEncoded, this->jwt->out, this->jwt->outputLength);
+    jwtEncoded[this->jwt->outputLength] = '\0';
     this->jwt->clear();
 }
 
+bool JWTManager::decodeJWT(char *jwtToDecode, char *payloadRetrieved) {
+    char logMessage[LOG_BUFFER];
 
-
-bool JWTManager::decodeJWT (char * jwtToDecode, char * payloadRetrived) {
-    char logMessage [LOG_BUFFER];
-    this->jwt->allocateJWTMemory();
-    //Decode the JWT
-    snprintf(logMessage, sizeof(logMessage), "Decoding and verifying the JWT\n\r");
-    uartUSB.write(logMessage , strlen(logMessage ));
-    snprintf(logMessage, sizeof(logMessage), "JWT Decode ended with result: \n\r");
-    uartUSB.write(logMessage , strlen(logMessage ));
-    int responseCode;
-    responseCode = this->jwt->decodeJWT(jwtToDecode);
-    //Code 0: Decode success \n Code 1: Memory not allocated \n Code 2: Invalid JWT \n Code 3: Signature Mismatch
-    snprintf(logMessage, sizeof(logMessage), "\n\rCode result = %i \n\r", responseCode); 
-    uartUSB.write(logMessage , strlen(logMessage ));
-    if (responseCode != 0 ) { 
+    if (jwtToDecode == nullptr || payloadRetrieved == nullptr) {
         return false;
     }
 
+    this->jwt->allocateJWTMemory();
 
-    snprintf(logMessage, sizeof(logMessage), "Header Info"); 
-    uartUSB.write(logMessage , strlen(logMessage ));
+    uartUSB.write(LOG_MESSAGE_DECODING_JWT, LOG_MESSAGE_DECODING_JWT_LEN);
+    uartUSB.write(LOG_MESSAGE_DECODE_RESULT, LOG_MESSAGE_DECODE_RESULT_LEN);
+
+    int responseCode = this->jwt->decodeJWT(jwtToDecode);
+
+    snprintf(logMessage, sizeof(logMessage), LOG_MESSAGE_CODE_RESULT, responseCode);
+    uartUSB.write(logMessage, strlen(logMessage));
+
+    if (responseCode != 0) {
+        return false;
+    }
+
+    uartUSB.write(LOG_MESSAGE_HEADER_INFO, LOG_MESSAGE_HEADER_INFO_LEN);
     printData(this->jwt->header, this->jwt->headerLength);
 
-    snprintf(logMessage, sizeof(logMessage), "Payload Info"); 
-    uartUSB.write(logMessage , strlen(logMessage ));
+    uartUSB.write(LOG_MESSAGE_PAYLOAD_INFO, LOG_MESSAGE_PAYLOAD_INFO_LEN);
     printData(this->jwt->payload, this->jwt->payloadLength);
 
-    snprintf(logMessage, sizeof(logMessage), "Signaure Info"); 
-    uartUSB.write(logMessage , strlen(logMessage ));
+    uartUSB.write(LOG_MESSAGE_SIGNATURE_INFO, LOG_MESSAGE_SIGNATURE_INFO_LEN);
     printData(this->jwt->signature, this->jwt->signatureLength);
-    
-    strcpy (payloadRetrived, this->jwt->payload);
+
+    strncpy(payloadRetrieved, this->jwt->payload, this->jwt->payloadLength);
+    payloadRetrieved[this->jwt->payloadLength] = '\0';
     this->jwt->clear();
+
     return true;
 }
-

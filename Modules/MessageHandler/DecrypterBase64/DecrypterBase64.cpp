@@ -3,6 +3,17 @@
 #include "Debugger.h" // due to global usbUart
 
 //=====[Declaration of private defines]========================================
+#define LOG_MESSAGE_BUFFER_SIZE 64
+
+#define LOG_ERROR_BASE64_DECODE          "\r\nError decodificando en base64: %d\r\n"
+#define LOG_ERROR_BASE64_DECODE_LEN(x)   (snprintf(nullptr,0,LOG_ERROR_BASE64_DECODE,x))
+
+#define LOG_ENCRYPTED_MESSAGE            "\r\nencrypted message:\r\n"
+#define LOG_ENCRYPTED_MESSAGE_LEN        (sizeof(LOG_ENCRYPTED_MESSAGE)-1)
+
+#define LOG_DECRYPTED_MESSAGE            "\r\ndecrypted message:\r\n"
+#define LOG_DECRYPTED_MESSAGE_LEN        (sizeof(LOG_DECRYPTED_MESSAGE)-1)
+
 
 //=====[Declaration of private data types]=====================================
 
@@ -29,31 +40,28 @@ DecrypterBase64::~DecrypterBase64 () {
     this->aes = nullptr;
     this->nextHandler = nullptr;
 
-    delete [] this->base64_decoded ;
-    this->base64_decoded = nullptr;
 }
 
 MessageHandlerStatus_t  DecrypterBase64::handleMessage (char * message, unsigned int sizeOfMessage) {
-    static char log [120];
+    static char log [LOG_MESSAGE_BUFFER_SIZE];
     int ret;
     size_t decoded_len = 0;
     static bool initialization = false;
 
-    if (initialization  == false) {
-         this->base64_decoded = new char [this->sizeOfBuffer];
-        initialization = true;
+    if (message == nullptr) {
+        return MESSAGE_HANDLER_STATUS_ERROR_NULL_PTR;
     }
-
+    
     ret = mbedtls_base64_decode((unsigned char*)this->base64_decoded, this->sizeOfBuffer, &decoded_len,
                                 (unsigned char*)message, strlen (message));
 
     if (ret != 0) {
-        snprintf(log, sizeof(log), "\r\nError decodificando en base64: %d\r\n", ret);
+        snprintf(log, sizeof(log), LOG_ERROR_BASE64_DECODE, ret);
         uartUSB.write (log, strlen (log));  // debug only
         this->base64_decoded[decoded_len] = '\0';
     }
 
-    uartUSB.write ("\r\nencrypted message:\r\n", strlen ("encrypted message:\r\n"));  // debug only
+    uartUSB.write (LOG_ENCRYPTED_MESSAGE, LOG_ENCRYPTED_MESSAGE_LEN);  // debug only
     uartUSB.write (this->base64_decoded, strlen ( this->base64_decoded));  // debug only
     uartUSB.write ( "\r\n",  3 );  // debug only
     
@@ -71,19 +79,15 @@ MessageHandlerStatus_t  DecrypterBase64::handleMessage (char * message, unsigned
     message[decoded_len] = '\0'; 
 
     uartUSB.write ( "\r\n",  3 );
-    uartUSB.write ("\r\ndecrypted message:\r\n", strlen ("decrypted message:\r\n"));  // debug only
+    uartUSB.write (LOG_DECRYPTED_MESSAGE, LOG_DECRYPTED_MESSAGE_LEN);  // debug only
     uartUSB.write ( message, strlen (  message));  // debug only
     uartUSB.write ( "\r\n",  3 );  // debug only
 
     if (this->nextHandler == nullptr) {
         initialization = false;
-        delete [] this->base64_decoded ;
-        this->base64_decoded = nullptr;
         return  MESSAGE_HANDLER_STATUS_PROCESSED;
     } else {
-        delete [] this->base64_decoded ;
         initialization = false;
-        this->base64_decoded = nullptr;
         return this->nextHandler->handleMessage ( message, sizeOfMessage);
     }
     

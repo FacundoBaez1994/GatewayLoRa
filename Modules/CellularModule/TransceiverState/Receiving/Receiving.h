@@ -12,8 +12,8 @@
 #include "CloseSocket.h"
 
 //=====[Declaration of public data types]======================================
-class CellularModule;   //!< Forward declaration of the owning module.a
-struct TcpSocket;        //!< Forward declaration of the socket structure.
+class CellularModule;   ///!< Forward declaration of the owning module.a
+struct RemoteServerInformation;   ///< Forward declaration for a struct with infomation over the remote server
 
 //=====[Declaration of public classes]=========================================
 /**
@@ -50,13 +50,13 @@ public:
      * @param ATHandler Pointer to AT command interface.
      * @param refreshTime Pointer to non-blocking delay used for retries.
      * @param message Pointer to the outgoing message (not used in this state).
-     * @param socketTargetted Pointer to the TCP socket used for communication.
+     * @param serverTargetted Pointer to a struct with information over the remote server.
      * @param receivedMessage Pointer to the buffer to store received message.
      * @param newDataAvailable Pointer to a flag set to true if new data is received.
      * @return CellularTransceiverStatus_t Resulting transceiver status.
      */
     virtual  CellularTransceiverStatus_t exchangeMessages (ATCommandHandler * ATHandler,
-    NonBlockingDelay * refreshTime, char * message, TcpSocket * socketTargetted,
+    NonBlockingDelay * refreshTime, char * message, RemoteServerInformation* serverTargetted,
      char * receivedMessage, bool * newDataAvailable);
 
 private:

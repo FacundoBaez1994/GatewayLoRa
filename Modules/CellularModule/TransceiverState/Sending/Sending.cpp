@@ -61,7 +61,7 @@ void Sending::enableTransceiver () {
 }
 
 CellularTransceiverStatus_t Sending::exchangeMessages (ATCommandHandler * ATHandler,
-    NonBlockingDelay * refreshTime, char * message, TcpSocket * socketTargetted,
+    NonBlockingDelay * refreshTime, char * message, RemoteServerInformation* serverTargetted,
      char * receivedMessage, bool * newDataAvailable) {
     char buffer[BUFFER_LEN];
 
@@ -72,6 +72,11 @@ CellularTransceiverStatus_t Sending::exchangeMessages (ATCommandHandler * ATHand
 
     size_t remainingLength = messageLength - currentMessagePosition;
     size_t sizeToSend = (remainingLength < chunkSize) ? remainingLength : chunkSize;
+
+    if (ATHandler == nullptr ||  refreshTime == nullptr || 
+     message == nullptr || receivedMessage == nullptr || serverTargetted == nullptr) {
+        return CELLULAR_TRANSCEIVER_STATUS_ERROR_NULL_POINTER;
+    }
 
     if (!debugFlag) {
         snprintf(buffer, sizeof(buffer), "currentMessagePosition = %zu, messageLength = %zu", currentMessagePosition, messageLength);
@@ -84,7 +89,7 @@ CellularTransceiverStatus_t Sending::exchangeMessages (ATCommandHandler * ATHand
     strncpy(messageChunk, message + currentMessagePosition, sizeToSend);
     messageChunk[sizeToSend] = '\0'; 
 
-    if (this->sendChunck(ATHandler, refreshTime, messageChunk, socketTargetted)) {
+    if (this->sendChunck(ATHandler, refreshTime, messageChunk, serverTargetted)) {
         currentMessagePosition += sizeToSend; 
     
         snprintf(buffer, sizeof(buffer), "Sent chunk, new currentMessagePosition = %zu", currentMessagePosition);
@@ -108,7 +113,7 @@ CellularTransceiverStatus_t Sending::exchangeMessages (ATCommandHandler * ATHand
 
 
 bool Sending::sendChunck(ATCommandHandler *ATHandler,
-    NonBlockingDelay *refreshTime, char *message, TcpSocket * socketTargetted) {
+    NonBlockingDelay *refreshTime, char *message, RemoteServerInformation* serverTargetted) {
     char StringToBeSend[AT_CMD_TCP_SEND_LEN + 5];
     char StringToBeRead[BUFFER_LEN];
     char ATcommand[AT_CMD_TCP_SEND_LEN + 1] = AT_CMD_TCP_SEND;
@@ -118,6 +123,11 @@ bool Sending::sendChunck(ATCommandHandler *ATHandler,
     char confirmationChar = '>';
     char recievedChar;
     static int counter = 0;
+
+    if (ATHandler == nullptr ||  refreshTime == nullptr || 
+     message == nullptr  || serverTargetted == nullptr) {
+        return CELLULAR_TRANSCEIVER_STATUS_ERROR_NULL_POINTER;
+    }
 
     int result = snprintf(StringToBeSend, sizeof(StringToBeSend), "%s%d,%d", ATcommand, connectID, strlen(message));
 
@@ -147,19 +157,15 @@ bool Sending::sendChunck(ATCommandHandler *ATHandler,
     }
 
     if (this->watingForConfirmation == true) {
-        if ( ATHandler->readATResponse ( StringToBeRead) == true) {
-            ////   ////   ////   ////   ////   ////
+        if ( ATHandler->readATResponse ( StringToBeRead, BUFFER_LEN) == true) {
             uartUSB.write (StringToBeRead , strlen (StringToBeRead));  // debug only
             uartUSB.write ( "\r\n",  3 );  // debug only
-            ////   ////   ////   ////   ////   ////
             if (strcmp (StringToBeRead, ExpectedResponse) == 0) {
-                ////   ////   ////   ////   ////   ////
                 counter = 0;
                 this->Attempts = 0;
                 this->readyToSend = true;
                 this->transmissionEnable = false;
                 this->watingForConfirmation = false;
-                ////   ////   ////   ////   ////   ////     
                // this->mobileNetworkModule->changeTransceiverState (new CloseSocket (this->mobileNetworkModule, true));
                  return true;
             }

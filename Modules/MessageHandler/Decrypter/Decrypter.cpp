@@ -4,6 +4,11 @@
 #include "Debugger.h" // due to global usbUart
 
 //=====[Declaration of private defines]========================================
+#define LOG_ENCRYPTED_MESSAGE            "\r\nencrypted message:\r\n"
+#define LOG_ENCRYPTED_MESSAGE_LEN        (sizeof(LOG_ENCRYPTED_MESSAGE)-1)
+
+#define LOG_DECRYPTED_MESSAGE            "\r\ndecrypted message:\r\n"
+#define LOG_DECRYPTED_MESSAGE_LEN        (sizeof(LOG_DECRYPTED_MESSAGE)-1)
 
 //=====[Declaration of private data types]=====================================
 
@@ -32,8 +37,12 @@ Decrypter::~Decrypter () {
 }
 
 MessageHandlerStatus_t  Decrypter::handleMessage (char * message, unsigned int sizeOfMessage) {
+    if (message == nullptr) {
+        return MESSAGE_HANDLER_STATUS_ERROR_NULL_PTR;
+    }
 
-    uartUSB.write ("\r\nencrypted message:\r\n", strlen ("encrypted message:\r\n"));  // debug only
+
+    uartUSB.write (LOG_ENCRYPTED_MESSAGE, LOG_ENCRYPTED_MESSAGE_LEN);  // debug only
     uartUSB.write (message, strlen ( message));  // debug only
     uartUSB.write ( "\r\n",  3 );  // debug only
     
@@ -43,7 +52,7 @@ MessageHandlerStatus_t  Decrypter::handleMessage (char * message, unsigned int s
 
 
     uartUSB.write ( "\r\n",  3 );  // debug only
-    uartUSB.write ("\r\ndecrypted message:\r\n", strlen ("decrypted message:\r\n"));  // debug only
+    uartUSB.write (LOG_DECRYPTED_MESSAGE, LOG_DECRYPTED_MESSAGE_LEN);  // debug only
     uartUSB.write ( message, strlen (  message));  // debug only
     uartUSB.write ( "\r\n",  3 );  // debug only
 
@@ -56,10 +65,6 @@ MessageHandlerStatus_t  Decrypter::handleMessage (char * message, unsigned int s
 }
 
 //=====[Implementations of private methods]===================================
-
-
-
-
 
 
 

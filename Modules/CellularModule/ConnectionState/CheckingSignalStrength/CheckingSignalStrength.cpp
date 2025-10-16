@@ -53,8 +53,8 @@ CheckingSignalStrength::CheckingSignalStrength (CellularModule * mobileModule) {
 }
 
 CheckingSignalStrength::~CheckingSignalStrength () {
-    this->mobileNetworkModule = nullptr;
     this->connectionAttemptsATResponse = 0; 
+    this->mobileNetworkModule = nullptr;
 }
 
 void CheckingSignalStrength::enableConnection () {
@@ -71,25 +71,25 @@ CellInformation * currentCellInformation) {
     char StringToSendUSB [LOG_MESSAGE_INITIAL_LEN + 1] = LOG_MESSAGE_INITIAL;
     char StringToSendUSB2 [LOG_MESSAGE_WARNING_LEN + 1] = LOG_MESSAGE_WARNING;
 
+    if (ATHandler == nullptr || refreshTime == nullptr || currentCellInformation == nullptr) {
+        return CELLULAR_CONNECTION_STATUS_ERROR_NULL_POINTER;
+    }
+
+
     if (this->readyToSend == true) {
         ATHandler->sendATCommand(StringToSend);
         this->readyToSend = false;
-        ////   ////   ////   ////   ////   ////
         uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
         uartUSB.write ( "\r\n",  3 );  // debug only
         uartUSB.write (StringToSend  , strlen (StringToSend  ));  // debug only
         uartUSB.write ( "\r\n",  3 );  // debug only
         refreshTime->restart();
-        ////   ////   ////   ////   ////   ////   
     }
 
     if ( this->signalLevelRetrived == false) {
-        if ( ATHandler->readATResponse ( StringToBeRead) == true ) {
-        
-            ////   ////   ////   ////   ////   ////
+        if ( ATHandler->readATResponse (StringToBeRead, BUFFER_LEN) == true ) {
             uartUSB.write (StringToBeRead , strlen (StringToBeRead));  // debug only
             uartUSB.write ( "\r\n",  3 );  // debug only
-            ////   ////   ////   ////   ////   ////
             this->ATFirstResponseRead = true;
              refreshTime->restart();
             if (this->checkExpectedResponse (StringToBeRead)) {
@@ -99,14 +99,13 @@ CellInformation * currentCellInformation) {
      } 
   
     if (this->signalLevelRetrived == true) {
-        if  (ATHandler->readATResponse ( StringToBeRead) == true) {
+        if  (ATHandler->readATResponse ( StringToBeRead, BUFFER_LEN) == true) {
             if (strcmp (StringToBeRead, ExpectedResponse) == 0) {
-                ////   ////   ////   ////   ////   ////
                 uartUSB.write (StringToBeRead , strlen (StringToBeRead ));  // debug only
-                uartUSB.write ( "\r\n",  3 );  // debug only
-                ////   ////   ////   ////   ////   ////        
+                uartUSB.write ( "\r\n",  3 );  // debug only     
                 if (this->signalLevel > LOWER_LIMIT_SIGNAL_LEVEL) {
                     currentCellInformation->signalLevel = this->signalLevel;
+                    this->connectionAttemptsATResponse = 0; 
                     this->mobileNetworkModule->changeConnectionState(new ConsultingIMEI(this->mobileNetworkModule));
                     return CELLULAR_CONNECTION_STATUS_TRYING_TO_CONNECT;
                 } else {
@@ -114,6 +113,7 @@ CellInformation * currentCellInformation) {
                     uartUSB.write ( "\r\n",  3 );  // debug only
                     connectionAttemptsSignal++;
                     if (this->connectionAttemptsSignal >= this->maxConnectionAttemptsSignal) {
+                        this->connectionAttemptsATResponse = 0; 
                         return CELLULAR_CONNECTION_STATUS_MODULE_DISCONNECTED;
                     }
                 }

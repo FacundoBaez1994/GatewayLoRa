@@ -62,6 +62,10 @@ GNSSState_t TurningOffGNSS::retrivGeopositioning (GNSSData * Geodata, ATCommandH
     char AlreadyTurnOffResponse [AT_CMD_TURNING_OFF_GNSS_EXPECTED_RESPONSE_THE_MODULE_IS_ALREADY_TURNOFF_LEN + 1] = AT_CMD_TURNING_OFF_GNSS_EXPECTED_RESPONSE_THE_MODULE_IS_ALREADY_TURNOFF;
     char StringToSendUSB [LOG_MESSAGE_LEN + 1] = LOG_MESSAGE;
 
+    if (Geodata == nullptr || ATHandler == nullptr || refreshTime == nullptr) {
+        return GNSS_STATE_ERROR_NULL_POINTER;
+    }
+
 
     if (this->readyToSend == true) {
         ATHandler->sendATCommand(StringToSend);
@@ -72,7 +76,7 @@ GNSSState_t TurningOffGNSS::retrivGeopositioning (GNSSData * Geodata, ATCommandH
         uartUSB.write ( "\r\n",  3 );  // debug only
     }
 
-    if ( ATHandler->readATResponse ( StringToBeRead) == true) {
+    if ( ATHandler->readATResponse ( StringToBeRead, BUFFER_LEN) == true) {
         uartUSB.write (StringToBeRead , strlen (StringToBeRead));  // debug only
         uartUSB.write ( "\r\n",  3 );  // debug only
         if (strcmp (StringToBeRead, ExpectedResponse) == 0

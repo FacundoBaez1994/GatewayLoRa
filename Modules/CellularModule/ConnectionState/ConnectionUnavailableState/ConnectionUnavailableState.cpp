@@ -1,5 +1,4 @@
 //=====[Libraries]=============================================================
-
 #include "ConnectionUnavailableState.h"
 #include "CellularModule.h" 
 #include "Debugger.h" // due to global usbUart
@@ -10,22 +9,17 @@
 
 //=====[Declaration and initialization of public global objects]===============
 
-
 //=====[Declaration of external public global variables]=======================
 
 //=====[Declaration and initialization of public global variables]=============
 
 //=====[Declaration and initialization of private global variables]============
 
-
 //=====[Declarations (prototypes) of private functions]========================
-
 
 //=====[Implementations of private methods]===================================
 
-
 //=====[Implementations of public methods]===================================
-
 ConnectionUnavailableState::ConnectionUnavailableState () {
     this->mobileNetworkModule = nullptr;
     this->enableTransceiver = false;

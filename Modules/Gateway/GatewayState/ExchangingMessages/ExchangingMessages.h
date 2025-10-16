@@ -52,14 +52,14 @@ public:
      * @brief Exchanges messages with the server via cellular transceiver
      * @param cellularTransceiver Pointer to the CellularModule instance
      * @param message Pointer to the message buffer to send
-     * @param socketTargetted Pointer to the TCP socket to send through
+     * @param serverTargetted Pointer to the remote server to send through
      * @param receivedMessage Pointer to buffer for storing received server response
      * @details Manages message sending, response reception, JSON parsing of
      * fields such as success status, latency, operation mode, and silent timer.
      * Transitions to appropriate next states depending on communication success.
     */
     virtual void exchangeMessages (CellularModule* cellularTransceiver,
-    char* message, TcpSocket* socketTargetted, char* receivedMessage );
+    char* message, RemoteServerInformation* serverTargetted, char* receivedMessage );
 private:
 //=====[Declaration of privates atributes]=========================================
     Gateway* gateway; ///< Pointer to the gateway instance for state transitions

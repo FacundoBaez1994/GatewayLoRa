@@ -10,12 +10,9 @@
 
 #define CELLULAR_MODULE_BAUD_RATE 115200
 #define CELLULAR_MODULE_SIMCARD_SWITCH_OUTPUT D7
-
-
 //=====[Declaration of private data types]=====================================
 
 //=====[Declaration and initialization of public global objects]===============
-
 
 //=====[Declaration of external public global variables]=======================s
 
@@ -27,10 +24,7 @@
 
 //=====[Implementations of private methods]===================================
 
-
-
 //=====[Implementations of public methods]===================================
-
 CellularModule::CellularModule () {
     this->refreshTime = new NonBlockingDelay (REFRESH_TIME);
     this->ATHandler = new ATCommandHandler (new BufferedSerial  (CELLULAR_MODULE_TX_UART, 
@@ -95,10 +89,10 @@ CellularConnectionStatus_t CellularModule::connectToMobileNetwork
     return this->currentConnectionState->connect(this->ATHandler, this->refreshTime, currentCellInformation);
 }
 
-CellularTransceiverStatus_t CellularModule::exchangeMessages (char * message, TcpSocket * socketTargetted,
+CellularTransceiverStatus_t CellularModule::exchangeMessages (char * message,  RemoteServerInformation* serverTargetted,
      char * receivedMessage, bool * newDataAvailable) {
     CellularTransceiverStatus_t currentStatus = this->currentTransceiverState->exchangeMessages (this->ATHandler,
-    this->refreshTime, message, socketTargetted, receivedMessage, newDataAvailable);
+    this->refreshTime, message, serverTargetted, receivedMessage, newDataAvailable);
     if (currentStatus != CELLULAR_TRANSCEIVER_STATUS_TRYNING_TO_SEND &&
     currentStatus  != CELLULAR_TRANSCEIVER_STATUS_UNAVAIBLE) {
         this->changeConnectionState(new ConnectionUnavailableState (this));

@@ -68,6 +68,18 @@ public:
     bool readATResponse (char * StringToBeRead);
 
     /**
+    * @brief Reads a single line of the AT command response from the UART interface.
+    * This method reads characters one by one from the UART. When a line terminator 
+    * (`\r` or `\n`) is detected and the buffer contains data, the string is 
+    * null-terminated, copied into the user-provided buffer, and returned as a complete line.
+    * @param StringToBeRead Pointer to the character array where the read response line will be stored.
+    * Must be large enough to hold the response.
+    * @param bufferSize buffer size for StringToBeRead.
+    * @returns bolean, true if a complete response line was read and copied, false otherwise.
+    */
+    bool readATResponse(char *StringToBeRead, size_t bufferSize);
+
+    /**
     * @brief Returns a pointer to the internal UART interface.
     * Allows external classes or modules to access the BufferedSerial
     * object used by this handler.
@@ -99,4 +111,4 @@ private:
 
 //=====[#include guards - end]=================================================
 
-#endif // _AT_COMMAND_HANDLER_H_
+#endif // _AT_COMMAND_HANDLER_

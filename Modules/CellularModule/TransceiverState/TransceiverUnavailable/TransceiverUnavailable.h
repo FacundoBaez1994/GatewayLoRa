@@ -15,8 +15,8 @@
 
 
 //=====[Declaration of public data types]======================================
-class CellularModule; //!< Forward declaration of the cellular module class.
-struct TcpSocket; //!< Forward declaration Structure used to represent a TCP socket for data transmission.
+class CellularModule; ///< Forward declaration of the cellular module class.
+struct RemoteServerInformation; ///< Forward declaration for a struct with infomation over the remote server
 
 //=====[Declaration of public classes]=========================================
 /**
@@ -45,12 +45,18 @@ public:
      */
     virtual ~TransceiverUnavailable ();
 
+
     /**
      * @brief Handles message exchange. In this state, message exchange is not possible.
+     * @param refreshTime Not used in this state.
+     * @param message Not used in this state.
+     * @param serverTargetted Not used in this state.
+     * @param receivedMessage Not used in this state.
+     * @param newDataAvailable Not used in this state
      * @returns Always returns a status indicating the transceiver is unavailable.
      */
     virtual CellularTransceiverStatus_t exchangeMessages (ATCommandHandler * ATHandler,
-    NonBlockingDelay * refreshTime, char * message, TcpSocket * socketTargetted,
+    NonBlockingDelay * refreshTime, char * message, RemoteServerInformation* serverTargetted,
      char * receivedMessage, bool * newDataAvailable);
 
     /**

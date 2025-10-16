@@ -21,12 +21,14 @@ class ConnectionState; ///<  Mandatory Forward declaration due to circular depen
 struct BatteryData;
 
 /**
- * @struct TcpSocket
- * @brief Represents a TCP socket endpoint.
+ * @struct RemoteServerInformation
+ * @brief Contains information of a remote server.
  */
- struct TcpSocket {
-    char * IpDirection; ///< IPv4 address as a string
-    int TcpPort;        ///< TCP port number
+ struct RemoteServerInformation {
+    char * IpDirection; ///<  Server IPv4 address as a string
+    int TcpPort;        ///<  Server TCP port number 
+    char * url;   ///<  Server  url as a string
+    char * secondaryUrl;   ///<  alternate Server url as a string
  };
 
 /**
@@ -129,12 +131,12 @@ public:
      * @brief Sends and receives messages through the transceiver.
      * Delegates on TrancieverState (State Pattern).
      * @param message Pointer to the message to send.
-     * @param socketTargetted Target socket (IP and port).
+     * @param serverTargetted Information of the remote server (url, IP and port).
      * @param receivedMessage Buffer to store the received message from the server response.
      * @param newDataAvailable Flag set to true if a new message is received.
      * @return Transceiver status after the operation.
      */
-    CellularTransceiverStatus_t exchangeMessages (char * message, TcpSocket * socketTargetted,
+    CellularTransceiverStatus_t exchangeMessages (char * message, RemoteServerInformation* serverTargetted,
      char * receivedMessage, bool * newDataAvailable);
 
     /**
@@ -143,6 +145,15 @@ public:
      */   
     void changeConnectionState  (ConnectionState * newConnectionState);
 
+    /**
+     * @brief Retrieves information about nearby cells.
+     * Parses responses to build a list of neighboring cells and appends them
+     * to the given vector. Delegates his behaviour on currentConnectionState
+     * @param neighborsCellInformation Output vector of CellInformation pointers.
+     * @param numberOfNeighbors number of neighbors retrieved.
+     * @return true if the retrieval process completes or times out, false otherwise.
+     * @note if the device couldn't retrieved the neighbor BTS data it would let the vector empty
+     */
     bool retrivNeighborCellsInformation ( std::vector<CellInformation*> &neighborsCellInformation
     , int numberOfNeighbors);
 

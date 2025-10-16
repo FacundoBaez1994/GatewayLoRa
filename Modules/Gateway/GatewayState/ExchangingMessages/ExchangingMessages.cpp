@@ -42,17 +42,18 @@ void ExchangingMessages::updatePowerStatus (CellularModule * cellularTransceiver
  }
 
 void ExchangingMessages::exchangeMessages (CellularModule * cellularTransceiver,
-    char * message, TcpSocket * socketTargetted, char * receivedMessage ){
+    char * message,  RemoteServerInformation* serverTargetted, char * receivedMessage ){
     static CellularTransceiverStatus_t currentTransmitionStatus;
     static bool newDataAvailable = false;
     static bool enableTransceiver = false;
     char logMessage [100];
+    char payloadRetrieved [256];
     
     if (enableTransceiver == false) {
         cellularTransceiver->enableTransceiver();
         enableTransceiver = true; 
     }
-    currentTransmitionStatus = cellularTransceiver->exchangeMessages (message, socketTargetted,
+    currentTransmitionStatus = cellularTransceiver->exchangeMessages (message, serverTargetted,
     receivedMessage, &newDataAvailable);
 
     if (currentTransmitionStatus == CELLULAR_TRANSCEIVER_STATUS_SEND_OK) {
@@ -64,6 +65,17 @@ void ExchangingMessages::exchangeMessages (CellularModule * cellularTransceiver,
 
         //////////////////   MESSAGE INTERPRETATION ////////////////
         ////////////////////////////////////////////////////////////////
+        if (this->gateway->decodeJWT(receivedMessage, payloadRetrieved) == false) {
+            snprintf(logMessage, sizeof(logMessage), "error decoding JWT\r\n");
+            uartUSB.write(logMessage, strlen(logMessage));
+
+            newDataAvailable = false;
+            enableTransceiver = false;
+            this->gateway->changeState (new SensingBatteryStatus (this->gateway));
+            return;
+        }
+        strcpy (receivedMessage, payloadRetrieved);
+
         newDataAvailable = false;
         enableTransceiver = false;
 
@@ -83,6 +95,9 @@ void ExchangingMessages::exchangeMessages (CellularModule * cellularTransceiver,
             this->gateway->changeState (new SensingBatteryStatus (this->gateway));
             return;
         }
+        this->gateway->progressOnHashChain ();
+        this->gateway->increaseSequenceNumber ();
+
         snprintf(logMessage, sizeof(logMessage), "SUCCESS: %s\r\n", success);
         uartUSB.write(logMessage, strlen(logMessage));
 

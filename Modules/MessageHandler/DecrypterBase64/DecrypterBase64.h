@@ -10,10 +10,13 @@
 #include "AES.h"
 #include <string.h>
 #include <stdio.h>
+#include "BufferSizes.h"
  
 //=====[Declaration of public data types]======================================
 class MessageHandler;  ///< Forward declaration
 
+
+#define BUFFER_SIZE_ADDITION_BASE64_DECRYPION 164
 //=====[Declaration of public classes]=========================================
 /**
  * @class DecrypterBase64
@@ -44,8 +47,8 @@ public:
 
 private:
 //=====[Declaration of privates atributes]=========================================
-    char* base64_decoded; ///< Buffer used to store Base64-decoded binary data
-    size_t sizeOfBuffer = 2564; ///< Internal buffer size
+    char base64_decoded [MESSAGE_BUFFER_SIZE + BUFFER_SIZE_ADDITION_BASE64_DECRYPION]; ///< Buffer used to store Base64-decoded binary data
+    size_t sizeOfBuffer = MESSAGE_BUFFER_SIZE + BUFFER_SIZE_ADDITION_BASE64_DECRYPION; ///< Internal buffer size
     AES* aes; ///< AES cipher instance
 //=====[Declaration of privates constants]=========================================
     const char key[32] = { ///< AES-256 key

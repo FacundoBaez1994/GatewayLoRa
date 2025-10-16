@@ -64,11 +64,11 @@ public:
     
     /**
      * @copydoc GatewayState::exchangeMessages(CellularModule * cellularTransceiver,
-     *  char * message, TcpSocket * socketTargetted, char * receivedMessage)
+     *  char * message,  RemoteServerInformation* serverTargetted, char * receivedMessage)
      * Default implementation: does nothing.
      */
     virtual void exchangeMessages (CellularModule * cellularTransceiver,
-    char * message, TcpSocket * socketTargetted, char * receivedMessage );
+    char * message,  RemoteServerInformation* serverTargetted, char * receivedMessage );
 
     /**
      * @copydoc GatewayState::exchangeMessages(LoRaClass * LoRaModule, char * message, 

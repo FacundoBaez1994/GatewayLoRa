@@ -86,7 +86,6 @@ void GNSSModule::enableGNSS () {
     return this->modulePowerManager;
 }
 
-
 bool GNSSModule::turnOn () { 
     return this->modulePowerManager->turnOn();
 }

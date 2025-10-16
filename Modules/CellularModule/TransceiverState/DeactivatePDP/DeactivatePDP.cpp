@@ -45,7 +45,7 @@ void DeactivatePDP::enableTransceiver () {
 }
 
 CellularTransceiverStatus_t DeactivatePDP::exchangeMessages (ATCommandHandler * ATHandler,
-    NonBlockingDelay * refreshTime, char * message, TcpSocket * socketTargetted,
+    NonBlockingDelay * refreshTime, char * message, RemoteServerInformation* serverTargetted,
      char * receivedMessage, bool * newDataAvailable) {
     char StringToBeRead [BUFFER_LEN];
     char ExpectedResponse [AT_CMD_DEACTIVATE_PDP_EXPECTED_RESPONSE_LEN + 1] = AT_CMD_DEACTIVATE_PDP_EXPECTED_RESPONSE;
@@ -54,6 +54,11 @@ CellularTransceiverStatus_t DeactivatePDP::exchangeMessages (ATCommandHandler * 
     char ATcommand[AT_CMD_DEACTIVATE_PDP_LEN + 1] = AT_CMD_DEACTIVATE_PDP; 
     int connectID = 0; 
     int contextID = 1; 
+
+    if (ATHandler == nullptr ||  refreshTime == nullptr || 
+     message == nullptr || receivedMessage == nullptr || serverTargetted == nullptr) {
+        return CELLULAR_TRANSCEIVER_STATUS_ERROR_NULL_POINTER;
+    }
 
     snprintf(StringToBeSend, sizeof(StringToBeSend), "%s%d", ATcommand, contextID );
 
@@ -68,7 +73,7 @@ CellularTransceiverStatus_t DeactivatePDP::exchangeMessages (ATCommandHandler * 
         ////   ////   ////   ////   ////   ////   
     }
 
-    if ( ATHandler->readATResponse ( StringToBeRead) == true) {
+    if ( ATHandler->readATResponse ( StringToBeRead, BUFFER_LEN) == true) {
          ////   ////   ////   ////   ////   ////
         uartUSB.write (StringToBeRead , strlen (StringToBeRead));  // debug only
         uartUSB.write ( "\r\n",  3 );  // debug only

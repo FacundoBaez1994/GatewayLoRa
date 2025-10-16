@@ -93,18 +93,19 @@ public:
      * @return Pointer to BufferedSerial instance.
      */
     BufferedSerial* getUART ();
-    
+
+    /**
+     * @brief Powers on the GNSS module.
+     * @return true if the operation has finished with success, false if the operation is still in process.
+    */
+    bool turnOn ();
+
     /**
      * @brief Powers off the GNSS module.
      * @return true if the operation has finished with success, false if the operation is still in process.
      */
     bool turnOff ();
 
-    /**
-     * @brief Powers on the GNSS module.
-     * @return true if the operation has finished with success, false if the operation is still in process.
-     */
-    bool turnOn ();
 
 private:
 //=====[Declaration of privates atributes]=========================================

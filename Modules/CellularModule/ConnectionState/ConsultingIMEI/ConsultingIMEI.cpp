@@ -53,11 +53,14 @@ void ConsultingIMEI::enableConnection () {
 
 CellularConnectionStatus_t ConsultingIMEI::connect (ATCommandHandler * ATHandler, NonBlockingDelay * refreshTime,
 CellInformation * currentCellInformation) {
-
     static char StringToBeRead [BUFFER_LEN];
     char ExpectedResponse [AT_CMD_CONSULT_IMEI_EXPECTED_RESPONSE_LEN + 1] = AT_CMD_CONSULT_IMEI_EXPECTED_RESPONSE;
      char StringToSend [AT_CMD_CONSULT_IMEI_LEN + 1] = AT_CMD_CONSULT_IMEI ;
     char StringToSendUSB [LOG_MESSAGE_LEN + 1] = LOG_MESSAGE;
+    
+    if (ATHandler == nullptr || refreshTime == nullptr || currentCellInformation == nullptr) {
+        return CELLULAR_CONNECTION_STATUS_ERROR_NULL_POINTER;
+    }
 
     if (this->readyToSend == true) {
         ATHandler->sendATCommand(StringToSend);
@@ -72,7 +75,7 @@ CellInformation * currentCellInformation) {
     }
 
  if ( this->IMEIRetrived == false) {
-        if ( ATHandler->readATResponse ( StringToBeRead) == true ) {
+        if ( ATHandler->readATResponse (StringToBeRead, BUFFER_LEN) == true ) {
         
             ////   ////   ////   ////   ////   ////
             uartUSB.write (StringToBeRead , strlen (StringToBeRead));  // debug only
@@ -92,13 +95,14 @@ CellInformation * currentCellInformation) {
     } 
 
     if (this->IMEIRetrived == true) {
-        if  (ATHandler->readATResponse ( StringToBeRead) == true) {
+        if  (ATHandler->readATResponse (StringToBeRead, BUFFER_LEN) == true) {
             if (strcmp (StringToBeRead, ExpectedResponse) == 0) {
                 ////   ////   ////   ////   ////   ////
                 uartUSB.write (StringToBeRead , strlen (StringToBeRead ));  // debug only
                 uartUSB.write ( "\r\n",  3 );  // debug only
                 ////   ////   ////   ////   ////   //// 
                 currentCellInformation->IMEI = this->IMEI;      
+                this->connectionAttempts = 0; 
                 this->mobileNetworkModule->changeConnectionState (new ConsultingSIMCardStatus (this->mobileNetworkModule) );
                 return CELLULAR_CONNECTION_STATUS_TRYING_TO_CONNECT;
             }

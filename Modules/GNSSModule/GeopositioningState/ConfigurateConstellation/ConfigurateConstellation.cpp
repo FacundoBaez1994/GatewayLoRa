@@ -57,11 +57,14 @@ ConfigurateConstellation::~ConfigurateConstellation  () {
 
 GNSSState_t  ConfigurateConstellation::retrivGeopositioning (GNSSData * Geodata, ATCommandHandler * ATHandler,
      NonBlockingDelay * refreshTime)  {
- 
     char StringToSend [AT_CMD_CONFIGURE_GNSS_CONSTELATIONS_LEN + 1] = AT_CMD_CONFIGURE_GNSS_CONSTELATIONS; // 4 == Beidou and GPS
     char StringToBeRead [BUFFER_LEN];
     char ExpectedResponse [AT_CMD_CONFIGURE_GNSS_CONSTELATIONS_EXPECTED_RESPONSE_LEN + 1] =  AT_CMD_CONFIGURE_GNSS_CONSTELATIONS_EXPECTED_RESPONSE;
     char StringToSendUSB [LOG_MESSAGE_LEN + 1] = LOG_MESSAGE;
+
+    if (Geodata == nullptr || ATHandler == nullptr || refreshTime == nullptr) {
+        return GNSS_STATE_ERROR_NULL_POINTER;
+    }
 
     if (this->readyToSend == true) {
         ATHandler->sendATCommand(StringToSend);
@@ -74,7 +77,7 @@ GNSSState_t  ConfigurateConstellation::retrivGeopositioning (GNSSData * Geodata,
         ////   ////   ////   ////   ////   ////   
     }
 
-    if ( ATHandler->readATResponse ( StringToBeRead) == true) {
+    if ( ATHandler->readATResponse ( StringToBeRead, BUFFER_LEN) == true) {
          ////   ////   ////   ////   ////   ////
         uartUSB.write (StringToBeRead , strlen (StringToBeRead));  // debug only
         uartUSB.write ( "\r\n",  3 );  // debug only

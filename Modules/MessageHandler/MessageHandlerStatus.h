@@ -10,6 +10,7 @@
 typedef enum {
     MESSAGE_HANDLER_STATUS_PROCESSING_MESSAGE,        //< The message is currently being processed.
     MESSAGE_HANDLER_STATUS_PROCESSED,                 //< The message was successfully processed.
+       MESSAGE_HANDLER_STATUS_ERROR_NULL_PTR,         //< an uninitialize buffer was recepted as param.
     MESSAGE_HANDLER_STATUS_ERROR_PACKET_TOO_SMALL,    //< The input packet was too small to be valid.
     MESSAGE_HANDLER_STATUS_ERROR_BUFFER_TOO_SMALL,    //< The output buffer is too small to hold the response.
     MESSAGE_HANDLER_STATUS_CHECKSUM_ERROR,            //< The message has an invalid checksum.

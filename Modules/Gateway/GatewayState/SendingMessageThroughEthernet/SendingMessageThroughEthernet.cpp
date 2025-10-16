@@ -133,8 +133,8 @@ char * payload) {
       //  "Host: intent-lion-loudly.ngrok-free.app\r\n"      // LocalHost
 
       //  "POST /apendice/canal-secundario/envio HTTP/1.1\r\n"
-      //  "Host: intent-lion-loudly.ngrok-free.app\r\n"       
-        "POST /0245a952-f9f0-4927-80b9-cd0c0ce91291 HTTP/1.1\r\n" // VARIA CON EL TIEMPO
+      //  "Host: intent-lion-loudly.ngrok-free.app\r\n" 
+        "POST /17a904ed-4df1-4d29-95ae-9bdfa70ad9bb HTTP/1.1\r\n" // VARIA CON EL TIEMPO
         "Host: webhook.site\r\n" 
         "Content-Type: text/plain\r\n"
         "Content-Length: %d\r\n"
@@ -214,6 +214,8 @@ char * payload) {
         }
         snprintf(logMessage, sizeof(logMessage),"%.*s\r\n", result, recvBuf);
         uartUSB.write(logMessage, strlen(logMessage));
+        this->gateway->progressOnHashChain ();
+        this->gateway->increaseSequenceNumber ();
         free(recvBuf);
     }
     uartUSB.write("\r\n", strlen("\r\n"));

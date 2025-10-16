@@ -14,7 +14,7 @@
 
 //=====[Declaration of public data types]======================================
 class CellularModule;  ///< Forward declaration of CellularModule
-struct TcpSocket;       ///< Forward declaration of TcpSocket
+struct RemoteServerInformation;  ///< Forward declaration for a struct with infomation over the remote server
 
 /**
  * @enum SSLConfigStatus_t
@@ -71,7 +71,7 @@ public:
      * @return CellularTransceiverStatus_t Transceiver status after processing.
      */
     virtual CellularTransceiverStatus_t exchangeMessages (ATCommandHandler * ATHandler,
-    NonBlockingDelay * refreshTime, char * message, TcpSocket * socketTargetted,
+    NonBlockingDelay * refreshTime, char * message, RemoteServerInformation* serverTargetted,
      char * receivedMessage, bool * newDataAvailable);
 private:
 //=====[Declaration of privates atributes]=========================================

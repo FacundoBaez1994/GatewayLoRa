@@ -80,11 +80,11 @@ public:
      * @brief Exchanges messages with a remote server via the cellular transceiver.
      * @param cellularTransceiver Pointer to the CellularModule instance.
      * @param message Pointer to the message to send.
-     * @param socketTargetted Pointer to the target TCP socket.
+     * @param serverTargetted Pointer to the target server.
      * @param receivedMessage Pointer to the buffer where the received message will be stored.
      */
     virtual void exchangeMessages (CellularModule* cellularTransceiver,
-    char* message, TcpSocket* socketTargetted, char* receivedMessage );
+    char* message, RemoteServerInformation* serverTargetted, char* receivedMessage );
 
     /**
      * @brief Exchanges messages with the LoRaGateway via the LoRa transceiver Module.

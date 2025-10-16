@@ -16,7 +16,7 @@
 
 //=====[Declaration of public data types]======================================
 class CellularModule;   //!< Forward declaration of the owning module.
-struct TcpSocket;       //!< Forward declaration of TCP socket structure.
+struct RemoteServerInformation;   ///< Forward declaration for a struct with infomation over the remote server
 
 //=====[Declaration of public classes]=========================================
 /**
@@ -59,13 +59,13 @@ public:
      * @param ATHandler Pointer to AT command interface.
      * @param refreshTime Pointer to a timer used for retries and pacing.
      * @param message Pointer to the message to be sent.
-     * @param socketTargetted Pointer to the destination TCP socket.
+     * @param serverTargetted Pointer to a struct with information of the destination TCP socket.
      * @param receivedMessage Pointer to buffer for a potential response (unused here).
      * @param newDataAvailable Pointer to flag indicating if new data was received (unused here).
      * @return CellularTransceiverStatus_t Status of the transmission.
      */
     virtual CellularTransceiverStatus_t exchangeMessages (ATCommandHandler * ATHandler,
-    NonBlockingDelay * refreshTime, char * message, TcpSocket * socketTargetted,
+    NonBlockingDelay * refreshTime, char * message, RemoteServerInformation* serverTargetted,
      char * receivedMessage, bool * newDataAvailable);
 
 private:
@@ -76,12 +76,12 @@ private:
      * @param ATHandler Pointer to AT command interface.
      * @param refreshTime Pointer to a timer used for retries and pacing.
      * @param message Pointer to the data chunk to send.
-     * @param socketTargetted Pointer to the destination TCP socket.
+     * @param serverTargetted Pointer to a struct with information of the destination TCP socket.
      * @return true if the chunk was sent and acknowledged correctly.
      * @return false if the send failed or timed out.
      */
     bool sendChunck(ATCommandHandler *ATHandler,
-    NonBlockingDelay *refreshTime, char *message, TcpSocket * socketTargetted);
+    NonBlockingDelay *refreshTime, char *message,  RemoteServerInformation* serverTargette);
 
     CellularModule * mobileNetworkModule;   //!< Pointer to the owner module
     bool readyToSend;                       //!< Indicates whether a chunk can be sent

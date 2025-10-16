@@ -5,12 +5,12 @@
 #include "Debugger.h" // due to global usbUart
 
 //=====[Declaration of private defines]========================================
-#define MAX_CELLS_ON_VECTOR 14
+#define MAX_CELLS_ON_VECTOR 13
 #define MAX_ROWS_TO_READ 30
 #define MAX_LENGTH_CELL_INFO_STRING 128
 
 #define MAX_TIME_WATING_RESPONSE_MS 10000
-#define MAX_TIMEOUT_RETRIES 6
+#define MAX_TIMEOUT_RETRIES 15
 
 #define AT_CMD_CELL_INFO_GATHERING      "AT+QOPS"
 #define AT_CMD_CELL_INFO_GATHERING_LEN  (sizeof(AT_CMD_CELL_INFO_GATHERING) - 1)
@@ -22,7 +22,6 @@
 #define LOG_MESSAGE "Retriving Neighboor Cells Data\r\n"
 #define LOG_MESSAGE_LEN 40
 
-
 //=====[Declaration of private data types]=====================================
 
 //=====[Declaration and initialization of public global objects]===============
@@ -32,7 +31,6 @@
 //=====[Declaration and initialization of public global variables]=============
 
 //=====[Declaration and initialization of private global variables]============
-
 
 //=====[Declarations (prototypes) of private functions]========================
 
@@ -79,6 +77,10 @@ bool ConnectedState::retrivNeighborCellsInformation(ATCommandHandler * handler,
     char StringToSend[AT_CMD_CELL_INFO_GATHERING_LEN + 1] = AT_CMD_CELL_INFO_GATHERING;
     char StringToSendUSB[LOG_MESSAGE_LEN] = LOG_MESSAGE;
 
+        if (handler == nullptr || refreshTime == nullptr) {
+        return CELLULAR_CONNECTION_STATUS_ERROR_NULL_POINTER;
+    }
+
     static int mnc;
     static int mcc;
     static int counterTimeOut = 0;
@@ -109,7 +111,7 @@ bool ConnectedState::retrivNeighborCellsInformation(ATCommandHandler * handler,
         uartUSB.write("\r\n", 3);  // debug only
         readyToSend = false;
     }
-    if (handler->readATResponse(StringToBeRead) == true) {
+    if (handler->readATResponse(StringToBeRead, MAX_LENGTH_CELL_INFO_STRING) == true) {
 
         if (strcmp (StringToBeRead, ExpectedResponse)  == 0) {
             cellDataRetrived = true;

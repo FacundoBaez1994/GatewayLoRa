@@ -1,7 +1,6 @@
 //=====[Libraries]=============================================================
-
 #include "ConsultingSIMCardStatus.h"
-#include "CellularModule.h"
+#include "CellularModule.h" 
 #include "Debugger.h" // due to global usbUart 
 
 //=====[Declaration of private defines]========================================
@@ -19,19 +18,16 @@
 #define AT_CMD_CONSULT_SIMCARD_STATUS_NO_SIMCARD_ERROR    "+CME ERROR: 10"
 #define AT_CMD_CONSULT_SIMCARD_STATUS_NO_SIMCARD_ERROR_LEN  (sizeof(AT_CMD_CONSULT_SIMCARD_STATUS_NO_SIMCARD_ERROR ) - 1)
 
-
 #define LOG_MESSAGE_1 "Consulting SimCard Status\r\n"
 #define LOG_MESSAGE_1_LEN (sizeof(LOG_MESSAGE_1) - 1)
 
 #define LOG_MESSAGE_2 "Switching SimCard\r\n"
 #define LOG_MESSAGE_2_LEN (sizeof(LOG_MESSAGE_2) - 1)
 
-
 #define BUFFER_LEN 128
 //=====[Declaration of private data types]=====================================
 
 //=====[Declaration and initialization of public global objects]===============
-
 
 //=====[Declaration of external public global variables]=======================
 
@@ -39,17 +35,9 @@
 
 //=====[Declaration and initialization of private global variables]============
 
-
-
-
 //=====[Declarations (prototypes) of private functions]========================
 
-
 //=====[Implementations of private methods]===================================
-/** 
-* @brief attachs the callback function to the ticker
-*/
-
 
 //=====[Implementations of public methods]===================================
 
@@ -63,8 +51,8 @@ ConsultingSIMCardStatus::ConsultingSIMCardStatus (CellularModule * mobileModule)
 }
 
 ConsultingSIMCardStatus::~ConsultingSIMCardStatus () {
-    this->connectionAttempts = 0;
     this->mobileNetworkModule = nullptr;
+    this->connectionAttempts = 0;
 }
 
 CellularConnectionStatus_t ConsultingSIMCardStatus::connect (ATCommandHandler * ATHandler, 
@@ -78,27 +66,26 @@ CellInformation * currentCellInformation) {
     char StringToSendUSB [LOG_MESSAGE_1_LEN + 1] = LOG_MESSAGE_1;
     char StringToSendUSB2 [LOG_MESSAGE_2_LEN + 1] = LOG_MESSAGE_2;
    
+    if (ATHandler == nullptr || refreshTime == nullptr || currentCellInformation == nullptr) {
+        return CELLULAR_CONNECTION_STATUS_ERROR_NULL_POINTER;
+    }
+
 
     if (this->readyToSend == true) {
         ATHandler->sendATCommand(StringToSend);
         this->readyToSend = false;
-        ////   ////   ////   ////   ////   ////
        
         uartUSB.write (StringToSendUSB , strlen (StringToSendUSB ));  // debug only
         uartUSB.write ( "\r\n",  3 );  // debug only
         uartUSB.write (StringToSend  , strlen (StringToSend  ));  // debug only
         uartUSB.write ( "\r\n",  3 );  // debug only
         refreshTime->restart();
-        ////   ////   ////   ////   ////   ////   
     }
 
     if ( this->simCardDetected == false) {
-        if ( ATHandler->readATResponse ( StringToBeRead) == true ) {
-            
-            ////   ////   ////   ////   ////   ////
+        if ( ATHandler->readATResponse (StringToBeRead, BUFFER_LEN) == true ) {
             uartUSB.write (StringToBeRead , strlen (StringToBeRead));  // debug only
             uartUSB.write ( "\r\n",  3 );  // debug only
-            ////   ////   ////   ////   ////   ////
              if (strcmp (StringToBeRead, noSimCardError) == 0 || strcmp (StringToBeRead, noSimCardError) == 0) {
                 this->mobileNetworkModule->switchSIMCARD();
                 uartUSB.write (StringToSendUSB2 , strlen (StringToSendUSB2 ));  // debug only
@@ -111,15 +98,12 @@ CellInformation * currentCellInformation) {
         }
     } 
      
-
     if (this->simCardDetected == true) {
-        if  (ATHandler->readATResponse ( StringToBeRead) == true) {
+        if  (ATHandler->readATResponse ( StringToBeRead, BUFFER_LEN) == true) {
             if (strcmp (StringToBeRead, expectedResponse) == 0) {
-                ////   ////   ////   ////   ////   ////
                 uartUSB.write (StringToBeRead , strlen (StringToBeRead ));  // debug only
                 uartUSB.write ( "\r\n",  3 );  // debug only     
-
-                ////   ////   ////   ////   ////   ////            
+                this->connectionAttempts = 0;       
                 this->mobileNetworkModule->changeConnectionState (new ConsultingNetworkStatus (this->mobileNetworkModule) );
                 return CELLULAR_CONNECTION_STATUS_TRYING_TO_CONNECT;
             }

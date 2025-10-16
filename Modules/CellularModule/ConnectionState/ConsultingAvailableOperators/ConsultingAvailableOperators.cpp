@@ -27,17 +27,11 @@
 
 //=====[Declaration and initialization of private global variables]============
 
-
-
-
 //=====[Declarations (prototypes) of private functions]========================
-
 
 //=====[Implementations of private methods]===================================
 
-
 //=====[Implementations of public methods]===================================
-
 ConsultingAvailableOperators::ConsultingAvailableOperators (CellularModule * mobileModule) {
     this->mobileNetworkModule = mobileModule;
     this->operatorsInformationRetrived = false;
@@ -65,6 +59,10 @@ CellInformation * currentCellInformation) {
     char StringToSend [AT_CMD_CONSULT_AVAILABLE_OPERATORS_INFO_LEN + 1] = AT_CMD_CONSULT_AVAILABLE_OPERATORS_INFO;
     char StringToSendUSB [LOG_MESSAGE_LEN + 1] = LOG_MESSAGE;
 
+    if (ATHandler == nullptr || refreshTime == nullptr || currentCellInformation == nullptr) {
+        return CELLULAR_CONNECTION_STATUS_ERROR_NULL_POINTER;
+    }
+
     if (this->readyToSend == true) {
         ATHandler->sendATCommand(StringToSend);
         this->readyToSend = false;
@@ -78,7 +76,7 @@ CellInformation * currentCellInformation) {
     }
 
     if ( this->operatorsInformationRetrived == false) {
-        if ( ATHandler->readATResponse ( StringToBeRead) == true ) {
+        if ( ATHandler->readATResponse ( StringToBeRead, BUFFER_LEN) == true ) {
         
             ////   ////   ////   ////   ////   ////
             uartUSB.write (StringToBeRead , strlen (StringToBeRead));  // debug only
@@ -92,7 +90,7 @@ CellInformation * currentCellInformation) {
     } 
 
     if (this->operatorsInformationRetrived  == true) {
-        if  (ATHandler->readATResponse ( StringToBeRead) == true) {
+        if  (ATHandler->readATResponse ( StringToBeRead, BUFFER_LEN) == true) {
             if (strcmp (StringToBeRead, ExpectedResponse) == 0) {
                 ////   ////   ////   ////   ////   ////
                 uartUSB.write (StringToBeRead , strlen (StringToBeRead ));  // debug only
@@ -100,7 +98,8 @@ CellInformation * currentCellInformation) {
                 currentCellInformation->mcc = this->mcc;
                 currentCellInformation->mnc = this->mnc;
                 currentCellInformation->channel = this->channel;
-                strcpy (currentCellInformation->band, this->band);             
+                strcpy (currentCellInformation->band, this->band);
+                this->connectionAttempts = 0;              
                 this->mobileNetworkModule->changeConnectionState (new RetrievingTimeAndDate (this->mobileNetworkModule));
                 return CELLULAR_CONNECTION_STATUS_TRYING_TO_CONNECT;
             }

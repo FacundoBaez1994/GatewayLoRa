@@ -39,6 +39,8 @@
 #include "DecrypterBase64.h"
 #include "EncrypterBase64.h"
 
+#include "BufferSizes.h"
+
 
 //=====[Declaration of public defines]=========================================
 /**
@@ -251,9 +253,16 @@ public:
 
     /**
      * @brief obtain the identifier of this device
-     * @param deviceId Pointer to a string to store the identifier.
+     * @return deviceId Pointer to a string to store the identifier.
      */
-    void getDeviceIdentifier ( char * deviceId);
+    char* getDeviceIdentifier ();
+
+    /**
+     * @brief obtain the identifier of this device
+     * @return deviceId Pointer to a string to store the identifier.
+     */
+    void getDeviceIdentifier (char * deviceId);
+
 
     /**
      * @brief obtain the current Sequence number
@@ -279,9 +288,15 @@ public:
 
     /**
      * @brief get the prev hash chain
+     * @return hashChain a valid hash Chain
+    */
+    char* getPrevHashChain ();
+
+    /**
+     * @brief get the prev hash chain
      * @param hashChain a valid hash Chain
     */
-    void getPrevHashChain (char * hashChain);
+    void getPrevHashChain (char* hashChain);
 
     
     /**
@@ -296,6 +311,11 @@ public:
      * @param RSSI a int representing the RSSI 
      */
     void setCurrentRSSI (int newRSSI);
+
+    void encodeJWT (char * payloadToJWT, char * jwtEncoded);
+
+    bool decodeJWT (char * jwtToDecode, char * payloadRetrived);
+
     
 private:
     GatewayState* currentState;            /**< Current operational state */
@@ -306,8 +326,6 @@ private:
 
     // metadata
     int sequenceMessageNumber = 0;
-    char* urlPathMainChannel;
-    char* urlPathSecondaryChannel;
     char* deviceIdentifier;
     char* prevChainHash;
     char* currChainHash;
@@ -341,7 +359,7 @@ private:
     
     // MN Module 
     CellularModule* cellularTransceiver;        /**< Cellular transceiver */
-    TcpSocket* socketTargetted;                 /**< Target TCP socket */
+    RemoteServerInformation* serverTargetted;                 /**< Target TCP socket */
     CellInformation* currentCellInformation;   /**< Current cell information */
     std::vector<CellInformation*> neighborsCellInformation;    /**< Neighbor cell data */
 
@@ -362,6 +380,7 @@ private:
     //MessageHandler* decrypter;         /**< Decryption handler */
     MessageHandler* decrypterBase64;   /**< Base64 decryption handler */
 
+    JWTManager* jwt; ///< Pointer to JWT manager for token/signature management
 };
 
 
