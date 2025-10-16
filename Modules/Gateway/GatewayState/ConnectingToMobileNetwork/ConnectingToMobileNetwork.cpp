@@ -45,7 +45,6 @@ void ConnectingToMobileNetwork::updatePowerStatus (CellularModule * cellularTran
  void ConnectingToMobileNetwork::connectToMobileNetwork (CellularModule * cellularTransceiver,
     CellInformation * currentCellInformation) {
     static CellularConnectionStatus_t currentConnectionStatus;
-    char logMessage [40];
     
     cellularTransceiver->turnOn();
     cellularTransceiver->enableConnection();

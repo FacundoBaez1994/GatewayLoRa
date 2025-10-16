@@ -15,10 +15,7 @@ class Gateway; //debido a declaracion adelantada
 //struct TcpSocket;
 
 //=====[Declaration of public classes]=========================================
-/*
- *  class - State desing pattern
- * 
- */
+
 class ObtaingTimeUTCThroughEthernet : public GatewayBaseState  {
 public:
 //=====[Declaration of public methods]=========================================
@@ -28,7 +25,6 @@ public:
 private:
     Gateway * gateway;
     int connectionRetries;
-    char payload [250];
     gatewayStatus_t currentStatus;
 //=====[Declaration of privates atributes]=========================================
 

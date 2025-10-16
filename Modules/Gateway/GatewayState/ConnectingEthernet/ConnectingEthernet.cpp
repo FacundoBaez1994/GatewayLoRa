@@ -1,93 +1,64 @@
 //=====[Libraries]=============================================================
 #include "ConnectingEthernet.h"
-#include "Gateway.h" //debido a declaracion adelantada
+#include "Gateway.h" // debido a declaración adelantada
 #include "Debugger.h" // due to global usbUart
 #include "GatewayStatus.h"
 #include "WaitingForMessage.h"
-#include "EthernetInterface.h"   // la interfaz de red cableada
+#include "EthernetInterface.h"
 #include "ObtaingTimeUTCThroughEthernet.h"
 #include "ConnectingToMobileNetwork.h"
 
-
 //=====[Declaration of private defines]========================================
-#define TIMEOUT_MS 80000
-#define MAX_RETRIES 20
-//=====[Declaration of private data types]=====================================
+#define TIMEOUT_MS_ETHERNET_CONNECTION      80000
+#define MAX_ETHERNET_RETRIES                20
+#define ETHERNET_CONNECT_TIMEOUT_S          60
+#define LOG_BUFFER_SIZE                     128
 
-//=====[Declaration and initialization of public global objects]===============
-
-
-//=====[Declaration of external public global variables]=======================
-
-//=====[Declaration and initialization of public global variables]=============
+#define LOG_MSG_ETH_CONNECTING              "Connecting Ethernet Module to Local network\n"
+#define LOG_MSG_ETH_NOT_AVAILABLE           "Ethernet connection not available\n"
+#define LOG_MSG_ETH_IP                      "IP address: %s\n"
+#define LOG_MSG_ETH_NETMASK                 "Netmask: %s\n"
+#define LOG_MSG_ETH_GATEWAY                 "Gateway: %s\n"
+#define LOG_MSG_CHANGE_TO_TIME_STATE        "Changing To ObtaingTimeUTCThroughEthernet State\r\n"
 
 //=====[Declaration and initialization of private global variables]============
-
-
-
-
-//=====[Declarations (prototypes) of private functions]========================
-
-
-//=====[Implementations of private methods]===================================
-/** 
-* @brief attachs the callback function to the ticker
-*/
-
+// (ninguna por ahora)
 
 //=====[Implementations of public methods]===================================
-/** 
-* @brief
-* 
-* @param 
-*/
-ConnectingEthernet::ConnectingEthernet (Gateway * gateway, gatewayStatus_t gatewayStatus) {
+
+ConnectingEthernet::ConnectingEthernet(Gateway * gateway, gatewayStatus_t gatewayStatus) {
     this->gateway = gateway;
     this->connectionRetries = 0;
     this->currentStatus = gatewayStatus;
-
 }
 
-
-/** 
-* @brief
-* 
-* @param 
-*/
 ConnectingEthernet::~ConnectingEthernet() {
-     this->gateway = NULL;
+    this->gateway = NULL;
 }
 
+void ConnectingEthernet::connectEthernetToLocalNetwork(UipEthernet * ethernetModule, NonBlockingDelay * delay) {
+    const time_t TIMEOUT = 5;
+    char logMessage[LOG_BUFFER_SIZE];
 
-void ConnectingEthernet::connectEthernetToLocalNetwork (UipEthernet * ethernetModule, NonBlockingDelay * delay) {
-     
-    const time_t    TIMEOUT = 5;    // Connection timeout time
-    time_t          timeOut;
-    char*           remaining;
-    uint8_t*        recvBuf;
-    int             result;
-    char logMessage [1024];
-
-
-    Watchdog &watchdog = Watchdog::get_instance(); // singleton
+    Watchdog &watchdog = Watchdog::get_instance();
     watchdog.kick();
 
-    snprintf(logMessage, sizeof(logMessage), "Connecting Ethernet Module to Local network\n");
+    snprintf(logMessage, sizeof(logMessage), LOG_MSG_ETH_CONNECTING);
     uartUSB.write(logMessage, strlen(logMessage));
 
-    // Conexión de red
-    if (ethernetModule->connect(15) != 0) {
-        snprintf(logMessage, sizeof(logMessage), "Ethernet connection not available\n");
+    // Intentar conectar
+    if (ethernetModule->connect(ETHERNET_CONNECT_TIMEOUT_S) != 0) {
+        snprintf(logMessage, sizeof(logMessage), LOG_MSG_ETH_NOT_AVAILABLE);
         uartUSB.write(logMessage, strlen(logMessage));
 
-        if (this->currentStatus ==  GATEWAY_STATUS_RECEPTED_LORALORA_MESSAGE_TRYING_ETHERNET ) {
+        if (this->currentStatus == GATEWAY_STATUS_RECEPTED_LORALORA_MESSAGE_TRYING_ETHERNET) {
             this->currentStatus = GATEWAY_STATUS_RECEPTED_LORALORA_MESSAGE_TRYING_MOBILE_NETWORK;
-            this->gateway->changeState (new ConnectingToMobileNetwork (this->gateway, this->currentStatus));
+            this->gateway->changeState(new ConnectingToMobileNetwork(this->gateway, this->currentStatus));
             return;
         }
         if (this->currentStatus == GATEWAY_STATUS_RECEPTED_LORAGNSS_MESSAGE_TRYING_ETHERNET) {
             this->currentStatus = GATEWAY_STATUS_RECEPTED_LORAGNSS_MESSAGE_TRYING_MOBILE_NETWORK;
-            this->gateway->changeState (new ConnectingToMobileNetwork (this->gateway, this->currentStatus));
+            this->gateway->changeState(new ConnectingToMobileNetwork(this->gateway, this->currentStatus));
             return;
         }
         return;
@@ -100,15 +71,18 @@ void ConnectingEthernet::connectEthernetToLocalNetwork (UipEthernet * ethernetMo
     const char* netmask = ethernetModule->get_netmask();
     const char* gateway = ethernetModule->get_gateway();
 
-    snprintf(logMessage, sizeof(logMessage), "IP address: %s\n", ip ? ip : "None");
-    uartUSB.write(logMessage, strlen(logMessage));
-    snprintf(logMessage, sizeof(logMessage), "Netmask: %s\n", netmask ? netmask : "None");
-    uartUSB.write(logMessage, strlen(logMessage));
-    snprintf(logMessage, sizeof(logMessage), "Gateway: %s\n", gateway ? gateway : "None");
+    snprintf(logMessage, sizeof(logMessage), LOG_MSG_ETH_IP, ip ? ip : "None");
     uartUSB.write(logMessage, strlen(logMessage));
 
-    uartUSB.write("Changing To ObtaingTimeUTCThroughEthernet State\r\n", strlen("Changing To ObtaingTimeUTCThroughEthernet State\r\n"));
-    this->gateway->changeState (new ObtaingTimeUTCThroughEthernet(this->gateway, this->currentStatus));
+    snprintf(logMessage, sizeof(logMessage), LOG_MSG_ETH_NETMASK, netmask ? netmask : "None");
+    uartUSB.write(logMessage, strlen(logMessage));
+
+    snprintf(logMessage, sizeof(logMessage), LOG_MSG_ETH_GATEWAY, gateway ? gateway : "None");
+    uartUSB.write(logMessage, strlen(logMessage));
+
+    uartUSB.write(LOG_MSG_CHANGE_TO_TIME_STATE, strlen(LOG_MSG_CHANGE_TO_TIME_STATE));
+    this->gateway->changeState(new ObtaingTimeUTCThroughEthernet(this->gateway, this->currentStatus));
 }
+
 
 //=====[Implementations of private functions]==================================

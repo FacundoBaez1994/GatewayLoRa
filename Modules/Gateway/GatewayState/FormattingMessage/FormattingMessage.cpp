@@ -55,14 +55,14 @@ FormattingMessage::FormattingMessage (Gateway * gateway, gatewayStatus_t gateway
     this->gateway = gateway;
     this->currentStatus = gatewayStatus;
     this->jwt = new JWTManager ();
-    this->sizeOfMessageBuffer = 2248;
+    this->sizeOfMessageBuffer = 2500;
     this->messageBuffer = new char [this->sizeOfMessageBuffer];
 }
 
 FormattingMessage::FormattingMessage (Gateway * gateway) {
     this->gateway = gateway;
     this->jwt = new JWTManager ();
-    this->sizeOfMessageBuffer = 2248;
+    this->sizeOfMessageBuffer = 2500;
     this->messageBuffer = new char [this->sizeOfMessageBuffer];
 }
 
