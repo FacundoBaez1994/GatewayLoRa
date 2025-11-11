@@ -20,7 +20,7 @@
 #define NGROK_PATH                       "/apendice/canal-secundario/envio"    
 #define WEBHOOK_HOSTNAME                  "webhook.site"
 #define WEBHOOK_PORT                      80
-#define WEBHOOK_PATH                      "/17a904ed-4df1-4d29-95ae-9bdfa70ad9bb" // VARIA CON EL TIEMPO
+#define WEBHOOK_PATH                      "7dafefff-6d11-4c3f-8d2d-eb084d109d4f" // VARIA CON EL TIEMPO
 
 #define HTTP_CONTENT_TYPE_TEXT_PLAIN      "Content-Type: text/plain\r\n"
 #define HTTP_CONNECTION_CLOSE             "Connection: close\r\n"
@@ -138,18 +138,35 @@ char * payload) {
 
     char httpRequest[HTTP_REQUEST_BUFFER_SIZE];
     snprintf(httpRequest, sizeof(httpRequest),
-      //  "POST NGROK_PATH  HTTP/1.1\r\n"
-      //  "Host: NGROK_HOSTNAME \r\n" 
-        "POST WEBHOOK_PATH HTTP/1.1\r\n" // VARIA CON EL TIEMPO
-        "Host: WEBHOOK_HOSTNAME \r\n" 
+        "POST /%s HTTP/1.1\r\n"
+        "Host: %s\r\n"
         HTTP_CONTENT_TYPE_TEXT_PLAIN
         "Content-Length: %d\r\n"
-         HTTP_CONNECTION_CLOSE
+        HTTP_CONNECTION_CLOSE
         "\r\n"
         "%s",
+        WEBHOOK_PATH,
+        WEBHOOK_HOSTNAME,
         strlen(payload),
         payload
     );
+
+
+    /*
+    snprintf(httpRequest, sizeof(httpRequest),
+        "POST %s HTTP/1.1\r\n"
+        "Host: %s\r\n"
+        HTTP_CONTENT_TYPE_TEXT_PLAIN
+        "Content-Length: %d\r\n"
+        HTTP_CONNECTION_CLOSE
+        "\r\n"
+        "%s",
+        NGROK_PATH,
+        NGROK_HOSTNAME,
+        strlen(payload),
+        payload
+    );
+    */
 
     remaining = httpRequest;
     while ((result = socket.send((uint8_t*)remaining, strlen(remaining))) > 0) {
