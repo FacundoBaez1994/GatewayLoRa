@@ -106,8 +106,11 @@ Gateway::Gateway () {
     this->currentState =  new SensingBatteryStatus (this); //WaitingForMessage
     //this->currentState =  new WaitingForMessage (this);
 
-
     this->LoRaTransciever = new LoRaClass ();
+    this->LoRaTransciever->setSpreadingFactor(12);   // ranges from 6-12,default 7
+    this->LoRaTransciever->setSyncWord(0xF3);  // ranges from 0-0xFF, default 0x34,
+    this->LoRaTransciever->setSignalBandwidth(125E3); // 125 kHz
+
     this->timeout = new NonBlockingDelay (STANDARD_TIMEOUT);
 
      //this->encrypter = new Encrypter ();
