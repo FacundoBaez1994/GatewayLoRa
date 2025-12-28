@@ -48,10 +48,18 @@ bool WaitingForMessage::waitForMessage (LoRaClass * LoRaModule, char * messageRe
     static std::vector<char> accumulatedBuffer; // Acumulador de fragmentos
     static std::string fullMessage;
 
+    static uint64_t total_bits = 0;         // bits recibidos en total
+    static uint64_t total_bit_errors = 0;   // errores totales
+    static float lastBER = 0.0f;            // BER del último paquete
+    static Timer timer;
+    using namespace std::chrono;
+
     char processedMessageReceived  [2048];
-    static char buffer[2048] = {0};
     static char message[1024];
+    char buffer [2048];
     char payload [1024];
+
+    static int packetRSSI;
 
     long long int deviceId = 0;
     int messageNumber = 0;
@@ -63,9 +71,10 @@ bool WaitingForMessage::waitForMessage (LoRaClass * LoRaModule, char * messageRe
     uint8_t receivedBuffer[64];
 
     if (firstEntryOnThisMethod == true) {
+        timer.start();
         timeOut->write(TIMEOUT);
         timeOut->restart();
-        uartUSB.write("time out restart\r\n", strlen("time out restart\r\n")); // Debug
+        //uartUSB.write("time out restart\r\n", strlen("time out restart\r\n")); // Debug
         if (!LoRaModule->begin (915E6)) {
             uartUSB.write ("LoRa Module Failed to Start!", strlen ("LoRa Module Failed to Start"));  // debug only
             uartUSB.write ( "\r\n",  3 );  // debug only
@@ -78,12 +87,12 @@ bool WaitingForMessage::waitForMessage (LoRaClass * LoRaModule, char * messageRe
         LoRaModule->disableInvertIQ (); // rx mode -> phase Quadrature invertion   
         int packetSize = LoRaModule->parsePacket();
         if (packetSize) {
-            uartUSB.write("Packet Received!\r\n", strlen("Packet Received!\r\n")); // Debug
+            //uartUSB.write("Packet Received!\r\n", strlen("Packet Received!\r\n")); // Debug
 
              //restart timeOut Timer
             if (firstPacketReceived == false) {
                 timeOut->restart ();
-                uartUSB.write("time out restart\r\n", strlen("time out restart\r\n")); // Debug
+                //uartUSB.write("time out restart\r\n", strlen("time out restart\r\n")); // Debug
                 firstPacketReceived = true;
             }
 
@@ -92,61 +101,47 @@ bool WaitingForMessage::waitForMessage (LoRaClass * LoRaModule, char * messageRe
 
             // Leer los datos disponibles
             
-            while (LoRaModule->available() > 0 && iterations < maxIterations) {
+            while (LoRaModule->available() > 0 ) {
                 ssize_t bytesRead = LoRaModule->read(reinterpret_cast<uint8_t*>(buffer), sizeof(buffer));
                // ssize_t bytesRead = LoRaModule->read(reinterpret_cast<uint8_t*>(buffer), strlen (buffer));
                 if (bytesRead > 0) {
                     // Enviar los bytes leídos al puerto serie
                    // uartUSB.write(buffer, bytesRead);
-                    uartUSB.write(buffer, strlen(buffer));
-                    uartUSB.write ("\r\n", strlen("\r\n"));
+                    //uartUSB.write(buffer, strlen(buffer));
+                    //uartUSB.write ("\r\n", strlen("\r\n"));
+
+                    /*
+                    for (ssize_t i = 0; i < bytesRead; i++) {
+                        char hexByte[8];
+                        snprintf(hexByte, sizeof(hexByte), "0x%02X ", (uint8_t)buffer[i]);
+                        uartUSB.write(hexByte, strlen(hexByte));
+                    }
+                    uartUSB.write("\r\n", 2);
+                    */
+
+
                     accumulatedBuffer.insert(accumulatedBuffer.end(), buffer, buffer + bytesRead);
-                    stringInsertCount ++;
+                    fullMessage.assign(accumulatedBuffer.begin(), accumulatedBuffer.end ());
+                    messageReceived = true;
 
-                    if (stringInsertCount > 51) {
-                        // Eliminar todos los elementos del vector
-                        accumulatedBuffer.clear();
-                        stringInsertCount = 0;
+                    // Debug del mensaje completo
+                    //uartUSB.write("Full Message: ", strlen("Full Message: "));
+                    //uartUSB.write(fullMessage.c_str(), fullMessage.length());
+                    //uartUSB.write("\r\n", strlen("\r\n"));
+                    
 
-                        // Acción adicional, si es necesario
-                        uartUSB.write("Buffer cleared size reach limit\r\n", strlen("Buffer cleared size reach limit\r\n"));
-                        messageReceived = false;
-                        return false;
-                    }
-
-                    // Buscar el delimitador `|`
-                    auto delimiterPos = std::search(accumulatedBuffer.begin(), accumulatedBuffer.end(), "||", "||" + 2);
-                    if (delimiterPos != accumulatedBuffer.end()) {
-                        // Reconstruir el mensaje completo
-                        fullMessage.assign(accumulatedBuffer.begin(), delimiterPos);
-                        accumulatedBuffer.erase(accumulatedBuffer.begin(), delimiterPos + 2); // Eliminar procesado
-                        stringInsertCount = 0;
-
-                        // Debug del mensaje completo
-                        uartUSB.write("Full Message: ", strlen("Full Message: "));
-                        uartUSB.write(fullMessage.c_str(), fullMessage.length());
-                        uartUSB.write("\r\n", strlen("\r\n"));
-                        messageReceived = true;
-
-                        int packetRSSI = LoRaModule->packetRssi();
-                        snprintf(message, sizeof(message), "packet RSSI: %d\r\n", packetRSSI);
-                        this->currentGateway->setCurrentRSSI(packetRSSI);
-                        uartUSB.write(message, strlen(message));
-                    }
-                    iterations++;
-                    if (iterations >= maxIterations) {
-                        uartUSB.write("Warning: Exceeded max iterations\r\n", strlen("Warning: Exceeded max iterations\r\n"));
-                        messageReceived = false;
-                        return false;
-                    }
+                    packetRSSI = LoRaModule->packetRssi();
+                   // snprintf(message, sizeof(message), "packet RSSI: %d\r\n", packetRSSI);
+                   // uartUSB.write(message, strlen(message));
+        
                 } //  if (bytesRead > 0) end
             } // while (LoRaModule->available() > 0 && iterations < maxIterations)  end
         } //  if (packetSize)  end
-    }  else {   // messageReceived  == false if end
+    }  else {   // si messageReceived  == true entonces:
         if (fullMessage.empty()) {
             accumulatedBuffer.clear();
             messageReceived = false;
-            uartUSB.write("Fail to process received message\r\n", strlen("Fail to process received message\r\n"));
+            //uartUSB.write("Fail to process received message\r\n", strlen("Fail to process received message\r\n"));
             return false;
         }
 
@@ -154,42 +149,67 @@ bool WaitingForMessage::waitForMessage (LoRaClass * LoRaModule, char * messageRe
         strncpy(processedMessageReceived, constCharPtr, sizeof(processedMessageReceived) - 1);
         processedMessageReceived[sizeof(processedMessageReceived) - 1] = '\0';
 
-        if (this->currentGateway->processLoRaMessage(processedMessageReceived, sizeof (processedMessageReceived) ) == false) {
-            uartUSB.write("Fail to process received message\r\n", strlen("Fail to process received message\r\n")); // Debug
-            messageReceived = false;
-            return false;
-        }
-        strcpy ( messageRecieved, processedMessageReceived);
-        uartUSB.write("Recepted message\r\n", strlen("Recepted message\r\n"));
-        uartUSB.write(messageRecieved, strlen(messageRecieved));
         messageReceived  = false;
         accumulatedBuffer.clear(); // Elimina todos los elementos del vector
         stringInsertCount = 0;
         fullMessage.clear();       // Elimina todo el contenido de la cadena
+        //uartUSB.write("recepted message\r\n", strlen("recepted message\r\n"));
+         //uartUSB.write(processedMessageReceived, strlen(processedMessageReceived));
+        
+        // ======== BER CALCULATION ========
 
-        if (this->currentGateway->parseReceptedLoRaMessage (messageRecieved) == false) {
-            messageReceived = false;
-            return false;
-        }
+// Convert processed message -> array of bytes
+uint8_t* rx_buffer = reinterpret_cast<uint8_t*>(processedMessageReceived);
+int msg_len = strlen(processedMessageReceived);
 
+// Expected pattern 0xAA (10101010)
+uint8_t expected = 0xAA;
 
-        messageReceived  = false;
-        accumulatedBuffer.clear(); // Elimina todos los elementos del vector
-        stringInsertCount = 0;
-        fullMessage.clear();       // Elimina todo el contenido de la cadena
-        uartUSB.write("Changing To Sending ACK State\r\n", strlen("Changing To Sending ACK State\r\n"));
-        ReceptedTypeMessage_t type = this->currentGateway->getReceptedTypeMessage();
-        if (type == LORALORA) {
-            this->currentGateway->changeState (new SendingAck (this->currentGateway, this->currentGateway->getReceptedIMEI(), 
-            this->currentGateway->getLoraMessageNumber(), GATEWAY_STATUS_RECEPTED_LORALORA_MESSAGE_TRYING_ETHERNET));
-            return true;
-        }
-        if (type == LORAGNSS) {
-            this->currentGateway->changeState (new SendingAck (this->currentGateway, this->currentGateway->getReceptedIMEI(), 
-            this->currentGateway->getLoraMessageNumber(), GATEWAY_STATUS_RECEPTED_LORAGNSS_MESSAGE_TRYING_ETHERNET));
-            return true;
-        }
+uint32_t bit_errors = 0;
 
+// Comparar bit a bit
+for (int i = 0; i < msg_len; i++) {
+    uint8_t diff = rx_buffer[i] ^ expected;
+
+    for (int b = 0; b < 8; b++) {
+        if (diff & (1 << b))
+            bit_errors++;
+    }
+}
+
+uint32_t bits_total_packet = msg_len * 8;
+
+// Acumular
+total_bits += bits_total_packet;
+total_bit_errors += bit_errors;
+
+// BER del paquete
+if (bits_total_packet > 0)
+    lastBER = (float)bit_errors / (float)bits_total_packet;
+
+// BER acumulado (opcional)
+float BER_total = 0.0f;
+if (total_bits > 0)
+    BER_total = (float)total_bit_errors / (float)total_bits;
+
+// ======== PRINT DEBUG ========
+char debugMsg[128];
+/*
+snprintf(debugMsg, sizeof(debugMsg),
+         "BER packet: %.6f | Errors: %lu / %lu bits\r\n",
+         lastBER, (unsigned long)bit_errors, (unsigned long)bits_total_packet);
+uartUSB.write(debugMsg, strlen(debugMsg));
+*/
+
+uint64_t now = duration_cast<milliseconds>(timer.elapsed_time()).count();
+
+snprintf(debugMsg, sizeof(debugMsg),
+         "%d,%.8f,%llu,%llu,%llu\r\n",
+         packetRSSI , BER_total, total_bit_errors, total_bits, now);
+uartUSB.write(debugMsg, strlen(debugMsg));
+
+        
+        return true;
 
     }
 

@@ -5,6 +5,7 @@
 #include "WaitingForMessage.h"
 
 
+
 //=====[Declaration of private defines]========================================
 #define EXTREMELY_LOW_LATENCY_MS   20000          // 20 seconds
 #define VERY_LOW_LATENCY_MS        (1 * 60 * 1000)   // 1 minutes
@@ -103,13 +104,22 @@ Gateway::Gateway () {
     this->receptedImuData->timestamp = new char [TIMESTAMP_BUFFER_SIZE];
     this->receptedImuData->timeBetweenSamples = TIME_BETWEEN_IMU_SAMPLES;
 
-    this->currentState =  new SensingBatteryStatus (this); //WaitingForMessage
-    //this->currentState =  new WaitingForMessage (this);
+    //this->currentState =  new SensingBatteryStatus (this); //WaitingForMessage
+    this->currentState =  new WaitingForMessage (this);
 
     this->LoRaTransciever = new LoRaClass ();
+    
     this->LoRaTransciever->setSpreadingFactor(12);   // ranges from 6-12,default 7
     this->LoRaTransciever->setSyncWord(0xF3);  // ranges from 0-0xFF, default 0x34,
-    this->LoRaTransciever->setSignalBandwidth(125E3); // 125 kHz
+    this->LoRaTransciever->setSignalBandwidth(125E3);
+    
+    /*
+    this->LoRaTransciever->setSpreadingFactor(12);   // ranges from 6-12,default 7
+     this->LoRaTransciever->setSyncWord(0xF3);  // ranges from 0-0xFF, default 0x34,
+     this->LoRaTransciever->setSignalBandwidth(125E3); // 31.25kHZ 125 kHz
+     this->LoRaTransciever->setCodingRate4(5);
+    this->LoRaTransciever->setPreambleLength(12);
+    */
 
     this->timeout = new NonBlockingDelay (STANDARD_TIMEOUT);
 
@@ -125,6 +135,7 @@ Gateway::Gateway () {
     this->decrypterBase64 = new DecrypterBase64 ();
 
     this->jwt = new JWTManager ();
+     uartUSB.write ("Built\r\n", strlen ("Built\r\n"));
 }
 
 Gateway::~Gateway() {
