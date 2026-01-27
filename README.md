@@ -1,7 +1,7 @@
 ![](./resources/fiubaLogo.png)
 
 # Project "Rastreador GNSS para Tareas Investigativas" (GNSS Tracker for investigative Tasks)
-# - LoRA Gateway -
+# - LoRa Gateway -
 
 # Brief
 
@@ -37,9 +37,8 @@ The hardware of the tracker consists in various OEM Modules listed:
 4. 2 LM2596 StepDown voltage regulator
 5. enc28j60 Ethernet module
 
-The system is powered by 18650 Ion-Lithium Batteries in parallel, therefore the device works with a voltage between
-3.0V and 4.2V. Some modules works 3.3V far less than the 4.2V maximum provided by the batteries, therefore
-that a few KF33BD-TR LDO Regulator have been incorporated into the circuit.
+The system is powered by a 12V 5A Gel Battery, therefore the device works with a voltage ranging in 10V to 14,4V.
+The OEM modules works 3.3V and 4.0V, therefore the battery voltage is reduced using the stepDown regulators.
 
 # Firmware
 
@@ -80,13 +79,11 @@ Outside the ones written by mbed Microcontroller Library this Firmware make uses
 various authors customized to fit into the project and work properly with mbed-os. 
 The following list shows all the libraries used:
 
-- [LoRa]() by
-- [CustomJWT]() by ,
+- [LoRa](https://github.com/sandeepmistry/arduino-LoRa) by Sandeep Mistry
+- [CustomJWT](https://github.com/Ant2000/CustomJWT) by Antony Jose Kuruvilla,
 - [Cypher AES](https://os.mbed.com/users/neilt6/code/AES/) by Neil Thiessen,
-- [Adafruit_BNO08x](https://github.com/adafruit/Adafruit_BNO08x) Adafruit library, which in turn is based on the
- CEVA [library SH2](https://github.com/ceva-dsp/sh2)
 - NonBlocking Delay and Miscellaneous codes from Arm Book  [A Beginner's-Guide-to-Designing-Embedded-System-Applications-on-Arm-Cortex-M-Microcontrollers](https://github.com/arm-university/A-Beginners-Guide-to-Designing-Embedded-System-Applications-on-Arm-Cortex-M-Microcontrollers) by Dr. Eng. Ariel Lutenberg
-
+- [UIPEthernet](https://github.com/UIPEthernet/UIPEthernet) by Juraj Andrássy,
 ### License and contributions
 
 The software is provided under Apache-2.0 license. Contributions to this project are accepted under the same license. Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for more info.

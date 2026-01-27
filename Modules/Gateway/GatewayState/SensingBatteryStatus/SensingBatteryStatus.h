@@ -1,7 +1,7 @@
 //=====[#include guards - begin]===============================================
 
-#ifndef _INITIALIZAING_H_
-#define _INITIALIZAING_H_
+#ifndef _SENSING_BATTERY_STATUS_H_
+#define _SENSING_BATTERY_STATUS_H_
 
 //==================[Libraries]===============================================
 
@@ -61,4 +61,4 @@ private:
 
 //=====[#include guards - end]=================================================
 
-#endif // _INITIALIZAING_H_
+#endif // _SENSING_BATTERY_STATUS_H_

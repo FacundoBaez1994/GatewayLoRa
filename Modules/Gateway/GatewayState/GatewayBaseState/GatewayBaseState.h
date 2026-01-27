@@ -20,8 +20,6 @@ class Gateway; ///< Forward declaration of the Gateway class.
  * This class provides default (empty) implementations for all methods declared
  * in the `GatewayState` interface. It allows derived state classes to override
  * only the methods they need, avoiding the need to implement unused functionality.
- * The only non-empty default method is `checkStabillity()`, which delegates the
- * stability check to the provided IMUManager instance.
  */
 class GatewayBaseState : public GatewayState {
 public:
@@ -89,14 +87,35 @@ public:
      */
     virtual void awake (CellularModule * cellularTransceiver, NonBlockingDelay * latency, NonBlockingDelay * silentTimer);
 
+    /**
+     * @copydoc GatewayState::sendAcknowledgement
+     * Default implementation: does nothing.
+     */
     virtual void sendAcknowledgement (LoRaClass * LoRaModule, char * messageToBeSend, NonBlockingDelay * backoffTime);
 
+    /**
+     * @copydoc GatewayState::waitForMessage
+     * Default implementation: does nothing.
+     */
     virtual bool waitForMessage (LoRaClass * LoRaModule, char * messageRecieved, NonBlockingDelay * timeOut);
 
 
-
+    /**
+     * @copydoc GatewayState::connectEthernetToLocalNetwork
+     * Default implementation: does nothing.
+     */
     virtual void connectEthernetToLocalNetwork (UipEthernet * ethernetModule, NonBlockingDelay * delay);
+
+    /**
+     * @copydoc GatewayState::exchangeMessagesThroughEthernet
+     * Default implementation: does nothing.
+     */
     virtual void exchangeMessagesThroughEthernet (UipEthernet * ethernetModule, NonBlockingDelay * delay, char * payload);
+
+    /**
+     * @copydoc GatewayState::queryUTCTimeViaRemoteServer
+     * Default implementation: does nothing.
+     */
     virtual void queryUTCTimeViaRemoteServer (UipEthernet * ethernetModule, NonBlockingDelay * delay);
 private:
 //=====[Declaration of privates atributes]=========================================

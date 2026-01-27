@@ -109,8 +109,8 @@ private:
     gatewayStatus_t currentStatus; ///< Current gateway status
     JWTManager* jwt; ///< Pointer to JWT manager for token/signature management
     
-    char* messageBuffer; ///<
-    int sizeOfMessageBuffer; ///< 
+    char* messageBuffer; ///< a buffer to storage the message
+    int sizeOfMessageBuffer; ///< the buffer size
 };
 
 

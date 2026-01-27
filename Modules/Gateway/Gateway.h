@@ -44,7 +44,7 @@
 
 //=====[Declaration of public defines]=========================================
 /**
- * @brief Enumeration representing latency levels for gateway operations.
+ * @brief Enumeration representing latency levels for tracker operations.
  */
 typedef enum {
     EXTREMELY_LOW_LATENCY,
@@ -56,6 +56,9 @@ typedef enum {
     EXTREMELY_HIGH_LATENCY,
 } LatencyLevel_t;
 
+/**
+ * @brief Types of messages that this Gateway could sent to the remote server.
+ */
 typedef enum {
     LORALORA,
     LORAGNSS,
@@ -63,7 +66,7 @@ typedef enum {
 
 
 /**
- * @brief Enumeration representing the operation modes of the gateway.
+ * @brief Enumeration representing the operation modes of a tracker.
  */
 typedef enum {
     NORMAL_OPERATION_MODE,      /**< Standard tracking behavior */
@@ -72,7 +75,7 @@ typedef enum {
 } OperationMode_t;
 
 /**
- * @brief Enumeration of movement-related events detected by the gateway.
+ * @brief Enumeration of movement-related events detected by a tracker.
  */
 typedef enum {
     MOVING,                 /**< Device is currently in motion */
@@ -88,15 +91,14 @@ typedef enum {
 //=====[Declaration of public classes]=========================
 /**
  * @brief High-level GNSS gateway class coordinating all subsystems.
- * @details This class represents the main control unit of the tracking device.
- * It manages sensors, communication modules, encryption/authentication mechanisms,
+ * @details This class represents the main control unit of the gateway device.
+ * It manages communication modules, encryption/authentication mechanisms,
  * and operational states using the State design pattern.
  * It delegates specific behaviors to its current state (`GatewayState`) and handles
  * interactions between modules such as:
  * - Cellular communications
  * - GNSS positioning
- * - IMU sensing
- * - EEPROM storage
+ * - LoRa communications
  * - Encryption, decryption, and authentication
  */
 class Gateway {
@@ -117,7 +119,7 @@ public:
     * It invokes the current state's behavior by calling the state's update methods,
     * orchestrating the sequence of operations required for the device to function correctly.
     * During each call, it handles sensor calibration, power management, GNSS positioning,
-    * network connectivity, message formatting and exchange, data saving/loading, and
+    * network connectivity, message formatting and exchange, LoRa recption and
     * sleep management. The update function is designed to be called repeatedly, typically
     * from the main program loop (or from a even higher class that uses a gateway) 
     * or timer interrupt, ensuring the Gateway's state machine
@@ -150,18 +152,10 @@ public:
     void getMovementEvent (char * movementEventString);
 
     /**
-     * @brief 
-     * @return
+     * @brief retrievs the IMEI from the tracker that sent a message to this gateway
+     * @return the IMEI number
      */
     long long int getReceptedIMEI ();
-
-
-    /**
-     * @brief Actualize the keep alive timer.
-     * @details when the gateway is in STOPPED MODE, it would send a message
-     * periodically but with and increase latency based on the current latency.
-     */
-    void actualizeKeepAliveLatency ();
 
     /**
      * @brief Encrypts a message using the configured encryption chain.
@@ -207,7 +201,11 @@ public:
      */
     void setLoRaMessageNumber (int messageNumber);
 
-
+    /**
+     * @brief Parces a received LoRa message.
+     * @param messageToParse Pointer to the message buffer.
+     * @return True if parsing succeeded, false otherwise.
+     */
     bool parseReceptedLoRaMessage (char * messageToParse);
 
     
@@ -284,8 +282,20 @@ public:
      */
     void setCurrentRSSI (int newRSSI);
 
+        
+     /**
+     * @brief encodes an string with JSON format to a JWT
+     * @param payloadToJWT a string with JSON
+     * @param jwtEncoded a string with the JSON codified into a JWT
+     */
     void encodeJWT (char * payloadToJWT, char * jwtEncoded);
 
+
+     /**
+     * @brief decodes an string codified as a JWT to a JSON format plainmessage
+     * @param jwtToDecode a string codified a a JWT
+     * @param payloadRetrived a string decoded from JWT to JSON
+     */
     bool decodeJWT (char * jwtToDecode, char * payloadRetrived);
 
     
@@ -294,14 +304,14 @@ private:
     OperationMode_t currentOperationMode;   /**< Current mode of operation */
 
     // metadata
-    int sequenceMessageNumber = 0;
-    char* deviceIdentifier;
-    char* prevChainHash;
-    char* currChainHash;
+    int sequenceMessageNumber = 0; /**< a Sequence that increses with every messages succefully sent to the remote server */
+    char* deviceIdentifier; /**< a string that identifies this current device*/
+    char* prevChainHash; /**< hash of the previous message sent to the remote server*/
+    char* currChainHash; /**< hash of the current message about to be sent to the remote server*/
 
     // Ethernet
-    UipEthernet * ethernetModule;
-    DigitalOut * resetEth;
+    UipEthernet * ethernetModule;  /**< pointer to the ethernet module*/
+    DigitalOut * resetEth;  /**< Digital Output that controls the reset of the ethenet module*/
 
 
     deviceMotionStatus_t newMotionStatus = DEVICE_ON_MOTION;        /**< Latest motion status */
@@ -313,17 +323,17 @@ private:
 
      // LORA
     LoRaClass * LoRaTransciever;    /**< LoRa Module transceiver */
-    NonBlockingDelay * timeout;
+    NonBlockingDelay * timeout;  /**< timer that controls LoRa sending/reception times*/
 
     // LORA Recepted Data
-    long long int IMEIRecepted;
-    int RSSI;
+    long long int IMEIRecepted; /**< IMEI of the tracker that comunicates with this gateway*/
+    int RSSI; /**< received signal strength indicator */
     int loraMessageNumber = 1;    /**< interger counting the number of messages sent by LoRa */
-    BatteryData* receptedBatteryData;  
+    BatteryData* receptedBatteryData;   /**< Latest Retrived Battery data from tracker */
     GNSSData* receptedGNSSdata;  /**< Latest Retrived GNSS data from tracker */
     IMUData_t* receptedImuData;  /**< Latest  Retrived IMU data from tracker */
-    char receptedTrackerEvent [20];
-    ReceptedTypeMessage_t receptedTypeMessage;
+    char receptedTrackerEvent [20]; /**< Latest Event from tracker */
+    ReceptedTypeMessage_t receptedTypeMessage; /**< Type of Message recepted from the tracker */
 
     
     // MN Module 
