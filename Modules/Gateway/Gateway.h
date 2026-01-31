@@ -1,4 +1,46 @@
 //=====[#include guards - begin]===============================================
+ /**
+ * @mainpage Gateway LoRa Firmware
+ *
+ * @section intro_sec Introduction
+ *
+ * This project implements the firmware of a LoRa Gateway based on a
+ * state machine architecture. It is responsible for receiving data packets
+ * from remote tracking devices, managing LoRa communication, and forwarding
+ * the received information to a backend server through the corresponding
+ * network interface.
+ *
+ * @section features_sec Main Features
+ * - State machine management for  operation as a gateway
+ * - Communication via cellular and/or LoRa modules
+ * - Efficient power and resource management
+ * - Modular architecture oriented to embedded systems
+* -  internet access via ethenet
+ *
+ * @section hardware_sec Supported Hardware
+ * - Microcontroller: STM32 (Nucleo-L432KC)
+ * - Cellular and GNSS Quectel EC21 module
+ * - Ethernet Module ENC28J60
+ * - RFM95 LoRa Module
+ *
+ *
+ * @section dependencies_sec Dependencies
+ * This firmware depends on the following libraries:
+ * - UIPEthernet by Juraj Andrássy,
+ * - LoRa by Sandeep Mistry
+ * - CustomJWT by Antony Jose Kuruvilla
+ * - Cypher AES by Neil Thiessen
+ * - NonBlocking Delay and Miscellaneous codes from Arm Book A Beginner's-Guide-to-Designing-Embedded-System-Applications-on-Arm-Cortex-M-Microcontrollers
+ *
+ * @section author_sec Author
+ * Facundo Baez 
+ * Elordi Joaquin
+ * Students from Faculty of Engineering, University of Buenos Aires (FIUBA)
+ *
+ * @section history_sec Version History
+ * v1.0 First functional release of the gateway firmware
+ */
+
 /**
  * @file Gateway.h
  * @brief Declares the Gateway class, which manages the state machine for tracking operations.
@@ -8,6 +50,7 @@
  * communication modules. It follows the State design pattern, where
  * different states encapsulate specific behavior.
  */
+
 
 #ifndef _GATEWAY_H_
 #define _GATEWAY_H_

@@ -3,6 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+ /**
+@file main.cpp
+*/
+
 #include "mbed.h"
 #include "arm_book_lib.h"
 #include "string.h"
